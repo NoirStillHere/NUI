@@ -40,8 +40,6 @@ local function ResolveIcon(iconInput)
 end
 
 --VibeSound Defaut
---If you prefer, you can also use these pre-made VibeSounds :)
-
 local VibeSounds = {
     Default = {
         Click = "rbxassetid://9121544550",
@@ -342,6 +340,11 @@ function NoirUI:Destroy()
     NoirUI.Connections = {}
 end
 
+function NoirUI:RegisterCommand(prefix, callback)
+    NoirUI.CustomCommands[prefix:lower()] = callback
+end
+
+-- HÀM TẠO SUBTITLE - Font Gotham
 local function AddSubtitle(parent, subtitleText, yOffset)
     if not subtitleText or subtitleText == "" then return nil end
     
@@ -351,7 +354,7 @@ local function AddSubtitle(parent, subtitleText, yOffset)
     subtitle.BackgroundTransparency = 1
     subtitle.Text = subtitleText
     subtitle.TextColor3 = Color3.fromRGB(140, 140, 140)
-    subtitle.Font = "Gotham"
+    subtitle.Font = "Gotham"  -- 🔥 Font Gotham cho subtitle
     subtitle.TextSize = 10
     subtitle.TextXAlignment = "Left"
     subtitle.TextYAlignment = "Top"
@@ -452,7 +455,6 @@ local function CreateGlowTextSlide(label, colors, speed)
     
     local gradient = Instance.new("UIGradient", label)
     
-    -- Tạo color sequence với nhiều màu
     local colorKeypoints = {}
     for i, color in ipairs(colors) do
         local position = (i - 1) / (#colors - 1)
@@ -465,7 +467,6 @@ local function CreateGlowTextSlide(label, colors, speed)
     
     speed = speed or 1.5
     
-    -- Di chuyển offset liên tục
     local connection
     connection = RunService.RenderStepped:Connect(function(dt)
         if not label or not label.Parent then
@@ -478,10 +479,6 @@ local function CreateGlowTextSlide(label, colors, speed)
     
     table.insert(NoirUI.Connections, connection)
     return gradient, connection
-end
-
-function NoirUI:RegisterCommand(prefix, callback)
-    NoirUI.CustomCommands[prefix:lower()] = callback
 end
 
 function NoirUI:CreateWindow(settings)
@@ -506,7 +503,7 @@ function NoirUI:CreateWindow(settings)
     mainCorner.CornerRadius = UDim.new(0, 12)
     local MainStroke = Instance.new("UIStroke", Main)
     MainStroke.Thickness = 2
-    MainStroke.Color = ACCENT -- 6️⃣ Màu Accent đơn
+    MainStroke.Color = ACCENT
     
     SetupBackground(Main, settings.Background, settings.MainBgColor, settings.MainBgTransparency or 0)
     MakeDraggable(Main)
@@ -519,7 +516,7 @@ function NoirUI:CreateWindow(settings)
     local loadingCorner = Instance.new("UICorner", LoadingFrame)
     loadingCorner.CornerRadius = UDim.new(0, 12)
     local LoadingStroke = Instance.new("UIStroke", LoadingFrame)
-    LoadingStroke.Color = ACCENT -- 6️⃣ Màu Accent đơn
+    LoadingStroke.Color = ACCENT
     LoadingStroke.Thickness = 2
     
     local hasLoadingBg = SetupBackground(LoadingFrame, settings.LoadingBackground, Color3.fromRGB(12, 12, 12), 0.95)
@@ -530,13 +527,12 @@ function NoirUI:CreateWindow(settings)
     LoadingTitle.Position = UDim2.new(0, 20, 0, 15)
     LoadingTitle.BackgroundTransparency = 1
     LoadingTitle.Text = settings.Name or "NOIR HUB"
-    LoadingTitle.TextColor3 = ACCENT -- 6️⃣ Màu Accent đơn
+    LoadingTitle.TextColor3 = ACCENT
     LoadingTitle.Font = "GothamBold"
     LoadingTitle.TextSize = 18
     LoadingTitle.TextXAlignment = "Left"
     LoadingTitle.ZIndex = 201
     
-    -- 5️⃣ Glow Text cho Loading Title
     if settings.UseGlow then
         CreateGlowTextSlide(LoadingTitle, {
             Color3.fromRGB(100, 100, 100),
@@ -566,7 +562,7 @@ function NoirUI:CreateWindow(settings)
     
     local LoadingBar = Instance.new("Frame", LoadingBarBg)
     LoadingBar.Size = UDim2.new(0, 0, 1, 0)
-    LoadingBar.BackgroundColor3 = ACCENT -- 6️⃣ Màu Accent đơn
+    LoadingBar.BackgroundColor3 = ACCENT
     Instance.new("UICorner", LoadingBar).CornerRadius = UDim.new(1, 0)
     LoadingBar.ZIndex = 201
     
@@ -575,7 +571,7 @@ function NoirUI:CreateWindow(settings)
     LoadingPercent.Position = UDim2.new(0, 0, 0.85, 0)
     LoadingPercent.BackgroundTransparency = 1
     LoadingPercent.Text = "0%"
-    LoadingPercent.TextColor3 = ACCENT -- 6️⃣ Màu Accent đơn
+    LoadingPercent.TextColor3 = ACCENT
     LoadingPercent.Font = "GothamBold"
     LoadingPercent.TextSize = 12
     LoadingPercent.ZIndex = 201
@@ -659,7 +655,7 @@ function NoirUI:CreateWindow(settings)
             keyCorner.CornerRadius = UDim.new(0, 12)
             local kstr = Instance.new("UIStroke", KUI)
             kstr.Thickness = 2
-            kstr.Color = ACCENT -- 6️⃣ Màu Accent đơn
+            kstr.Color = ACCENT
             MakeDraggable(KUI)
             
             SetupBackground(KUI, settings.KeyBackground, Color3.fromRGB(12, 12, 12), 0)
@@ -668,13 +664,12 @@ function NoirUI:CreateWindow(settings)
             KT.Size = UDim2.new(1,0,0,35)
             KT.Position = UDim2.new(0,0,0,10)
             KT.Text = KS.Title or "KEY SYSTEM"
-            KT.TextColor3 = ACCENT -- 6️⃣ Màu Accent đơn
+            KT.TextColor3 = ACCENT
             KT.Font = "GothamBold"
             KT.TextSize = 16
             KT.BackgroundTransparency = 1
             KT.ZIndex = 2
             
-            -- 5️⃣ Glow Text cho Key Title
             if settings.UseGlow then
                 CreateGlowTextSlide(KT, {
                     Color3.fromRGB(100, 100, 100),
@@ -700,6 +695,8 @@ function NoirUI:CreateWindow(settings)
             KI.TextColor3 = Color3.new(1,1,1)
             KI.PlaceholderText = "Nhập Key..."
             KI.Text = ""
+            KI.Font = "GothamMedium"
+            KI.TextSize = 12
             Instance.new("UICorner", KI).CornerRadius = UDim.new(0, 6)
             Instance.new("UIStroke", KI).Color = Color3.fromRGB(40,40,40)
             KI.ZIndex = 2
@@ -718,13 +715,13 @@ function NoirUI:CreateWindow(settings)
             local KB = Instance.new("TextButton", KUI)
             KB.Size = UDim2.new(0.8, 0, 0, 35)
             KB.Position = UDim2.new(0.1, 0, 0.75, 10)
-            KB.BackgroundColor3 = ACCENT -- 6️⃣ Màu Accent đơn
+            KB.BackgroundColor3 = ACCENT
             KB.Text = "XÁC NHẬN"
             KB.Font = "GothamBold"
             KB.TextColor3 = Color3.new(1,1,1)
             Instance.new("UICorner", KB).CornerRadius = UDim.new(0, 6)
             KB.ZIndex = 2
-            KB.AutoButtonColor = false -- 7️⃣ Tắt hiệu ứng mờ
+            KB.AutoButtonColor = false
             
             KB.MouseButton1Click:Connect(function()
                 if CheckKeys(KI.Text) then
@@ -770,7 +767,6 @@ function NoirUI:CreateWindow(settings)
     Title.TextSize = 14
     Title.TextXAlignment = "Left"
     
-    -- 5️⃣ Glow Text cho Header Title
     if settings.UseGlow then
         CreateGlowTextSlide(Title, {
             Color3.fromRGB(100, 100, 100),
@@ -797,7 +793,7 @@ function NoirUI:CreateWindow(settings)
         b.TextColor3 = col
         b.Font = "GothamBold"
         Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
-        b.AutoButtonColor = false -- 7️⃣ Tắt hiệu ứng mờ
+        b.AutoButtonColor = false
         b.MouseButton1Click:Connect(cb)
     end
     
@@ -820,7 +816,7 @@ function NoirUI:CreateWindow(settings)
         local confCorner = Instance.new("UICorner", Conf)
         confCorner.CornerRadius = UDim.new(0, 12)
         local s = Instance.new("UIStroke", Conf)
-        s.Color = ACCENT -- 6️⃣ Màu Accent đơn
+        s.Color = ACCENT
         s.Thickness = 2
         local t = Instance.new("TextLabel", Conf)
         t.Size = UDim2.new(1, 0, 0.5, 0)
@@ -837,17 +833,21 @@ function NoirUI:CreateWindow(settings)
         cbtn.Text = "Cancel"
         cbtn.TextColor3 = Color3.new(1,1,1)
         cbtn.ZIndex = 101
+        cbtn.Font = "GothamMedium"
+        cbtn.TextSize = 12
         Instance.new("UICorner", cbtn).CornerRadius = UDim.new(0, 6)
-        cbtn.AutoButtonColor = false -- 7️⃣ Tắt hiệu ứng mờ
+        cbtn.AutoButtonColor = false
         local fbtn = Instance.new("TextButton", Conf)
         fbtn.Size = UDim2.new(0.4, 0, 0, 32)
         fbtn.Position = UDim2.new(0.53, 0, 0.6, 0)
-        fbtn.BackgroundColor3 = ACCENT -- 6️⃣ Màu Accent đơn
+        fbtn.BackgroundColor3 = ACCENT
         fbtn.Text = "Confirm"
         fbtn.TextColor3 = Color3.new(1,1,1)
         fbtn.ZIndex = 101
+        fbtn.Font = "GothamBold"
+        fbtn.TextSize = 12
         Instance.new("UICorner", fbtn).CornerRadius = UDim.new(0, 6)
-        fbtn.AutoButtonColor = false -- 7️⃣ Tắt hiệu ứng mờ
+        fbtn.AutoButtonColor = false
         local function destroyConfirm()
             NoirUI.ActiveConfirmFrame = nil
             Conf:Destroy()
@@ -874,7 +874,7 @@ function NoirUI:CreateWindow(settings)
     sideCorner.CornerRadius = UDim.new(0, 8)
     
     local SideStroke = Instance.new("UIStroke", Side)
-    SideStroke.Color = ACCENT -- 6️⃣ Màu Accent đơn
+    SideStroke.Color = ACCENT
     SideStroke.Thickness = 1
     SideStroke.Transparency = 0.7
     
@@ -883,7 +883,7 @@ function NoirUI:CreateWindow(settings)
     TScroll.Position = UDim2.new(0, 0, 0, 0)
     TScroll.BackgroundTransparency = 1
     TScroll.ScrollBarThickness = 3
-    TScroll.ScrollBarImageColor3 = ACCENT -- 6️⃣ Màu Accent đơn
+    TScroll.ScrollBarImageColor3 = ACCENT
     TScroll.ScrollBarImageTransparency = 0.5
     TScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
     TScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
@@ -909,7 +909,7 @@ function NoirUI:CreateWindow(settings)
     AI.Position = UDim2.new(0.5, -19, 0, 0)
     pcall(function() AI.Image = Players:GetUserThumbnailAsync(Players.LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100) end)
     Instance.new("UICorner", AI).CornerRadius = UDim.new(1,0)
-    Instance.new("UIStroke", AI).Color = ACCENT -- 6️⃣ Màu Accent đơn
+    Instance.new("UIStroke", AI).Color = ACCENT
     
     local Cont = Instance.new("Frame", Main)
     Cont.Size = UDim2.new(1, -125, 1, -50)
@@ -920,11 +920,11 @@ function NoirUI:CreateWindow(settings)
     contCorner.CornerRadius = UDim.new(0, 8)
     
     local ContStroke = Instance.new("UIStroke", Cont)
-    ContStroke.Color = ACCENT -- 6️⃣ Màu Accent đơn
+    ContStroke.Color = ACCENT
     ContStroke.Thickness = 1
     ContStroke.Transparency = 0.7
     
-    -- 4️⃣ FLOAT BUTTON TÙY CHỈNH KÍCH THƯỚC
+    -- FLOAT BUTTON TÙY CHỈNH
     local floatSize = settings.FloatSize or 45
     local floatIconSize = settings.FloatIconSize or 24
     local floatCornerRadius = settings.FloatCornerRadius or 12
@@ -936,13 +936,11 @@ function NoirUI:CreateWindow(settings)
     TBtn.Image = ""
     TBtn.ZIndex = 10
     TBtn.ClipsDescendants = true
-    TBtn.AutoButtonColor = false -- 7️⃣ Tắt hiệu ứng mờ
+    TBtn.AutoButtonColor = false
 
-    -- Create squircle shape with UICorner
     local floatCorner = Instance.new("UICorner", TBtn)
     floatCorner.CornerRadius = UDim.new(0, floatCornerRadius)
 
-    -- ClipGroup for proper masking
     local ClipGroup = Instance.new("Frame", TBtn)
     ClipGroup.Name = "ClipGroup"
     ClipGroup.Size = UDim2.new(1, 0, 1, 0)
@@ -951,11 +949,9 @@ function NoirUI:CreateWindow(settings)
     ClipGroup.ClipsDescendants = true
     ClipGroup.ZIndex = TBtn.ZIndex
 
-    -- Match the squircle shape for ClipGroup
     local clipCorner = Instance.new("UICorner", ClipGroup)
     clipCorner.CornerRadius = UDim.new(0, floatCornerRadius)
 
-    -- Background for float button
     if settings.FloatBackground and settings.FloatBackground.Image then
         local bgImage = Instance.new("ImageLabel", ClipGroup)
         bgImage.Name = "BackgroundImage"
@@ -973,7 +969,6 @@ function NoirUI:CreateWindow(settings)
             bgImage.Image = imgValue
         end
         
-        -- Apply clipping mask for background image
         local bgCorner = Instance.new("UICorner", bgImage)
         bgCorner.CornerRadius = UDim.new(0, floatCornerRadius)
 
@@ -983,7 +978,6 @@ function NoirUI:CreateWindow(settings)
         overlay.BackgroundTransparency = 0.4
         overlay.ZIndex = 2
         
-        -- Apply clipping mask for overlay
         local overlayCorner = Instance.new("UICorner", overlay)
         overlayCorner.CornerRadius = UDim.new(0, floatCornerRadius)
     else
@@ -993,12 +987,10 @@ function NoirUI:CreateWindow(settings)
         bgColor.BackgroundTransparency = 0
         bgColor.ZIndex = 1
         
-        -- Apply clipping mask for background color
         local bgCorner = Instance.new("UICorner", bgColor)
         bgCorner.CornerRadius = UDim.new(0, floatCornerRadius)
     end
 
-    -- Icon with clipping mask
     local iconValue = settings.Icon
     if iconValue then
         local iconImage = ResolveIcon(iconValue)
@@ -1012,7 +1004,6 @@ function NoirUI:CreateWindow(settings)
             FI.ScaleType = Enum.ScaleType.Crop
             FI.ZIndex = 3
             
-            -- Apply clipping mask for icon
             local iconCorner = Instance.new("UICorner", FI)
             iconCorner.CornerRadius = UDim.new(0, floatCornerRadius)
         elseif type(iconValue) == "string" then
@@ -1027,18 +1018,15 @@ function NoirUI:CreateWindow(settings)
             textIcon.TextScaled = true
             textIcon.ZIndex = 3
             
-            -- Apply clipping mask for text icon
             local textCorner = Instance.new("UICorner", textIcon)
             textCorner.CornerRadius = UDim.new(0, floatCornerRadius)
         end
     end
 
-    -- Stroke (border) for float button
     local TS = Instance.new("UIStroke", TBtn)
-    TS.Color = ACCENT -- 6️⃣ Màu Accent đơn
+    TS.Color = ACCENT
     TS.Thickness = 2
 
-    -- Draggable logic for float button
     local floatDragging = false
     local floatDragStart, floatStartPos, floatDragInput
     TBtn.InputBegan:Connect(function(input)
@@ -1106,7 +1094,7 @@ function NoirUI:CreateWindow(settings)
         local notifCorner = Instance.new("UICorner", n)
         notifCorner.CornerRadius = UDim.new(0, 8)
         local ns = Instance.new("UIStroke", n)
-        ns.Color = ACCENT -- 6️⃣ Màu Accent đơn
+        ns.Color = ACCENT
         
         SetupBackground(n, settings.NotificationBackground, Color3.fromRGB(15, 15, 15), 0.25)
         
@@ -1127,13 +1115,12 @@ function NoirUI:CreateWindow(settings)
         tl.Size = UDim2.new(1, iconName and -45 or -15, 0, 20)
         tl.Position = UDim2.new(0, iconName and 40 or 15, 0, 5)
         tl.Text = title
-        tl.TextColor3 = ACCENT -- 6️⃣ Màu Accent đơn
+        tl.TextColor3 = ACCENT
         tl.BackgroundTransparency = 1
         tl.Font = "GothamBold"
         tl.TextSize = 13
         tl.TextXAlignment = "Left"
         
-        -- 5️⃣ Glow Text cho Notification Title
         if settings.UseGlow then
             CreateGlowTextSlide(tl, {
                 Color3.fromRGB(100, 100, 100),
@@ -1180,14 +1167,13 @@ function NoirUI:CreateWindow(settings)
         B.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
         B.BackgroundTransparency = 0.7
         B.Text = ""
-        B.AutoButtonColor = false -- 7️⃣ Tắt hiệu ứng mờ
+        B.AutoButtonColor = false
         Instance.new("UICorner", B).CornerRadius = UDim.new(0, 6)
         
-        -- 1️⃣ STROKE cho tab khi được chọn
         local tabStroke = Instance.new("UIStroke", B)
         tabStroke.Color = ACCENT
         tabStroke.Thickness = 2
-        tabStroke.Transparency = 1  -- Mặc định ẩn
+        tabStroke.Transparency = 1
         tabStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         tabStroke.ZIndex = 2
         
@@ -1197,12 +1183,12 @@ function NoirUI:CreateWindow(settings)
         BT.BackgroundTransparency = 1
         BT.Text = name
         BT.TextColor3 = Color3.fromRGB(150, 150, 150)
-        BT.Font = "GothamMedium"
-        BT.TextSize = 11
+        BT.Font = "GothamSemibold"  -- Font rõ hơn
+        BT.TextSize = 12
         BT.TextXAlignment = "Left"
         BT.ZIndex = 2
+        BT.TextTruncate = Enum.TextTruncate.None
         
-        -- 5️⃣ Glow Text cho Tab Text
         if settings.UseGlow then
             CreateGlowTextSlide(BT, {
                 Color3.fromRGB(80, 80, 80),
@@ -1242,7 +1228,6 @@ function NoirUI:CreateWindow(settings)
         TabContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
         TabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
         
-        -- 3️⃣ SEARCH FRAME VỚI STROKE
         local SearchFrame = Instance.new("Frame", TabContainer)
         SearchFrame.Size = UDim2.new(1, -20, 0, 35)
         SearchFrame.Position = UDim2.new(0, 10, 0, 0)
@@ -1250,7 +1235,6 @@ function NoirUI:CreateWindow(settings)
         SearchFrame.BackgroundTransparency = 0.5
         Instance.new("UICorner", SearchFrame).CornerRadius = UDim.new(0, 8)
         
-        -- STROKE CHO SEARCH FRAME
         local searchStroke = Instance.new("UIStroke", SearchFrame)
         searchStroke.Color = ACCENT
         searchStroke.Thickness = 1
@@ -1291,17 +1275,23 @@ function NoirUI:CreateWindow(settings)
         end
         ContentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas)
         
-        -- Reset tất cả tab
         local function resetAllTabs()
             for _, v in pairs(TScroll:GetChildren()) do
                 if v:IsA("TextButton") then
                     local t = v:FindFirstChild("TextLabel")
-                    if t then t.TextColor3 = Color3.fromRGB(150, 150, 150) end
+                    if t then 
+                        t.TextColor3 = Color3.fromRGB(150, 150, 150)
+                    end
                     local img = v:FindFirstChild("ImageLabel")
-                    if img then img.ImageColor3 = Color3.fromRGB(150, 150, 150) end
-                    -- Ẩn stroke của tất cả tab
+                    if img then 
+                        img.ImageColor3 = Color3.fromRGB(150, 150, 150)
+                    end
                     local stroke = v:FindFirstChildWhichIsA("UIStroke")
-                    if stroke then stroke.Transparency = 1 end
+                    if stroke then 
+                        stroke.Transparency = 1
+                    end
+                    v.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+                    v.BackgroundTransparency = 0.7
                 end
             end
         end
@@ -1314,17 +1304,28 @@ function NoirUI:CreateWindow(settings)
             resetAllTabs()
             TabContainer.Visible = true
             BT.TextColor3 = ACCENT
-            tabStroke.Transparency = 0  -- 1️⃣ HIỆN STROKE khi chọn
+            tabStroke.Transparency = 0
+            B.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+            B.BackgroundTransparency = 0.7
+            
             local tabImg = B:FindFirstChild("ImageLabel")
-            if tabImg then tabImg.ImageColor3 = Color3.fromRGB(150, 150, 150) end
+            if tabImg then 
+                tabImg.ImageColor3 = ACCENT
+            end
             updateCanvas()
         end)
         
-        -- Tab đầu tiên được chọn mặc định
         if #TScroll:GetChildren() == 0 then
             TabContainer.Visible = true
             BT.TextColor3 = ACCENT
-            tabStroke.Transparency = 0  -- 1️⃣ HIỆN STROKE
+            tabStroke.Transparency = 0
+            B.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+            B.BackgroundTransparency = 0.7
+            
+            local tabImg = B:FindFirstChild("ImageLabel")
+            if tabImg then 
+                tabImg.ImageColor3 = ACCENT
+            end
         end
         
         local Tab = { Count = 0, Elements = {}, Connections = {}, _currentSectionContent = nil, _sectionLayout = nil }
@@ -1347,7 +1348,8 @@ function NoirUI:CreateWindow(settings)
         end)
         
         function Tab:CreateLabel(text, updateFunction)
-            local l = Instance.new("TextLabel", ContentFrame)
+            local parent = Tab._currentSectionContent or ContentFrame
+            local l = Instance.new("TextLabel", parent)
             l.Size = UDim2.new(0.95, 0, 0, 20)
             l.BackgroundTransparency = 1
             l.Text = type(text) == "function" and text() or text
@@ -1373,7 +1375,6 @@ function NoirUI:CreateWindow(settings)
             return l
         end
         
-        -- 2️⃣ SECTION CÓ THỂ THU GỌN
         function Tab:CreateSection(title, noLine)
             local s = Instance.new("Frame", ContentFrame)
             s.Size = UDim2.new(0.95, 0, 0, noLine and 25 or 35)
@@ -1383,13 +1384,12 @@ function NoirUI:CreateWindow(settings)
             s.ClipsDescendants = true
             table.insert(Tab.Elements, s)
             
-            -- HEADER (có thể click)
             local headerBtn = Instance.new("TextButton", s)
             headerBtn.Size = UDim2.new(1, 0, 0, 25)
             headerBtn.Position = UDim2.new(0, 0, 0, 0)
             headerBtn.BackgroundTransparency = 1
             headerBtn.Text = ""
-            headerBtn.AutoButtonColor = false -- 7️⃣ Tắt hiệu ứng mờ
+            headerBtn.AutoButtonColor = false
             
             local lbl = Instance.new("TextLabel", headerBtn)
             lbl.Size = UDim2.new(1, -30, 1, 0)
@@ -1401,7 +1401,6 @@ function NoirUI:CreateWindow(settings)
             lbl.TextXAlignment = "Left"
             lbl.BackgroundTransparency = 1
             
-            -- 5️⃣ Glow Text cho Section Title
             if settings.UseGlow then
                 CreateGlowTextSlide(lbl, {
                     Color3.fromRGB(80, 80, 80),
@@ -1410,7 +1409,6 @@ function NoirUI:CreateWindow(settings)
                 }, 1.2)
             end
             
-            -- MŨI TÊN THU GỌN
             local arrow = Instance.new("TextLabel", headerBtn)
             arrow.Size = UDim2.new(0, 20, 1, 0)
             arrow.Position = UDim2.new(1, -25, 0, 0)
@@ -1423,7 +1421,6 @@ function NoirUI:CreateWindow(settings)
             arrow.TextYAlignment = "Center"
             arrow.Name = "Arrow"
             
-            -- CONTAINER CHỨA ELEMENT BÊN TRONG
             local sectionContent = Instance.new("Frame", s)
             sectionContent.Size = UDim2.new(1, 0, 0, 0)
             sectionContent.Position = UDim2.new(0, 0, 0, 25)
@@ -1438,7 +1435,6 @@ function NoirUI:CreateWindow(settings)
             local isCollapsed = false
             local contentHeight = 0
             
-            -- CẬP NHẬT CHIỀU CAO SECTION
             local function updateSectionHeight()
                 task.wait()
                 contentHeight = sectionLayout.AbsoluteContentSize.Y
@@ -1449,7 +1445,6 @@ function NoirUI:CreateWindow(settings)
             end
             sectionLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateSectionHeight)
             
-            -- CLICK ĐỂ THU GỌN/MỞ RỘNG
             headerBtn.MouseButton1Click:Connect(function()
                 PlaySound("Element")
                 isCollapsed = not isCollapsed
@@ -1472,7 +1467,6 @@ function NoirUI:CreateWindow(settings)
                 line.BorderSizePixel = 0
             end
             
-            -- LƯU SECTION CONTENT ĐỂ THÊM ELEMENT VÀO
             Tab._currentSectionContent = sectionContent
             Tab._sectionLayout = sectionLayout
             
@@ -1484,7 +1478,7 @@ function NoirUI:CreateWindow(settings)
             local f = Instance.new("Frame", parent)
             f.Size = UDim2.new(0.95, 0, 0, 65)
             f.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-            f.BackgroundTransparency = 0.5
+            f.BackgroundTransparency = 0
             Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
             f.LayoutOrder = GetO()
             f.Name = opt.Title or ""
@@ -1520,7 +1514,7 @@ function NoirUI:CreateWindow(settings)
             local f = Instance.new("Frame", parent)
             f.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
             f.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-            f.BackgroundTransparency = 0.7
+            f.BackgroundTransparency = 0
             Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
             f.LayoutOrder = GetO()
             f.Name = opt.Name or ""
@@ -1549,7 +1543,7 @@ function NoirUI:CreateWindow(settings)
             local b = Instance.new("TextButton", parent)
             b.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
             b.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-            b.BackgroundTransparency = 0.6
+            b.BackgroundTransparency = 0
             b.Text = opt.Name
             b.TextColor3 = Color3.new(1, 1, 1)
             b.Font = "GothamMedium"
@@ -1557,7 +1551,7 @@ function NoirUI:CreateWindow(settings)
             Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
             b.LayoutOrder = GetO()
             b.Name = opt.Name
-            b.AutoButtonColor = false -- 7️⃣ Tắt hiệu ứng mờ
+            b.AutoButtonColor = false
             table.insert(Tab.Elements, b)
             
             if opt.Align == false then
@@ -1580,8 +1574,7 @@ function NoirUI:CreateWindow(settings)
             
             if hasSubtitle then
                 AddSubtitle(b, opt.Subtitle, 38)
-            end
-            
+            end            
             b.MouseButton1Click:Connect(function()
                 PlaySound("Element")
                 if opt.Callback then opt.Callback() end
@@ -1595,15 +1588,16 @@ function NoirUI:CreateWindow(settings)
             local t = Instance.new("TextButton", parent)
             t.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
             t.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-            t.BackgroundTransparency = 0.6
+            t.BackgroundTransparency = 0
             t.Text = "  " .. opt.Name
             t.TextColor3 = s and ACCENT or Color3.fromRGB(180, 180, 180)
             t.TextXAlignment = "Left"
             t.TextSize = 12
+            t.Font = "GothamMedium"
             Instance.new("UICorner", t).CornerRadius = UDim.new(0, 8)
             t.LayoutOrder = GetO()
             t.Name = opt.Name
-            t.AutoButtonColor = false -- 7️⃣ Tắt hiệu ứng mờ
+            t.AutoButtonColor = false
             table.insert(Tab.Elements, t)
             
             local bx = Instance.new("Frame", t)
@@ -1641,7 +1635,7 @@ function NoirUI:CreateWindow(settings)
             local f = Instance.new("Frame", parent)
             f.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 70 or 50)
             f.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-            f.BackgroundTransparency = 0.7
+            f.BackgroundTransparency = 0
             Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
             f.LayoutOrder = GetO()
             f.Name = opt.Name or ""
@@ -1655,6 +1649,7 @@ function NoirUI:CreateWindow(settings)
             l.TextColor3 = Color3.new(1, 1, 1)
             l.TextXAlignment = "Left"
             l.TextSize = 11
+            l.Font = "GothamMedium"
             
             local sbg = Instance.new("Frame", f)
             sbg.Size = UDim2.new(0.9, 0, 0, 8)
@@ -1713,7 +1708,7 @@ function NoirUI:CreateWindow(settings)
             local f = Instance.new("Frame", parent)
             f.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
             f.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-            f.BackgroundTransparency = 0.7
+            f.BackgroundTransparency = 0
             Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
             f.LayoutOrder = GetO()
             f.ClipsDescendants = true
@@ -1736,7 +1731,7 @@ function NoirUI:CreateWindow(settings)
             pvw.BackgroundColor3 = ColorSelected
             pvw.Text = ""
             Instance.new("UICorner", pvw).CornerRadius = UDim.new(0, 4)
-            pvw.AutoButtonColor = false -- 7️⃣ Tắt hiệu ứng mờ
+            pvw.AutoButtonColor = false
             
             if hasSubtitle then
                 AddSubtitle(f, opt.Subtitle, 38)
@@ -1753,21 +1748,35 @@ function NoirUI:CreateWindow(settings)
             satBox.Image = "rbxassetid://4155801252"
             satBox.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
             Instance.new("UICorner", satBox).CornerRadius = UDim.new(0, 6)
-            satBox.AutoButtonColor = false -- 7️⃣ Tắt hiệu ứng mờ
+            satBox.AutoButtonColor = false
             
             local cursor = Instance.new("Frame", satBox)
-            cursor.Size = UDim2.new(0, 8, 0, 8)
+            cursor.Size = UDim2.new(0, 10, 0, 10)
             cursor.AnchorPoint = Vector2.new(0.5, 0.5)
             cursor.BackgroundColor3 = Color3.new(1, 1, 1)
             cursor.Position = UDim2.new(s, 0, 1 - v, 0)
             Instance.new("UICorner", cursor).CornerRadius = UDim.new(1, 0)
+            cursor.BorderSizePixel = 1
+            cursor.BorderColor3 = Color3.fromRGB(50, 50, 50)
             
             local hueSlide = Instance.new("ImageButton", Holder)
-            hueSlide.Size = UDim2.new(0.9, 0, 0, 12)
+            hueSlide.Size = UDim2.new(0.9, 0, 0, 14)
             hueSlide.Position = UDim2.new(0.05, 0, 0, 115)
-            hueSlide.Image = "rbxassetid://3641079629"
+            hueSlide.Image = ""
             Instance.new("UICorner", hueSlide).CornerRadius = UDim.new(0, 6)
-            hueSlide.AutoButtonColor = false -- 7️⃣ Tắt hiệu ứng mờ
+            hueSlide.AutoButtonColor = false
+            
+            local hueGradient = Instance.new("UIGradient", hueSlide)
+            local hueColorSequence = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+                ColorSequenceKeypoint.new(0.166, Color3.fromRGB(255, 255, 0)),
+                ColorSequenceKeypoint.new(0.333, Color3.fromRGB(0, 255, 0)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
+                ColorSequenceKeypoint.new(0.666, Color3.fromRGB(0, 0, 255)),
+                ColorSequenceKeypoint.new(0.833, Color3.fromRGB(255, 0, 255)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))
+            })
+            hueGradient.Color = hueColorSequence
             
             local hCursor = Instance.new("Frame", hueSlide)
             hCursor.Size = UDim2.new(0, 4, 1, 4)
@@ -1775,6 +1784,8 @@ function NoirUI:CreateWindow(settings)
             hCursor.AnchorPoint = Vector2.new(0.5, 0.5)
             hCursor.BackgroundColor3 = Color3.new(1, 1, 1)
             Instance.new("UICorner", hCursor)
+            hCursor.BorderSizePixel = 1
+            hCursor.BorderColor3 = Color3.fromRGB(50, 50, 50)
             
             local function UpdateColor()
                 local finalCol = Color3.fromHSV(h, s, v)
@@ -1782,37 +1793,76 @@ function NoirUI:CreateWindow(settings)
                 satBox.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
                 cursor.Position = UDim2.new(s, 0, 1 - v, 0)
                 hCursor.Position = UDim2.new(1 - h, 0, 0.5, 0)
-                if opt.Callback then opt.Callback(finalCol) end
+                
+                local lightness = (s + v) / 2
+                if lightness > 0.6 then
+                    cursor.BackgroundColor3 = Color3.new(0, 0, 0)
+                else
+                    cursor.BackgroundColor3 = Color3.new(1, 1, 1)
+                end
+                
+                if opt.Callback then 
+                    pcall(function() opt.Callback(finalCol) end)
+                end
             end
             
-            local hS, hH = false, false
-            satBox.InputBegan:Connect(function(i)
-                if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then hS = true end
+            local isDraggingSat = false
+            satBox.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    isDraggingSat = true
+                    local relativeX = math.clamp((input.Position.X - satBox.AbsolutePosition.X) / satBox.AbsoluteSize.X, 0, 1)
+                    local relativeY = math.clamp((input.Position.Y - satBox.AbsolutePosition.Y) / satBox.AbsoluteSize.Y, 0, 1)
+                    s = math.clamp(relativeX, 0, 1)
+                    v = math.clamp(1 - relativeY, 0, 1)
+                    UpdateColor()
+                end
             end)
-            hueSlide.InputBegan:Connect(function(i)
-                if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then hH = true end
+            
+            local isDraggingHue = false
+            hueSlide.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    isDraggingHue = true
+                    local relativeX = math.clamp((input.Position.X - hueSlide.AbsolutePosition.X) / hueSlide.AbsoluteSize.X, 0, 1)
+                    h = math.clamp(1 - relativeX, 0, 1)
+                    UpdateColor()
+                end
             end)
-            UIS.InputEnded:Connect(function(i)
-                if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then hS, hH = false, false end
-            end)
-            UIS.InputChanged:Connect(function(i)
-                if (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
-                    if hS then
-                        s = math.clamp((i.Position.X - satBox.AbsolutePosition.X) / satBox.AbsoluteSize.X, 0, 1)
-                        v = 1 - math.clamp((i.Position.Y - satBox.AbsolutePosition.Y) / satBox.AbsoluteSize.Y, 0, 1)
+            
+            local function onInputChanged(input)
+                if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                    if isDraggingSat then
+                        local relativeX = math.clamp((input.Position.X - satBox.AbsolutePosition.X) / satBox.AbsoluteSize.X, 0, 1)
+                        local relativeY = math.clamp((input.Position.Y - satBox.AbsolutePosition.Y) / satBox.AbsoluteSize.Y, 0, 1)
+                        s = math.clamp(relativeX, 0, 1)
+                        v = math.clamp(1 - relativeY, 0, 1)
                         UpdateColor()
-                    elseif hH then
-                        h = 1 - math.clamp((i.Position.X - hueSlide.AbsolutePosition.X) / hueSlide.AbsoluteSize.X, 0, 1)
+                    elseif isDraggingHue then
+                        local relativeX = math.clamp((input.Position.X - hueSlide.AbsolutePosition.X) / hueSlide.AbsoluteSize.X, 0, 1)
+                        h = math.clamp(1 - relativeX, 0, 1)
                         UpdateColor()
                     end
                 end
-            end)
+            end
+            
+            local function onInputEnded(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    isDraggingSat = false
+                    isDraggingHue = false
+                end
+            end
+            
+            UIS.InputChanged:Connect(onInputChanged)
+            UIS.InputEnded:Connect(onInputEnded)
             
             pvw.MouseButton1Click:Connect(function()
                 PlaySound("Element")
                 open = not open
-                TweenService:Create(f, TweenInfo.new(0.3), {Size = open and UDim2.new(0.95, 0, 0, 180) or UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)}):Play()
+                TweenService:Create(f, TweenInfo.new(0.3), {
+                    Size = open and UDim2.new(0.95, 0, 0, 180) or UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
+                }):Play()
             end)
+            
+            UpdateColor()
         end
         
         function Tab:CreateDropdown(opt)
@@ -1821,7 +1871,7 @@ function NoirUI:CreateWindow(settings)
             local d = Instance.new("Frame", parent)
             d.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
             d.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-            d.BackgroundTransparency = 0.7
+            d.BackgroundTransparency = 0
             Instance.new("UICorner", d).CornerRadius = UDim.new(0, 8)
             d.LayoutOrder = GetO()
             d.ClipsDescendants = true
@@ -1837,7 +1887,7 @@ function NoirUI:CreateWindow(settings)
             t.Font = "GothamMedium"
             t.TextSize = 12
             t.TextXAlignment = "Left"
-            t.AutoButtonColor = false -- 7️⃣ Tắt hiệu ứng mờ
+            t.AutoButtonColor = false
             
             local Arrow = Instance.new("TextLabel", t)
             Arrow.Name = "ArrowLabel"
@@ -1880,12 +1930,12 @@ function NoirUI:CreateWindow(settings)
                     local it = Instance.new("TextButton", il)
                     it.Size = UDim2.new(1, 0, 0, 30)
                     it.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
-                    it.BackgroundTransparency = 0.5
+                    it.BackgroundTransparency = 0
                     it.Text = option
                     it.TextColor3 = Color3.fromRGB(200, 200, 200)
                     it.Font = "GothamMedium"
                     it.TextSize = 11
-                    it.AutoButtonColor = false -- 7️⃣ Tắt hiệu ứng mờ
+                    it.AutoButtonColor = false
                     it.MouseButton1Click:Connect(function()
                         PlaySound("Element")
                         il.Visible = false
@@ -1926,12 +1976,12 @@ function NoirUI:CreateWindow(settings)
                     local it = Instance.new("TextButton", il)
                     it.Size = UDim2.new(1, 0, 0, 30)
                     it.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
-                    it.BackgroundTransparency = 0.5
+                    it.BackgroundTransparency = 0
                     it.Text = v
                     it.TextColor3 = Color3.fromRGB(200, 200, 200)
                     it.Font = "GothamMedium"
                     it.TextSize = 11
-                    it.AutoButtonColor = false -- 7️⃣ Tắt hiệu ứng mờ
+                    it.AutoButtonColor = false
                     it.MouseButton1Click:Connect(function()
                         PlaySound("Element")
                         open = false
@@ -1973,7 +2023,7 @@ function NoirUI:CreateWindow(settings)
             local f = Instance.new("Frame", parent)
             f.Size = UDim2.new(0.95, 0, 0, 38)
             f.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-            f.BackgroundTransparency = 0.7
+            f.BackgroundTransparency = 0
             Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
             f.LayoutOrder = GetO()
             f.Name = "RunBox"
@@ -2000,7 +2050,7 @@ function NoirUI:CreateWindow(settings)
             r.Font = "GothamBold"
             r.TextSize = 10
             Instance.new("UICorner", r).CornerRadius = UDim.new(0, 6)
-            r.AutoButtonColor = false -- 7️⃣ Tắt hiệu ứng mờ
+            r.AutoButtonColor = false
             
             r.MouseButton1Click:Connect(function()
                 PlaySound("Element")
