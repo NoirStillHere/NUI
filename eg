@@ -446,6 +446,93 @@ local function SetupBackground(frame, bgSetting, bgColor, defaultTransparency)
     end
 end
 
+-- Hàm tạo gradient cho UIStroke
+local function ApplyGradientToStroke(stroke, colors, speed)
+    if not stroke or not colors or #colors < 2 then 
+        stroke.Color = colors[1] or Color3.fromRGB(170, 85, 255)
+        return nil 
+    end
+    
+    -- Xóa gradient cũ nếu có
+    local oldGradient = stroke:FindFirstChild("UIGradient")
+    if oldGradient then oldGradient:Destroy() end
+    
+    local gradient = Instance.new("UIGradient")
+    gradient.Rotation = 0
+    gradient.Transparency = NumberSequence.new(0)
+    
+    -- Tạo color sequence từ mảng màu
+    local colorKeys = {}
+    local step = 1 / (#colors - 1)
+    for i, color in ipairs(colors) do
+        local position = (i - 1) * step
+        table.insert(colorKeys, ColorSequenceKeypoint.new(position, color))
+    end
+    gradient.Color = ColorSequence.new(colorKeys)
+    gradient.Parent = stroke
+    
+    -- Animation gradient rotation
+    if speed then
+        local connection
+        connection = RunService.RenderStepped:Connect(function(dt)
+            if not gradient or not gradient.Parent then 
+                if connection then connection:Disconnect() end
+                return 
+            end
+            gradient.Rotation = (gradient.Rotation + dt * (speed or 30)) % 360
+        end)
+        table.insert(NoirUI.Connections, connection)
+        return connection
+    end
+    return nil
+end
+
+-- Hàm tạo glow effect
+local function CreateGlowEffect(parent, colors, intensity, size)
+    local glow = Instance.new("ImageLabel")
+    glow.Name = "GlowEffect"
+    glow.Size = UDim2.new(1, size or 20, 1, size or 20)
+    glow.Position = UDim2.new(0.5, -(size or 20)/2, 0.5, -(size or 20)/2)
+    glow.BackgroundTransparency = 1
+    glow.Image = "rbxassetid://5028857086" -- Glow texture
+    glow.ImageTransparency = 0.7
+    glow.ZIndex = 0
+    glow.Parent = parent
+    
+    -- Nếu có nhiều màu, tạo gradient cho glow
+    if colors and #colors >= 2 then
+        local gradient = Instance.new("UIGradient")
+        gradient.Rotation = 0
+        gradient.Transparency = NumberSequence.new(0)
+        
+        local colorKeys = {}
+        local step = 1 / (#colors - 1)
+        for i, color in ipairs(colors) do
+            local position = (i - 1) * step
+            table.insert(colorKeys, ColorSequenceKeypoint.new(position, color))
+        end
+        gradient.Color = ColorSequence.new(colorKeys)
+        gradient.Parent = glow
+        
+        -- Animation cho glow
+        local connection
+        connection = RunService.RenderStepped:Connect(function(dt)
+            if not gradient or not gradient.Parent then 
+                if connection then connection:Disconnect() end
+                return 
+            end
+            gradient.Rotation = (gradient.Rotation + dt * 20) % 360
+        end)
+        table.insert(NoirUI.Connections, connection)
+    else
+        glow.ImageColor3 = colors[1] or Color3.fromRGB(170, 85, 255)
+    end
+    
+    glow.ImageTransparency = 1 - (intensity or 0.3)
+    
+    return glow
+end
+
 function NoirUI:RegisterCommand(prefix, callback)
     NoirUI.CustomCommands[prefix:lower()] = callback
 end
@@ -454,7 +541,12 @@ function NoirUI:CreateWindow(settings)
     local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
     ScreenGui.Name = "NoirUI_V3_Ultimate"
     ScreenGui.ResetOnSpawn = false
+    
+    -- Xử lý màu sắc
     local ACCENT = settings.Accent or Color3.fromRGB(170, 85, 255)
+    local StrokeColors = settings.StrokeColors or {ACCENT} -- Mảng màu cho gradient
+    local GlowEnabled = settings.Glow or false
+    local GlowIntensity = settings.GlowIntensity or 0.3
     
     local mainDefaultPos = settings.DefaultPosition or UDim2.new(0.5, -210, 0.5, -150)
     local floatDefaultPos = settings.FloatDefaultPosition or UDim2.new(0, 15, 0.5, -22)
@@ -470,8 +562,20 @@ function NoirUI:CreateWindow(settings)
     Main.Visible = false
     local mainCorner = Instance.new("UICorner", Main)
     mainCorner.CornerRadius = UDim.new(0, 12)
+    
+    -- Main Stroke với gradient
     local MainStroke = Instance.new("UIStroke", Main)
     MainStroke.Thickness = 2
+    if #StrokeColors >= 2 then
+        ApplyGradientToStroke(MainStroke, StrokeColors, 30)
+    else
+        MainStroke.Color = StrokeColors[1] or ACCENT
+    end
+    
+    -- Glow cho Main
+    if GlowEnabled then
+        CreateGlowEffect(Main, StrokeColors, GlowIntensity, 30)
+    end
     
     SetupBackground(Main, settings.Background, settings.MainBgColor, settings.MainBgTransparency or 0)
     MakeDraggable(Main)
@@ -483,12 +587,23 @@ function NoirUI:CreateWindow(settings)
     LoadingFrame.ZIndex = 200
     local loadingCorner = Instance.new("UICorner", LoadingFrame)
     loadingCorner.CornerRadius = UDim.new(0, 12)
+    
+    -- Loading Stroke với gradient
     local LoadingStroke = Instance.new("UIStroke", LoadingFrame)
-    LoadingStroke.Color = ACCENT
     LoadingStroke.Thickness = 2
+    if #StrokeColors >= 2 then
+        ApplyGradientToStroke(LoadingStroke, StrokeColors, 30)
+    else
+        LoadingStroke.Color = StrokeColors[1] or ACCENT
+    end
     
     local hasLoadingBg = SetupBackground(LoadingFrame, settings.LoadingBackground, Color3.fromRGB(12, 12, 12), 0.95)
     LoadingStroke.Transparency = hasLoadingBg and 0 or 1
+    
+    -- Glow cho Loading
+    if GlowEnabled then
+        CreateGlowEffect(LoadingFrame, StrokeColors, GlowIntensity, 25)
+    end
     
     local LoadingTitle = Instance.new("TextLabel", LoadingFrame)
     LoadingTitle.Size = UDim2.new(1, -40, 0, 30)
@@ -562,17 +677,6 @@ function NoirUI:CreateWindow(settings)
         table.insert(NoirUI.Connections, loadingConnection)
     end
     
-    local rainbowConnection
-    task.spawn(function()
-        while Main and Main.Parent do
-            for i = 0, 1, 0.01 do
-                if not Main or not Main.Parent then break end
-                MainStroke.Color = Color3.fromHSV(i, 0.8, 1)
-                task.wait(0.04)
-            end
-        end
-    end)
-    
     local KeySolved = false
     local KUI = nil
     
@@ -613,11 +717,22 @@ function NoirUI:CreateWindow(settings)
             KUI.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
             local keyCorner = Instance.new("UICorner", KUI)
             keyCorner.CornerRadius = UDim.new(0, 12)
+            
+            -- Key UI Stroke với gradient
             local kstr = Instance.new("UIStroke", KUI)
             kstr.Thickness = 2
-            kstr.Color = ACCENT
-            MakeDraggable(KUI)
+            if #StrokeColors >= 2 then
+                ApplyGradientToStroke(kstr, StrokeColors, 30)
+            else
+                kstr.Color = StrokeColors[1] or ACCENT
+            end
             
+            -- Glow cho Key UI
+            if GlowEnabled then
+                CreateGlowEffect(KUI, StrokeColors, GlowIntensity, 25)
+            end
+            
+            MakeDraggable(KUI)
             SetupBackground(KUI, settings.KeyBackground, Color3.fromRGB(12, 12, 12), 0)
             
             local KT = Instance.new("TextLabel", KUI)
@@ -755,9 +870,16 @@ function NoirUI:CreateWindow(settings)
         Conf.ZIndex = 100
         local confCorner = Instance.new("UICorner", Conf)
         confCorner.CornerRadius = UDim.new(0, 12)
+        
+        -- Confirm Stroke với gradient
         local s = Instance.new("UIStroke", Conf)
-        s.Color = ACCENT
         s.Thickness = 2
+        if #StrokeColors >= 2 then
+            ApplyGradientToStroke(s, StrokeColors, 30)
+        else
+            s.Color = StrokeColors[1] or ACCENT
+        end
+        
         local t = Instance.new("TextLabel", Conf)
         t.Size = UDim2.new(1, 0, 0.5, 0)
         t.BackgroundTransparency = 1
@@ -766,6 +888,7 @@ function NoirUI:CreateWindow(settings)
         t.Font = "GothamMedium"
         t.TextSize = 13
         t.ZIndex = 101
+        
         local cbtn = Instance.new("TextButton", Conf)
         cbtn.Size = UDim2.new(0.4, 0, 0, 32)
         cbtn.Position = UDim2.new(0.07, 0, 0.6, 0)
@@ -774,6 +897,7 @@ function NoirUI:CreateWindow(settings)
         cbtn.TextColor3 = Color3.new(1,1,1)
         cbtn.ZIndex = 101
         Instance.new("UICorner", cbtn).CornerRadius = UDim.new(0, 6)
+        
         local fbtn = Instance.new("TextButton", Conf)
         fbtn.Size = UDim2.new(0.4, 0, 0, 32)
         fbtn.Position = UDim2.new(0.53, 0, 0.6, 0)
@@ -782,10 +906,12 @@ function NoirUI:CreateWindow(settings)
         fbtn.TextColor3 = Color3.new(1,1,1)
         fbtn.ZIndex = 101
         Instance.new("UICorner", fbtn).CornerRadius = UDim.new(0, 6)
+        
         local function destroyConfirm()
             NoirUI.ActiveConfirmFrame = nil
             Conf:Destroy()
         end
+        
         cbtn.MouseButton1Click:Connect(function()
             PlaySound("Click")
             destroyConfirm()
@@ -807,10 +933,15 @@ function NoirUI:CreateWindow(settings)
     local sideCorner = Instance.new("UICorner", Side)
     sideCorner.CornerRadius = UDim.new(0, 8)
     
+    -- Side Stroke với gradient
     local SideStroke = Instance.new("UIStroke", Side)
-    SideStroke.Color = ACCENT
     SideStroke.Thickness = 1
     SideStroke.Transparency = 0.7
+    if #StrokeColors >= 2 then
+        ApplyGradientToStroke(SideStroke, StrokeColors, 20)
+    else
+        SideStroke.Color = StrokeColors[1] or ACCENT
+    end
     
     local TScroll = Instance.new("ScrollingFrame", Side)
     TScroll.Size = UDim2.new(1, 0, 1, -55)
@@ -853,10 +984,15 @@ function NoirUI:CreateWindow(settings)
     local contCorner = Instance.new("UICorner", Cont)
     contCorner.CornerRadius = UDim.new(0, 8)
     
+    -- Cont Stroke với gradient
     local ContStroke = Instance.new("UIStroke", Cont)
-    ContStroke.Color = ACCENT
     ContStroke.Thickness = 1
     ContStroke.Transparency = 0.7
+    if #StrokeColors >= 2 then
+        ApplyGradientToStroke(ContStroke, StrokeColors, 20)
+    else
+        ContStroke.Color = StrokeColors[1] or ACCENT
+    end
     
     -- FLOAT BUTTON WITH SQUIRCLE AND CLIPPING MASK
     local TBtn = Instance.new("ImageButton", ScreenGui)
@@ -870,6 +1006,20 @@ function NoirUI:CreateWindow(settings)
     -- Create squircle shape with UICorner
     local floatCorner = Instance.new("UICorner", TBtn)
     floatCorner.CornerRadius = UDim.new(0, settings.FloatCornerRadius or 12)
+
+    -- Float button stroke với gradient
+    local TS = Instance.new("UIStroke", TBtn)
+    TS.Thickness = 2
+    if #StrokeColors >= 2 then
+        ApplyGradientToStroke(TS, StrokeColors, 40)
+    else
+        TS.Color = StrokeColors[1] or ACCENT
+    end
+
+    -- Glow cho float button
+    if GlowEnabled then
+        CreateGlowEffect(TBtn, StrokeColors, GlowIntensity, 35)
+    end
 
     -- ClipGroup for proper masking
     local ClipGroup = Instance.new("Frame", TBtn)
@@ -967,11 +1117,6 @@ function NoirUI:CreateWindow(settings)
         end
     end
 
-    -- Stroke (border) for float button
-    local TS = Instance.new("UIStroke", TBtn)
-    TS.Color = ACCENT
-    TS.Thickness = 2
-
     -- Draggable logic for float button
     local floatDragging = false
     local floatDragStart, floatStartPos, floatDragInput
@@ -1039,8 +1184,14 @@ function NoirUI:CreateWindow(settings)
         n.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
         local notifCorner = Instance.new("UICorner", n)
         notifCorner.CornerRadius = UDim.new(0, 8)
+        
+        -- Notification Stroke với gradient
         local ns = Instance.new("UIStroke", n)
-        ns.Color = ACCENT
+        if #StrokeColors >= 2 then
+            ApplyGradientToStroke(ns, StrokeColors, 15)
+        else
+            ns.Color = StrokeColors[1] or ACCENT
+        end
         
         SetupBackground(n, settings.NotificationBackground, Color3.fromRGB(15, 15, 15), 0.25)
         
@@ -1098,6 +1249,117 @@ function NoirUI:CreateWindow(settings)
     end
     
     local Window = {}
+    
+    -- Hàm cập nhật gradient
+    function Window:UpdateGradient(colors, speed)
+        if not colors or #colors < 2 then return end
+        StrokeColors = colors
+        
+        -- Cập nhật tất cả stroke
+        local strokes = {
+            MainStroke, LoadingStroke, SideStroke, ContStroke, TS, ns
+        }
+        
+        -- Tìm tất cả stroke trong UI
+        local function findStrokes(parent)
+            for _, child in pairs(parent:GetChildren()) do
+                if child:IsA("UIStroke") then
+                    table.insert(strokes, child)
+                end
+                findStrokes(child)
+            end
+        end
+        
+        findStrokes(Main)
+        findStrokes(TBtn)
+        
+        for _, stroke in pairs(strokes) do
+            if stroke then
+                -- Xóa gradient cũ
+                local oldGradient = stroke:FindFirstChild("UIGradient")
+                if oldGradient then oldGradient:Destroy() end
+                
+                -- Áp dụng gradient mới
+                ApplyGradientToStroke(stroke, colors, speed or 30)
+            end
+        end
+        
+        -- Cập nhật glow
+        local glows = {}
+        local function findGlows(parent)
+            for _, child in pairs(parent:GetChildren()) do
+                if child.Name == "GlowEffect" then 
+                    table.insert(glows, child) 
+                end
+                findGlows(child)
+            end
+        end
+        
+        findGlows(Main)
+        findGlows(TBtn)
+        findGlows(LoadingFrame)
+        
+        for _, glow in pairs(glows) do
+            local oldGradient = glow:FindFirstChild("UIGradient")
+            if oldGradient then oldGradient:Destroy() end
+            
+            if #colors >= 2 then
+                local gradient = Instance.new("UIGradient")
+                local colorKeys = {}
+                local step = 1 / (#colors - 1)
+                for i, color in ipairs(colors) do
+                    local position = (i - 1) * step
+                    table.insert(colorKeys, ColorSequenceKeypoint.new(position, color))
+                end
+                gradient.Color = ColorSequence.new(colorKeys)
+                gradient.Parent = glow
+            else
+                glow.ImageColor3 = colors[1] or ACCENT
+            end
+        end
+        
+        NoirUI:Notify("Gradient", "Đã cập nhật gradient!", "palette", "Success")
+    end
+    
+    -- Hàm bật/tắt glow
+    function Window:ToggleGlow(enabled)
+        GlowEnabled = enabled
+        
+        local function updateGlowVisibility(parent)
+            for _, child in pairs(parent:GetChildren()) do
+                if child.Name == "GlowEffect" then
+                    child.Visible = enabled
+                end
+                updateGlowVisibility(child)
+            end
+        end
+        
+        updateGlowVisibility(Main)
+        updateGlowVisibility(TBtn)
+        updateGlowVisibility(LoadingFrame)
+        
+        NoirUI:Notify("Glow", enabled and "Đã bật glow" or "Đã tắt glow", "sparkles", "Success")
+    end
+    
+    -- Hàm set glow intensity
+    function Window:SetGlowIntensity(intensity)
+        GlowIntensity = math.clamp(intensity, 0, 1)
+        
+        local function updateGlowIntensity(parent)
+            for _, child in pairs(parent:GetChildren()) do
+                if child.Name == "GlowEffect" then
+                    child.ImageTransparency = 1 - GlowIntensity
+                end
+                updateGlowIntensity(child)
+            end
+        end
+        
+        updateGlowIntensity(Main)
+        updateGlowIntensity(TBtn)
+        updateGlowIntensity(LoadingFrame)
+        
+        NoirUI:Notify("Glow Intensity", "Độ mạnh: " .. math.floor(GlowIntensity * 100) .. "%", "sun", "Success")
+    end
     
     function Window:CreateTab(name, icon)
         local B = Instance.new("TextButton", TScroll)
