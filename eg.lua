@@ -39,6 +39,60 @@ local function ResolveIcon(iconInput)
     return nil
 end
 
+--VibeSound Defaut
+local VibeSounds = {
+    Default = {
+        Click = "rbxassetid://9121544550",
+        Tab = "rbxassetid://9121544550",
+        Element = "rbxassetid://9121544550",
+        Open = "rbxassetid://9121544550",
+        Close = "rbxassetid://9121544550",
+        Notification = "rbxassetid://9121544550",
+        Error = "rbxassetid://9121544550",
+        Success = "rbxassetid://9121544550",
+    },
+    Cyber = {
+        Click = "rbxassetid://169653382",
+        Tab = "rbxassetid://169653382",
+        Element = "rbxassetid://169653382",
+        Open = "rbxassetid://169653382",
+        Close = "rbxassetid://169653382",
+        Notification = "rbxassetid://253176819",
+        Error = "rbxassetid://183922415",
+        Success = "rbxassetid://9121544550",
+    },
+    Soft = {
+        Click = "rbxassetid://415202063",
+        Tab = "rbxassetid://415202063",
+        Element = "rbxassetid://415202063", 
+        Open = "rbxassetid://415202063",
+        Close = "rbxassetid://415202063",
+        Notification = "rbxassetid://6367035006",
+        Error = "rbxassetid://5170587753",
+        Success = "rbxassetid://6367344460",
+    },
+    Retro = {
+        Click = "rbxassetid://132317637",
+        Tab = "rbxassetid://132317637",
+        Element = "rbxassetid://132317637",
+        Open = "rbxassetid://132317637",
+        Close = "rbxassetid://132317637",
+        Notification = "rbxassetid://282872173",
+        Error = "rbxassetid://144434571",
+        Success = "rbxassetid://280651216",
+    },
+    Nature = {
+        Click = "rbxassetid://3628697780",
+        Tab = "rbxassetid://3628697780",
+        Element = "rbxassetid://3628697780",
+        Open = "rbxassetid://3628697780",
+        Close = "rbxassetid://3628697780",
+        Notification = "rbxassetid://2602352041",
+        Error = "rbxassetid://2708694673",
+        Success = "rbxassetid://6246820498",
+    },
+}
+
 local SoundSettings = {
     Enabled = true,
     Volume = 0.5,
@@ -391,7 +445,7 @@ local function SetupBackground(frame, bgSetting, bgColor, defaultTransparency)
 end
 
 -- ============================================================
--- EFFECT: GLOW TEXT CHẠY NGANG (Giữ lại)
+-- EFFECT: GLOW TEXT CHẠY NGANG
 -- ============================================================
 local function CreateGlowTextSlide(label, colors, speed)
     if not label then return nil end
@@ -456,7 +510,7 @@ function NoirUI:CreateWindow(settings)
     local mainCorner = Instance.new("UICorner", Main)
     mainCorner.CornerRadius = UDim.new(0, 12)
     local MainStroke = Instance.new("UIStroke", Main)
-    MainStroke.Color = ACCENT
+    MainStroke.Color = ACCENT  -- <-- QUAN TRỌNG: Gán màu cho stroke
     MainStroke.Thickness = 2
     
     SetupBackground(Main, settings.Background, settings.MainBgColor, settings.MainBgTransparency or 0)
@@ -1278,6 +1332,7 @@ function NoirUI:CreateWindow(settings)
             if prop == "Text" then filterElements(SearchBox.Text) end
         end)
         
+        -- ============ CÁC ELEMENT ============
         function Tab:CreateLabel(text, updateFunction)
             local l = Instance.new("TextLabel", ContentFrame)
             l.Size = UDim2.new(0.95, 0, 0, 20)
