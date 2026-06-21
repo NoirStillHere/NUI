@@ -446,20 +446,56 @@ local function SetupBackground(frame, bgSetting, bgColor, defaultTransparency)
     end
 end
 
--- Hàm tạo gradient cho UIStroke
-local function ApplyGradientStroke(stroke, colors, angle)
-    if not stroke or not colors or #colors < 2 then return end
+-- Hàm tạo gradient 2 màu với hiệu ứng di chuyển
+local function CreateAnimatedGradient(parent, color1, color2, speed, angle)
+    if not parent or not color1 or not color2 then return nil end
     
-    local gradient = Instance.new("UIGradient", stroke)
+    local gradient = Instance.new("UIGradient", parent)
     gradient.Rotation = angle or 45
+    
+    -- Tạo 3 điểm màu: A -> B -> A (loop)
+    local colorKeypoints = {
+        ColorSequenceKeypoint.new(0, color1),
+        ColorSequenceKeypoint.new(0.5, color2),
+        ColorSequenceKeypoint.new(1, color1),
+    }
+    gradient.Color = ColorSequence.new(colorKeypoints)
     gradient.Transparency = NumberSequence.new(0)
     
-    local colorKeypoints = {}
-    for i, color in ipairs(colors) do
-        local position = (i - 1) / (#colors - 1)
-        table.insert(colorKeypoints, ColorSequenceKeypoint.new(position, color))
-    end
+    -- Tạo hiệu ứng di chuyển
+    local offset = 0
+    local speedValue = speed or 0.5
+    
+    local connection
+    connection = RunService.RenderStepped:Connect(function(deltaTime)
+        if not parent or not parent.Parent then
+            connection:Disconnect()
+            return
+        end
+        offset = (offset + deltaTime * speedValue) % 1
+        gradient.Offset = Vector2.new(offset, 0)
+    end)
+    
+    table.insert(NoirUI.Connections, connection)
+    
+    return gradient
+end
+
+-- Hàm tạo gradient tĩnh 2 màu
+local function CreateStaticGradient(parent, color1, color2, angle)
+    if not parent or not color1 or not color2 then return nil end
+    
+    local gradient = Instance.new("UIGradient", parent)
+    gradient.Rotation = angle or 45
+    
+    local colorKeypoints = {
+        ColorSequenceKeypoint.new(0, color1),
+        ColorSequenceKeypoint.new(1, color2),
+    }
     gradient.Color = ColorSequence.new(colorKeypoints)
+    gradient.Transparency = NumberSequence.new(0)
+    
+    return gradient
 end
 
 function NoirUI:RegisterCommand(prefix, callback)
@@ -471,13 +507,16 @@ function NoirUI:CreateWindow(settings)
     ScreenGui.Name = "NoirUI_V3_Ultimate"
     ScreenGui.ResetOnSpawn = false
     
-    -- Xử lý accent color / gradient
-    local accentColors = settings.AccentColors or {settings.Accent or Color3.fromRGB(170, 85, 255)}
-    local accentGradientAngle = settings.AccentAngle or 45
+    -- Xử lý accent colors (chỉ 2 màu)
+    local accentColor1 = settings.AccentColor1 or Color3.fromRGB(170, 85, 255)
+    local accentColor2 = settings.AccentColor2 or Color3.fromRGB(255, 50, 150)
+    local accentSpeed = settings.AccentSpeed or 0.5 -- Tốc độ di chuyển gradient
+    local accentAngle = settings.AccentAngle or 45
+    local useAnimation = settings.AccentAnimated ~= false -- Mặc định true
     
     -- Hàm lấy màu accent đầu tiên làm màu chính
     local function GetPrimaryAccent()
-        return accentColors[1] or Color3.fromRGB(170, 85, 255)
+        return accentColor1
     end
     
     local ACCENT = GetPrimaryAccent()
@@ -500,15 +539,15 @@ function NoirUI:CreateWindow(settings)
     MainStroke.Thickness = 2
     MainStroke.Color = ACCENT
     
-    -- Áp dụng gradient cho MainStroke nếu có nhiều màu
-    if #accentColors > 1 then
-        ApplyGradientStroke(MainStroke, accentColors, accentGradientAngle)
+    -- Tạo gradient animated cho MainStroke
+    if useAnimation then
+        CreateAnimatedGradient(MainStroke, accentColor1, accentColor2, accentSpeed, accentAngle)
+    else
+        CreateStaticGradient(MainStroke, accentColor1, accentColor2, accentAngle)
     end
     
     SetupBackground(Main, settings.Background, settings.MainBgColor, settings.MainBgTransparency or 0)
     MakeDraggable(Main)
-    
-    -- Bỏ hiệu ứng nhấp nháy rainbow
     
     local LoadingFrame = Instance.new("Frame", ScreenGui)
     LoadingFrame.Size = UDim2.new(0, 300, 0, 120)
@@ -521,9 +560,11 @@ function NoirUI:CreateWindow(settings)
     LoadingStroke.Color = ACCENT
     LoadingStroke.Thickness = 2
     
-    -- Áp dụng gradient cho LoadingStroke
-    if #accentColors > 1 then
-        ApplyGradientStroke(LoadingStroke, accentColors, accentGradientAngle)
+    -- Tạo gradient animated cho LoadingStroke
+    if useAnimation then
+        CreateAnimatedGradient(LoadingStroke, accentColor1, accentColor2, accentSpeed, accentAngle)
+    else
+        CreateStaticGradient(LoadingStroke, accentColor1, accentColor2, accentAngle)
     end
     
     local hasLoadingBg = SetupBackground(LoadingFrame, settings.LoadingBackground, Color3.fromRGB(12, 12, 12), 0.95)
@@ -565,17 +606,11 @@ function NoirUI:CreateWindow(settings)
     Instance.new("UICorner", LoadingBar).CornerRadius = UDim.new(1, 0)
     LoadingBar.ZIndex = 201
     
-    -- Áp dụng gradient cho LoadingBar
-    if #accentColors > 1 then
-        local barGradient = Instance.new("UIGradient", LoadingBar)
-        barGradient.Rotation = 0
-        local colorKeypoints = {}
-        for i, color in ipairs(accentColors) do
-            local position = (i - 1) / (#accentColors - 1)
-            table.insert(colorKeypoints, ColorSequenceKeypoint.new(position, color))
-        end
-        barGradient.Color = ColorSequence.new(colorKeypoints)
-        barGradient.Transparency = NumberSequence.new(0)
+    -- Tạo gradient animated cho LoadingBar
+    if useAnimation then
+        CreateAnimatedGradient(LoadingBar, accentColor1, accentColor2, accentSpeed, 0)
+    else
+        CreateStaticGradient(LoadingBar, accentColor1, accentColor2, 0)
     end
     
     local LoadingPercent = Instance.new("TextLabel", LoadingFrame)
@@ -658,9 +693,11 @@ function NoirUI:CreateWindow(settings)
             kstr.Thickness = 2
             kstr.Color = ACCENT
             
-            -- Áp dụng gradient cho key stroke
-            if #accentColors > 1 then
-                ApplyGradientStroke(kstr, accentColors, accentGradientAngle)
+            -- Tạo gradient animated cho key stroke
+            if useAnimation then
+                CreateAnimatedGradient(kstr, accentColor1, accentColor2, accentSpeed, accentAngle)
+            else
+                CreateStaticGradient(kstr, accentColor1, accentColor2, accentAngle)
             end
             
             MakeDraggable(KUI)
@@ -719,17 +756,11 @@ function NoirUI:CreateWindow(settings)
             Instance.new("UICorner", KB).CornerRadius = UDim.new(0, 6)
             KB.ZIndex = 2
             
-            -- Áp dụng gradient cho button xác nhận
-            if #accentColors > 1 then
-                local btnGradient = Instance.new("UIGradient", KB)
-                btnGradient.Rotation = accentGradientAngle
-                local colorKeypoints = {}
-                for i, color in ipairs(accentColors) do
-                    local position = (i - 1) / (#accentColors - 1)
-                    table.insert(colorKeypoints, ColorSequenceKeypoint.new(position, color))
-                end
-                btnGradient.Color = ColorSequence.new(colorKeypoints)
-                btnGradient.Transparency = NumberSequence.new(0)
+            -- Tạo gradient animated cho button xác nhận
+            if useAnimation then
+                CreateAnimatedGradient(KB, accentColor1, accentColor2, accentSpeed, accentAngle)
+            else
+                CreateStaticGradient(KB, accentColor1, accentColor2, accentAngle)
             end
             
             KB.MouseButton1Click:Connect(function()
@@ -819,9 +850,11 @@ function NoirUI:CreateWindow(settings)
         s.Color = ACCENT
         s.Thickness = 2
         
-        -- Áp dụng gradient cho confirm stroke
-        if #accentColors > 1 then
-            ApplyGradientStroke(s, accentColors, accentGradientAngle)
+        -- Tạo gradient animated cho confirm stroke
+        if useAnimation then
+            CreateAnimatedGradient(s, accentColor1, accentColor2, accentSpeed, accentAngle)
+        else
+            CreateStaticGradient(s, accentColor1, accentColor2, accentAngle)
         end
         
         local t = Instance.new("TextLabel", Conf)
@@ -849,17 +882,11 @@ function NoirUI:CreateWindow(settings)
         fbtn.ZIndex = 101
         Instance.new("UICorner", fbtn).CornerRadius = UDim.new(0, 6)
         
-        -- Áp dụng gradient cho confirm button
-        if #accentColors > 1 then
-            local confirmGradient = Instance.new("UIGradient", fbtn)
-            confirmGradient.Rotation = accentGradientAngle
-            local colorKeypoints = {}
-            for i, color in ipairs(accentColors) do
-                local position = (i - 1) / (#accentColors - 1)
-                table.insert(colorKeypoints, ColorSequenceKeypoint.new(position, color))
-            end
-            confirmGradient.Color = ColorSequence.new(colorKeypoints)
-            confirmGradient.Transparency = NumberSequence.new(0)
+        -- Tạo gradient animated cho confirm button
+        if useAnimation then
+            CreateAnimatedGradient(fbtn, accentColor1, accentColor2, accentSpeed, accentAngle)
+        else
+            CreateStaticGradient(fbtn, accentColor1, accentColor2, accentAngle)
         end
         
         local function destroyConfirm()
@@ -892,9 +919,11 @@ function NoirUI:CreateWindow(settings)
     SideStroke.Thickness = 1
     SideStroke.Transparency = 0.7
     
-    -- Áp dụng gradient cho SideStroke
-    if #accentColors > 1 then
-        ApplyGradientStroke(SideStroke, accentColors, accentGradientAngle)
+    -- Tạo gradient animated cho SideStroke
+    if useAnimation then
+        CreateAnimatedGradient(SideStroke, accentColor1, accentColor2, accentSpeed, accentAngle)
+    else
+        CreateStaticGradient(SideStroke, accentColor1, accentColor2, accentAngle)
     end
     
     local TScroll = Instance.new("ScrollingFrame", Side)
@@ -931,9 +960,11 @@ function NoirUI:CreateWindow(settings)
     local avatarStroke = Instance.new("UIStroke", AI)
     avatarStroke.Color = ACCENT
     
-    -- Áp dụng gradient cho avatar stroke
-    if #accentColors > 1 then
-        ApplyGradientStroke(avatarStroke, accentColors, accentGradientAngle)
+    -- Tạo gradient animated cho avatar stroke
+    if useAnimation then
+        CreateAnimatedGradient(avatarStroke, accentColor1, accentColor2, accentSpeed, accentAngle)
+    else
+        CreateStaticGradient(avatarStroke, accentColor1, accentColor2, accentAngle)
     end
     
     local Cont = Instance.new("Frame", Main)
@@ -949,9 +980,11 @@ function NoirUI:CreateWindow(settings)
     ContStroke.Thickness = 1
     ContStroke.Transparency = 0.7
     
-    -- Áp dụng gradient cho ContStroke
-    if #accentColors > 1 then
-        ApplyGradientStroke(ContStroke, accentColors, accentGradientAngle)
+    -- Tạo gradient animated cho ContStroke
+    if useAnimation then
+        CreateAnimatedGradient(ContStroke, accentColor1, accentColor2, accentSpeed, accentAngle)
+    else
+        CreateStaticGradient(ContStroke, accentColor1, accentColor2, accentAngle)
     end
     
     -- FLOAT BUTTON WITH SQUIRCLE AND CLIPPING MASK
@@ -1068,9 +1101,11 @@ function NoirUI:CreateWindow(settings)
     TS.Color = ACCENT
     TS.Thickness = 2
     
-    -- Áp dụng gradient cho float button stroke
-    if #accentColors > 1 then
-        ApplyGradientStroke(TS, accentColors, accentGradientAngle)
+    -- Tạo gradient animated cho float button stroke
+    if useAnimation then
+        CreateAnimatedGradient(TS, accentColor1, accentColor2, accentSpeed, accentAngle)
+    else
+        CreateStaticGradient(TS, accentColor1, accentColor2, accentAngle)
     end
 
     -- Draggable logic for float button
@@ -1143,9 +1178,11 @@ function NoirUI:CreateWindow(settings)
         local ns = Instance.new("UIStroke", n)
         ns.Color = ACCENT
         
-        -- Áp dụng gradient cho notification stroke
-        if #accentColors > 1 then
-            ApplyGradientStroke(ns, accentColors, accentGradientAngle)
+        -- Tạo gradient animated cho notification stroke
+        if useAnimation then
+            CreateAnimatedGradient(ns, accentColor1, accentColor2, accentSpeed, accentAngle)
+        else
+            CreateStaticGradient(ns, accentColor1, accentColor2, accentAngle)
         end
         
         SetupBackground(n, settings.NotificationBackground, Color3.fromRGB(15, 15, 15), 0.25)
@@ -1577,17 +1614,11 @@ function NoirUI:CreateWindow(settings)
             fill.BackgroundColor3 = ACCENT
             Instance.new("UICorner", fill)
             
-            -- Áp dụng gradient cho slider fill
-            if #accentColors > 1 then
-                local fillGradient = Instance.new("UIGradient", fill)
-                fillGradient.Rotation = 0
-                local colorKeypoints = {}
-                for i, color in ipairs(accentColors) do
-                    local position = (i - 1) / (#accentColors - 1)
-                    table.insert(colorKeypoints, ColorSequenceKeypoint.new(position, color))
-                end
-                fillGradient.Color = ColorSequence.new(colorKeypoints)
-                fillGradient.Transparency = NumberSequence.new(0)
+            -- Tạo gradient animated cho slider fill
+            if useAnimation then
+                CreateAnimatedGradient(fill, accentColor1, accentColor2, accentSpeed, 0)
+            else
+                CreateStaticGradient(fill, accentColor1, accentColor2, 0)
             end
             
             if hasSubtitle then
@@ -1913,17 +1944,11 @@ function NoirUI:CreateWindow(settings)
             r.TextSize = 10
             Instance.new("UICorner", r).CornerRadius = UDim.new(0, 6)
             
-            -- Áp dụng gradient cho Run button
-            if #accentColors > 1 then
-                local runGradient = Instance.new("UIGradient", r)
-                runGradient.Rotation = accentGradientAngle
-                local colorKeypoints = {}
-                for i, color in ipairs(accentColors) do
-                    local position = (i - 1) / (#accentColors - 1)
-                    table.insert(colorKeypoints, ColorSequenceKeypoint.new(position, color))
-                end
-                runGradient.Color = ColorSequence.new(colorKeypoints)
-                runGradient.Transparency = NumberSequence.new(0)
+            -- Tạo gradient animated cho Run button
+            if useAnimation then
+                CreateAnimatedGradient(r, accentColor1, accentColor2, accentSpeed, accentAngle)
+            else
+                CreateStaticGradient(r, accentColor1, accentColor2, accentAngle)
             end
             
             r.MouseButton1Click:Connect(function()
@@ -1987,6 +2012,12 @@ function NoirUI:CreateWindow(settings)
         
         return Tab
     end
+    
+    -- Lưu thông tin accent để sử dụng sau
+    Window._accentColor1 = accentColor1
+    Window._accentColor2 = accentColor2
+    Window._accentSpeed = accentSpeed
+    Window._useAnimation = useAnimation
     
     return Window
 end
