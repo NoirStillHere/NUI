@@ -39,27 +39,6 @@ local function ResolveIcon(iconInput)
     return nil
 end
 
--- Hàm tạo gradient stroke
-local function CreateGradientStroke(parent, colors, thickness, transparency)
-    -- Tạo UIStroke
-    local stroke = Instance.new("UIStroke", parent)
-    stroke.Thickness = thickness or 2
-    stroke.Transparency = transparency or 0
-    
-    -- Tạo UIGradient với nhiều màu
-    local gradient = Instance.new("UIGradient", stroke)
-    
-    local colorSequence = {}
-    for i, color in ipairs(colors) do
-        local position = (i - 1) / (#colors - 1)
-        table.insert(colorSequence, ColorSequenceKeypoint.new(position, color))
-    end
-    
-    gradient.Color = ColorSequence.new(colorSequence)
-    
-    return stroke
-end
-
 --VibeSound Defaut
 --If you prefer, you can also use these pre-made VibeSounds :)
 
@@ -467,6 +446,27 @@ local function SetupBackground(frame, bgSetting, bgColor, defaultTransparency)
     end
 end
 
+-- Function to create gradient stroke
+local function CreateGradientStroke(parent, colors, thickness, transparency)
+    local stroke = Instance.new("UIStroke", parent)
+    stroke.Thickness = thickness or 2
+    stroke.Transparency = transparency or 0
+    
+    if colors and #colors > 1 then
+        -- Create gradient using ColorSequence
+        local colorSequence = {}
+        for i, color in ipairs(colors) do
+            local position = (i - 1) / (#colors - 1)
+            table.insert(colorSequence, ColorSequenceKeypoint.new(position, color))
+        end
+        stroke.Color = ColorSequence.new(colorSequence)
+    else
+        stroke.Color = colors and colors[1] or Color3.fromRGB(170, 85, 255)
+    end
+    
+    return stroke
+end
+
 function NoirUI:RegisterCommand(prefix, callback)
     NoirUI.CustomCommands[prefix:lower()] = callback
 end
@@ -476,19 +476,12 @@ function NoirUI:CreateWindow(settings)
     ScreenGui.Name = "NoirUI_V3_Ultimate"
     ScreenGui.ResetOnSpawn = false
     
-    -- Xử lý màu sắc cho gradient
-    local function ProcessColors(colors)
-        if not colors then
-            return {settings.Accent or Color3.fromRGB(170, 85, 255)}
-        end
-        if type(colors) == "table" then
-            return colors
-        end
-        return {colors}
+    -- Handle accent colors (support both single color and gradient)
+    local accentColors = settings.Accent
+    if type(accentColors) ~= "table" then
+        accentColors = {accentColors or Color3.fromRGB(170, 85, 255)}
     end
-    
-    local ACCENT = settings.Accent or Color3.fromRGB(170, 85, 255)
-    local StrokeColors = ProcessColors(settings.StrokeColors)
+    local ACCENT = accentColors[1] or Color3.fromRGB(170, 85, 255)
     
     local mainDefaultPos = settings.DefaultPosition or UDim2.new(0.5, -210, 0.5, -150)
     local floatDefaultPos = settings.FloatDefaultPosition or UDim2.new(0, 15, 0.5, -22)
@@ -505,8 +498,8 @@ function NoirUI:CreateWindow(settings)
     local mainCorner = Instance.new("UICorner", Main)
     mainCorner.CornerRadius = UDim.new(0, 12)
     
-    -- Tạo gradient stroke cho Main UI
-    local MainStroke = CreateGradientStroke(Main, StrokeColors, 2, 0)
+    -- Create gradient stroke for Main UI
+    CreateGradientStroke(Main, accentColors, 2, 0)
     
     SetupBackground(Main, settings.Background, settings.MainBgColor, settings.MainBgTransparency or 0)
     MakeDraggable(Main)
@@ -518,7 +511,9 @@ function NoirUI:CreateWindow(settings)
     LoadingFrame.ZIndex = 200
     local loadingCorner = Instance.new("UICorner", LoadingFrame)
     loadingCorner.CornerRadius = UDim.new(0, 12)
-    local LoadingStroke = CreateGradientStroke(LoadingFrame, StrokeColors, 2, 0)
+    
+    -- Create gradient stroke for Loading
+    local LoadingStroke = CreateGradientStroke(LoadingFrame, accentColors, 2, 0)
     
     local hasLoadingBg = SetupBackground(LoadingFrame, settings.LoadingBackground, Color3.fromRGB(12, 12, 12), 0.95)
     LoadingStroke.Transparency = hasLoadingBg and 0 or 1
@@ -528,7 +523,7 @@ function NoirUI:CreateWindow(settings)
     LoadingTitle.Position = UDim2.new(0, 20, 0, 15)
     LoadingTitle.BackgroundTransparency = 1
     LoadingTitle.Text = settings.Name or "NOIR HUB"
-    LoadingTitle.TextColor3 = StrokeColors[1] or ACCENT
+    LoadingTitle.TextColor3 = ACCENT
     LoadingTitle.Font = "GothamBold"
     LoadingTitle.TextSize = 18
     LoadingTitle.TextXAlignment = "Left"
@@ -555,7 +550,7 @@ function NoirUI:CreateWindow(settings)
     
     local LoadingBar = Instance.new("Frame", LoadingBarBg)
     LoadingBar.Size = UDim2.new(0, 0, 1, 0)
-    LoadingBar.BackgroundColor3 = StrokeColors[1] or ACCENT
+    LoadingBar.BackgroundColor3 = ACCENT
     Instance.new("UICorner", LoadingBar).CornerRadius = UDim.new(1, 0)
     LoadingBar.ZIndex = 201
     
@@ -564,7 +559,7 @@ function NoirUI:CreateWindow(settings)
     LoadingPercent.Position = UDim2.new(0, 0, 0.85, 0)
     LoadingPercent.BackgroundTransparency = 1
     LoadingPercent.Text = "0%"
-    LoadingPercent.TextColor3 = StrokeColors[1] or ACCENT
+    LoadingPercent.TextColor3 = ACCENT
     LoadingPercent.Font = "GothamBold"
     LoadingPercent.TextSize = 12
     LoadingPercent.ZIndex = 201
@@ -595,8 +590,7 @@ function NoirUI:CreateWindow(settings)
         table.insert(NoirUI.Connections, loadingConnection)
     end
     
-    -- Xóa hiệu ứng nhấp nháy (rainbow effect)
-    -- Không còn vòng lặp làm nhấp nháy main stroke nữa
+    -- Removed rainbow animation
     
     local KeySolved = false
     local KUI = nil
@@ -638,7 +632,10 @@ function NoirUI:CreateWindow(settings)
             KUI.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
             local keyCorner = Instance.new("UICorner", KUI)
             keyCorner.CornerRadius = UDim.new(0, 12)
-            local kstr = CreateGradientStroke(KUI, StrokeColors, 2, 0)
+            
+            -- Create gradient stroke for Key UI
+            CreateGradientStroke(KUI, accentColors, 2, 0)
+            
             MakeDraggable(KUI)
             
             SetupBackground(KUI, settings.KeyBackground, Color3.fromRGB(12, 12, 12), 0)
@@ -647,7 +644,7 @@ function NoirUI:CreateWindow(settings)
             KT.Size = UDim2.new(1,0,0,35)
             KT.Position = UDim2.new(0,0,0,10)
             KT.Text = KS.Title or "KEY SYSTEM"
-            KT.TextColor3 = StrokeColors[1] or ACCENT
+            KT.TextColor3 = ACCENT
             KT.Font = "GothamBold"
             KT.TextSize = 16
             KT.BackgroundTransparency = 1
@@ -688,7 +685,7 @@ function NoirUI:CreateWindow(settings)
             local KB = Instance.new("TextButton", KUI)
             KB.Size = UDim2.new(0.8, 0, 0, 35)
             KB.Position = UDim2.new(0.1, 0, 0.75, 10)
-            KB.BackgroundColor3 = StrokeColors[1] or ACCENT
+            KB.BackgroundColor3 = ACCENT
             KB.Text = "XÁC NHẬN"
             KB.Font = "GothamBold"
             KB.TextColor3 = Color3.new(1,1,1)
@@ -778,7 +775,10 @@ function NoirUI:CreateWindow(settings)
         Conf.ZIndex = 100
         local confCorner = Instance.new("UICorner", Conf)
         confCorner.CornerRadius = UDim.new(0, 12)
-        local s = CreateGradientStroke(Conf, StrokeColors, 2, 0)
+        
+        -- Create gradient stroke for Confirm
+        CreateGradientStroke(Conf, accentColors, 2, 0)
+        
         local t = Instance.new("TextLabel", Conf)
         t.Size = UDim2.new(1, 0, 0.5, 0)
         t.BackgroundTransparency = 1
@@ -798,7 +798,7 @@ function NoirUI:CreateWindow(settings)
         local fbtn = Instance.new("TextButton", Conf)
         fbtn.Size = UDim2.new(0.4, 0, 0, 32)
         fbtn.Position = UDim2.new(0.53, 0, 0.6, 0)
-        fbtn.BackgroundColor3 = StrokeColors[1] or ACCENT
+        fbtn.BackgroundColor3 = ACCENT
         fbtn.Text = "Confirm"
         fbtn.TextColor3 = Color3.new(1,1,1)
         fbtn.ZIndex = 101
@@ -828,14 +828,15 @@ function NoirUI:CreateWindow(settings)
     local sideCorner = Instance.new("UICorner", Side)
     sideCorner.CornerRadius = UDim.new(0, 8)
     
-    local SideStroke = CreateGradientStroke(Side, StrokeColors, 1, 0.7)
+    -- Create gradient stroke for Side
+    local SideStroke = CreateGradientStroke(Side, accentColors, 1, 0.7)
     
     local TScroll = Instance.new("ScrollingFrame", Side)
     TScroll.Size = UDim2.new(1, 0, 1, -55)
     TScroll.Position = UDim2.new(0, 0, 0, 0)
     TScroll.BackgroundTransparency = 1
     TScroll.ScrollBarThickness = 3
-    TScroll.ScrollBarImageColor3 = StrokeColors[1] or ACCENT
+    TScroll.ScrollBarImageColor3 = ACCENT
     TScroll.ScrollBarImageTransparency = 0.5
     TScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
     TScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
@@ -861,7 +862,7 @@ function NoirUI:CreateWindow(settings)
     AI.Position = UDim2.new(0.5, -19, 0, 0)
     pcall(function() AI.Image = Players:GetUserThumbnailAsync(Players.LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100) end)
     Instance.new("UICorner", AI).CornerRadius = UDim.new(1,0)
-    local aiStroke = CreateGradientStroke(AI, StrokeColors, 1, 0)
+    Instance.new("UIStroke", AI).Color = ACCENT
     
     local Cont = Instance.new("Frame", Main)
     Cont.Size = UDim2.new(1, -125, 1, -50)
@@ -871,7 +872,8 @@ function NoirUI:CreateWindow(settings)
     local contCorner = Instance.new("UICorner", Cont)
     contCorner.CornerRadius = UDim.new(0, 8)
     
-    local ContStroke = CreateGradientStroke(Cont, StrokeColors, 1, 0.7)
+    -- Create gradient stroke for Content
+    local ContStroke = CreateGradientStroke(Cont, accentColors, 1, 0.7)
     
     -- FLOAT BUTTON WITH SQUIRCLE AND CLIPPING MASK
     local TBtn = Instance.new("ImageButton", ScreenGui)
@@ -885,6 +887,9 @@ function NoirUI:CreateWindow(settings)
     -- Create squircle shape with UICorner
     local floatCorner = Instance.new("UICorner", TBtn)
     floatCorner.CornerRadius = UDim.new(0, settings.FloatCornerRadius or 12)
+
+    -- Create gradient stroke for Float button
+    CreateGradientStroke(TBtn, accentColors, 2, 0)
 
     -- ClipGroup for proper masking
     local ClipGroup = Instance.new("Frame", TBtn)
@@ -982,9 +987,6 @@ function NoirUI:CreateWindow(settings)
         end
     end
 
-    -- Gradient Stroke for float button
-    local TS = CreateGradientStroke(TBtn, StrokeColors, 2, 0)
-
     -- Draggable logic for float button
     local floatDragging = false
     local floatDragStart, floatStartPos, floatDragInput
@@ -1052,7 +1054,9 @@ function NoirUI:CreateWindow(settings)
         n.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
         local notifCorner = Instance.new("UICorner", n)
         notifCorner.CornerRadius = UDim.new(0, 8)
-        local ns = CreateGradientStroke(n, StrokeColors, 1, 0)
+        
+        -- Create gradient stroke for Notification
+        CreateGradientStroke(n, accentColors, 1, 0)
         
         SetupBackground(n, settings.NotificationBackground, Color3.fromRGB(15, 15, 15), 0.25)
         
@@ -1073,7 +1077,7 @@ function NoirUI:CreateWindow(settings)
         tl.Size = UDim2.new(1, iconName and -45 or -15, 0, 20)
         tl.Position = UDim2.new(0, iconName and 40 or 15, 0, 5)
         tl.Text = title
-        tl.TextColor3 = StrokeColors[1] or ACCENT
+        tl.TextColor3 = ACCENT
         tl.BackgroundTransparency = 1
         tl.Font = "GothamBold"
         tl.TextSize = 13
@@ -1154,7 +1158,7 @@ function NoirUI:CreateWindow(settings)
         TabContainer.BackgroundTransparency = 1
         TabContainer.Visible = false
         TabContainer.ScrollBarThickness = 3
-        TabContainer.ScrollBarImageColor3 = StrokeColors[1] or ACCENT
+        TabContainer.ScrollBarImageColor3 = ACCENT
         TabContainer.ScrollBarImageTransparency = 0.5
         TabContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
         TabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
@@ -1214,7 +1218,7 @@ function NoirUI:CreateWindow(settings)
                 end
             end
             TabContainer.Visible = true
-            BT.TextColor3 = StrokeColors[1] or ACCENT
+            BT.TextColor3 = ACCENT
             local tabImg = B:FindFirstChild("ImageLabel")
             if tabImg then tabImg.ImageColor3 = Color3.fromRGB(150, 150, 150) end
             updateCanvas()
@@ -1222,7 +1226,7 @@ function NoirUI:CreateWindow(settings)
         
         if #TScroll:GetChildren() == 0 then
             TabContainer.Visible = true
-            BT.TextColor3 = StrokeColors[1] or ACCENT
+            BT.TextColor3 = ACCENT
         end
         
         local Tab = { Count = 0, Elements = {}, Connections = {} }
@@ -1283,7 +1287,7 @@ function NoirUI:CreateWindow(settings)
             lbl.Size = UDim2.new(1, 0, 0, 20)
             lbl.Position = UDim2.new(0, 0, 0, 0)
             lbl.Text = title:upper()
-            lbl.TextColor3 = StrokeColors[1] or ACCENT
+            lbl.TextColor3 = ACCENT
             lbl.Font = "GothamBold"
             lbl.TextSize = 11
             lbl.TextXAlignment = "Left"
@@ -1293,7 +1297,7 @@ function NoirUI:CreateWindow(settings)
                 local line = Instance.new("Frame", s)
                 line.Size = UDim2.new(1, 0, 0, 1)
                 line.Position = UDim2.new(0, 0, 0, 22)
-                line.BackgroundColor3 = StrokeColors[1] or ACCENT
+                line.BackgroundColor3 = ACCENT
                 line.BackgroundTransparency = 0.5
                 line.BorderSizePixel = 0
             end
@@ -1314,7 +1318,7 @@ function NoirUI:CreateWindow(settings)
             title.Size = UDim2.new(1, -20, 0, 25)
             title.Position = UDim2.new(0, 10, 0, 5)
             title.Text = opt.Title or ""
-            title.TextColor3 = StrokeColors[1] or ACCENT
+            title.TextColor3 = ACCENT
             title.Font = "GothamBold"
             title.TextSize = 13
             title.BackgroundTransparency = 1
@@ -1413,7 +1417,7 @@ function NoirUI:CreateWindow(settings)
             t.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
             t.BackgroundTransparency = 0.6
             t.Text = "  " .. opt.Name
-            t.TextColor3 = s and (StrokeColors[1] or ACCENT) or Color3.fromRGB(180, 180, 180)
+            t.TextColor3 = s and ACCENT or Color3.fromRGB(180, 180, 180)
             t.TextXAlignment = "Left"
             t.TextSize = 12
             Instance.new("UICorner", t).CornerRadius = UDim.new(0, 8)
@@ -1424,7 +1428,7 @@ function NoirUI:CreateWindow(settings)
             local bx = Instance.new("Frame", t)
             bx.Size = UDim2.new(0, 30, 0, 16)
             bx.Position = UDim2.new(1, -40, 0.5, hasSubtitle and -15 or -8)
-            bx.BackgroundColor3 = s and (StrokeColors[1] or ACCENT) or Color3.fromRGB(40, 40, 40)
+            bx.BackgroundColor3 = s and ACCENT or Color3.fromRGB(40, 40, 40)
             bx.BackgroundTransparency = 0.3
             Instance.new("UICorner", bx).CornerRadius = UDim.new(1, 0)
             
@@ -1435,8 +1439,8 @@ function NoirUI:CreateWindow(settings)
             t.MouseButton1Click:Connect(function()
                 PlaySound("Element")
                 s = not s
-                t.TextColor3 = s and (StrokeColors[1] or ACCENT) or Color3.fromRGB(180, 180, 180)
-                bx.BackgroundColor3 = s and (StrokeColors[1] or ACCENT) or Color3.fromRGB(40, 40, 40)
+                t.TextColor3 = s and ACCENT or Color3.fromRGB(180, 180, 180)
+                bx.BackgroundColor3 = s and ACCENT or Color3.fromRGB(40, 40, 40)
                 if opt.Callback then opt.Callback(s) end
             end)
         end
@@ -1480,7 +1484,7 @@ function NoirUI:CreateWindow(settings)
             local fill = Instance.new("Frame", sbg)
             local percent = (defaultValue - min) / (max - min)
             fill.Size = UDim2.new(percent, 0, 1, 0)
-            fill.BackgroundColor3 = StrokeColors[1] or ACCENT
+            fill.BackgroundColor3 = ACCENT
             Instance.new("UICorner", fill)
             
             if hasSubtitle then
@@ -1799,7 +1803,7 @@ function NoirUI:CreateWindow(settings)
             local r = Instance.new("TextButton", f)
             r.Size = UDim2.new(0, 50, 0, 26)
             r.Position = UDim2.new(1, -55, 0.5, -13)
-            r.BackgroundColor3 = StrokeColors[1] or ACCENT
+            r.BackgroundColor3 = ACCENT
             r.Text = "RUN"
             r.TextColor3 = Color3.new(1, 1, 1)
             r.Font = "GothamBold"
