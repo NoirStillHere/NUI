@@ -39,7 +39,7 @@ local function ResolveIcon(iconInput)
     return nil
 end
 
--- Sound Settings (User tự tìm ID)
+-- Sound Settings
 local SoundSettings = {
     Enabled = true,
     Volume = 0.5,
@@ -354,7 +354,7 @@ local function SetupBackground(frame, bgSetting, bgColor, defaultTransparency)
 end
 
 -- ============================================================
--- EFFECT: GRADIENT (Hiệu ứng chuyển màu nền)
+-- EFFECT: GRADIENT (Hiệu ứng chuyển màu nền - Loop tròn)
 -- ============================================================
 
 local function CreateGradientEffect(frame, colors, direction, speed)
@@ -370,11 +370,16 @@ local function CreateGradientEffect(frame, colors, direction, speed)
         gradient.Rotation = direction or 0
     end
     
+    -- Tạo color sequence với 3 điểm: A -> B -> A để loop mượt
     local colorKeypoints = {}
+    local totalColors = #colors
     for i, color in ipairs(colors) do
-        local position = (i - 1) / (#colors - 1)
+        local position = (i - 1) / (totalColors - 1)
         table.insert(colorKeypoints, ColorSequenceKeypoint.new(position, color))
     end
+    -- Thêm màu đầu tiên ở cuối để loop
+    table.insert(colorKeypoints, ColorSequenceKeypoint.new(1, colors[1]))
+    
     gradient.Color = ColorSequence.new(colorKeypoints)
     gradient.Transparency = NumberSequence.new(0)
     
@@ -386,6 +391,7 @@ local function CreateGradientEffect(frame, colors, direction, speed)
                 connection:Disconnect()
                 return
             end
+            -- Di chuyển offset liên tục theo vòng tròn
             offset = (offset + deltaTime * speed) % 1
             gradient.Offset = Vector2.new(offset, 0)
         end)
@@ -397,7 +403,7 @@ local function CreateGradientEffect(frame, colors, direction, speed)
 end
 
 -- ============================================================
--- EFFECT: GLOW TEXT (Hiệu ứng sáng chữ)
+-- EFFECT: GLOW TEXT (Chỉ cho Header, Tab, Title Notification)
 -- ============================================================
 
 local function CreateGlowText(label, glowColor, speed)
@@ -421,49 +427,6 @@ local function CreateGlowText(label, glowColor, speed)
         local b = baseColor.B + (glowColor.B - baseColor.B) * pulse * 0.5
         
         label.TextColor3 = Color3.new(r, g, b)
-    end)
-    
-    table.insert(NoirUI.Connections, connection)
-    return connection
-end
-
--- ============================================================
--- EFFECT: GLOW TEXT với Shadow (hiệu ứng phát sáng đẹp hơn)
--- ============================================================
-
-local function CreateGlowTextShadow(label, glowColor, intensity, speed)
-    if not label then return nil end
-    
-    intensity = intensity or 0.5
-    speed = speed or 1
-    
-    local shadow1 = Instance.new("UIShadow", label)
-    shadow1.Color = glowColor
-    shadow1.Offset = Vector2.new(0, 0)
-    shadow1.Blur = 20
-    
-    local shadow2 = Instance.new("UIShadow", label)
-    shadow2.Color = glowColor
-    shadow2.Offset = Vector2.new(0, 0)
-    shadow2.Blur = 10
-    
-    local connection
-    connection = RunService.RenderStepped:Connect(function()
-        if not label or not label.Parent then
-            connection:Disconnect()
-            return
-        end
-        
-        local time = tick() * speed
-        local pulse = (math.sin(time) + 1) / 2
-        local currentIntensity = intensity * (0.5 + pulse * 0.5)
-        
-        shadow1.Blur = 10 + currentIntensity * 15
-        shadow2.Blur = 5 + currentIntensity * 10
-        
-        local transparency = 1 - currentIntensity
-        shadow1.Transparency = transparency
-        shadow2.Transparency = transparency * 0.5
     end)
     
     table.insert(NoirUI.Connections, connection)
@@ -511,9 +474,9 @@ function NoirUI:CreateWindow(settings)
     MainStroke.Thickness = 2
     MainStroke.Color = ACCENT
     
-    -- Gradient effect cho Main Stroke
+    -- Gradient effect cho Main Stroke (loop tròn)
     if useAnimation then
-        local colors = {accentColor1, accentColor2, accentColor1}
+        local colors = {accentColor1, accentColor2}
         CreateGradientEffect(MainStroke, colors, accentAngle, accentSpeed)
     end
     
@@ -538,7 +501,7 @@ function NoirUI:CreateWindow(settings)
     LoadingStroke.Thickness = 2
     
     if useAnimation then
-        local colors = {accentColor1, accentColor2, accentColor1}
+        local colors = {accentColor1, accentColor2}
         CreateGradientEffect(LoadingStroke, colors, accentAngle, accentSpeed)
     end
     
@@ -556,7 +519,7 @@ function NoirUI:CreateWindow(settings)
     LoadingTitle.TextXAlignment = "Left"
     LoadingTitle.ZIndex = 201
     
-    -- Glow effect cho Loading Title
+    -- Glow cho Loading Title (header-like)
     if useGlow then
         CreateGlowText(LoadingTitle, Color3.fromRGB(255, 200, 100), 1.5)
     end
@@ -587,7 +550,7 @@ function NoirUI:CreateWindow(settings)
     LoadingBar.ZIndex = 201
     
     if useAnimation then
-        local colors = {accentColor1, accentColor2, accentColor1}
+        local colors = {accentColor1, accentColor2}
         CreateGradientEffect(LoadingBar, colors, 0, accentSpeed)
     end
     
@@ -600,10 +563,6 @@ function NoirUI:CreateWindow(settings)
     LoadingPercent.Font = "GothamBold"
     LoadingPercent.TextSize = 12
     LoadingPercent.ZIndex = 201
-    
-    if useGlow then
-        CreateGlowText(LoadingPercent, Color3.fromRGB(255, 200, 100), 1.5)
-    end
     
     local function StartLoading()
         LoadingFrame.Visible = true
@@ -631,7 +590,7 @@ function NoirUI:CreateWindow(settings)
         table.insert(NoirUI.Connections, loadingConnection)
     end
     
-    -- Key System (giữ nguyên)
+    -- Key System
     local KeySolved = false
     local KUI = nil
     
@@ -645,7 +604,6 @@ function NoirUI:CreateWindow(settings)
         end
     end
     
-    -- ... (Key System code giữ nguyên, đã có ở trên)
     if settings.KeySystem then
         local KS = settings.KeySettings or {}
         local KeyPath = (KS.FileName or "NoirKey") .. ".json"
@@ -678,7 +636,7 @@ function NoirUI:CreateWindow(settings)
             kstr.Color = ACCENT
             
             if useAnimation then
-                local colors = {accentColor1, accentColor2, accentColor1}
+                local colors = {accentColor1, accentColor2}
                 CreateGradientEffect(kstr, colors, accentAngle, accentSpeed)
             end
             
@@ -695,6 +653,7 @@ function NoirUI:CreateWindow(settings)
             KT.BackgroundTransparency = 1
             KT.ZIndex = 2
             
+            -- Glow cho Key Title (header-like)
             if useGlow then
                 CreateGlowText(KT, Color3.fromRGB(255, 200, 100), 1.5)
             end
@@ -742,7 +701,7 @@ function NoirUI:CreateWindow(settings)
             KB.ZIndex = 2
             
             if useAnimation then
-                local colors = {accentColor1, accentColor2, accentColor1}
+                local colors = {accentColor1, accentColor2}
                 CreateGradientEffect(KB, colors, accentAngle, accentSpeed)
             end
             
@@ -774,7 +733,7 @@ function NoirUI:CreateWindow(settings)
     Header.Size = UDim2.new(1, 0, 0, 40)
     Header.BackgroundTransparency = 1
     
-    -- Gradient cho Header
+    -- Gradient cho Header (loop tròn)
     if settings.HeaderGradient and #settings.HeaderGradient >= 2 then
         CreateGradientEffect(Header, settings.HeaderGradient, "horizontal", settings.HeaderSpeed or 0.3)
     end
@@ -787,6 +746,7 @@ function NoirUI:CreateWindow(settings)
         local logoImage = ResolveIcon(settings.LogoID)
         if logoImage then L.Image = logoImage end
     end
+    
     local Title = Instance.new("TextLabel", Header)
     Title.Size = UDim2.new(1, -120, 1, 0)
     Title.Position = UDim2.new(0, settings.LogoID and 40 or 15, 0, 0)
@@ -797,6 +757,7 @@ function NoirUI:CreateWindow(settings)
     Title.TextSize = 14
     Title.TextXAlignment = "Left"
     
+    -- Glow cho Header Title
     if useGlow then
         CreateGlowText(Title, Color3.fromRGB(200, 200, 255), 1.5)
     end
@@ -821,10 +782,6 @@ function NoirUI:CreateWindow(settings)
         b.Font = "GothamBold"
         Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
         b.MouseButton1Click:Connect(cb)
-        
-        if useGlow then
-            CreateGlowText(b, col, 1)
-        end
     end
     
     local isM = false
@@ -850,7 +807,7 @@ function NoirUI:CreateWindow(settings)
         s.Thickness = 2
         
         if useAnimation then
-            local colors = {accentColor1, accentColor2, accentColor1}
+            local colors = {accentColor1, accentColor2}
             CreateGradientEffect(s, colors, accentAngle, accentSpeed)
         end
         
@@ -881,12 +838,8 @@ function NoirUI:CreateWindow(settings)
         Instance.new("UICorner", fbtn).CornerRadius = UDim.new(0, 6)
         
         if useAnimation then
-            local colors = {accentColor1, accentColor2, accentColor1}
+            local colors = {accentColor1, accentColor2}
             CreateGradientEffect(fbtn, colors, accentAngle, accentSpeed)
-        end
-        
-        if useGlow then
-            CreateGlowText(fbtn, Color3.fromRGB(255, 200, 100), 1.5)
         end
         
         local function destroyConfirm()
@@ -921,7 +874,7 @@ function NoirUI:CreateWindow(settings)
     SideStroke.Transparency = 0.7
     
     if useAnimation then
-        local colors = {accentColor1, accentColor2, accentColor1}
+        local colors = {accentColor1, accentColor2}
         CreateGradientEffect(SideStroke, colors, accentAngle, accentSpeed)
     end
     
@@ -965,7 +918,7 @@ function NoirUI:CreateWindow(settings)
     avatarStroke.Color = ACCENT
     
     if useAnimation then
-        local colors = {accentColor1, accentColor2, accentColor1}
+        local colors = {accentColor1, accentColor2}
         CreateGradientEffect(avatarStroke, colors, accentAngle, accentSpeed)
     end
     
@@ -984,7 +937,7 @@ function NoirUI:CreateWindow(settings)
     ContStroke.Transparency = 0.7
     
     if useAnimation then
-        local colors = {accentColor1, accentColor2, accentColor1}
+        local colors = {accentColor1, accentColor2}
         CreateGradientEffect(ContStroke, colors, accentAngle, accentSpeed)
     end
     
@@ -1092,7 +1045,7 @@ function NoirUI:CreateWindow(settings)
     TS.Thickness = 2
     
     if useAnimation then
-        local colors = {accentColor1, accentColor2, accentColor1}
+        local colors = {accentColor1, accentColor2}
         CreateGradientEffect(TS, colors, accentAngle, accentSpeed)
     end
 
@@ -1167,7 +1120,7 @@ function NoirUI:CreateWindow(settings)
         ns.Color = ACCENT
         
         if useAnimation then
-            local colors = {accentColor1, accentColor2, accentColor1}
+            local colors = {accentColor1, accentColor2}
             CreateGradientEffect(ns, colors, accentAngle, accentSpeed)
         end
         
@@ -1196,6 +1149,7 @@ function NoirUI:CreateWindow(settings)
         tl.TextSize = 13
         tl.TextXAlignment = "Left"
         
+        -- Glow cho Title Notification
         if useGlow then
             CreateGlowText(tl, Color3.fromRGB(255, 200, 100), 1.5)
         end
@@ -1250,6 +1204,7 @@ function NoirUI:CreateWindow(settings)
         BT.TextSize = 11
         BT.TextXAlignment = "Left"
         
+        -- Glow cho Tab text
         if useGlow then
             CreateGlowText(BT, Color3.fromRGB(200, 180, 255), 1)
         end
@@ -1383,9 +1338,7 @@ function NoirUI:CreateWindow(settings)
             l.Name = "Label"
             table.insert(Tab.Elements, l)
             
-            if useGlow then
-                CreateGlowText(l, Color3.fromRGB(200, 200, 255), 1)
-            end
+            -- KHÔNG glow cho label thường
             
             if type(text) == "function" then
                 local connection = RunService.RenderStepped:Connect(function()
@@ -1419,9 +1372,7 @@ function NoirUI:CreateWindow(settings)
             lbl.TextXAlignment = "Left"
             lbl.BackgroundTransparency = 1
             
-            if useGlow then
-                CreateGlowText(lbl, Color3.fromRGB(255, 200, 100), 1.5)
-            end
+            -- KHÔNG glow cho section title
             
             if not noLine then
                 local line = Instance.new("Frame", s)
@@ -1454,9 +1405,7 @@ function NoirUI:CreateWindow(settings)
             title.BackgroundTransparency = 1
             title.TextXAlignment = "Left"
             
-            if useGlow then
-                CreateGlowText(title, Color3.fromRGB(255, 200, 100), 1.5)
-            end
+            -- KHÔNG glow cho paragraph title
             
             local content = Instance.new("TextLabel", f)
             content.Size = UDim2.new(1, -20, 0, 30)
@@ -1515,9 +1464,7 @@ function NoirUI:CreateWindow(settings)
             b.Name = opt.Name
             table.insert(Tab.Elements, b)
             
-            if useGlow then
-                CreateGlowText(b, Color3.fromRGB(200, 200, 255), 1)
-            end
+            -- KHÔNG glow cho button
             
             if opt.Align == false then
                 b.TextXAlignment = "Left"
@@ -1563,9 +1510,7 @@ function NoirUI:CreateWindow(settings)
             t.Name = opt.Name
             table.insert(Tab.Elements, t)
             
-            if useGlow then
-                CreateGlowText(t, s and Color3.fromRGB(255, 200, 100) or Color3.fromRGB(180, 180, 200), 1)
-            end
+            -- KHÔNG glow cho toggle
             
             local bx = Instance.new("Frame", t)
             bx.Size = UDim2.new(0, 30, 0, 16)
@@ -1616,9 +1561,7 @@ function NoirUI:CreateWindow(settings)
             l.TextXAlignment = "Left"
             l.TextSize = 11
             
-            if useGlow then
-                CreateGlowText(l, Color3.fromRGB(200, 200, 255), 1)
-            end
+            -- KHÔNG glow cho slider label
             
             local sbg = Instance.new("Frame", f)
             sbg.Size = UDim2.new(0.9, 0, 0, 8)
@@ -1634,7 +1577,7 @@ function NoirUI:CreateWindow(settings)
             Instance.new("UICorner", fill)
             
             if useAnimation then
-                local colors = {accentColor1, accentColor2, accentColor1}
+                local colors = {accentColor1, accentColor2}
                 CreateGradientEffect(fill, colors, 0, accentSpeed)
             end
             
@@ -1698,9 +1641,7 @@ function NoirUI:CreateWindow(settings)
             t.TextSize = 12
             t.TextXAlignment = "Left"
             
-            if useGlow then
-                CreateGlowText(t, Color3.fromRGB(200, 200, 255), 1)
-            end
+            -- KHÔNG glow cho color picker label
             
             local pvw = Instance.new("TextButton", f)
             pvw.Size = UDim2.new(0, 40, 0, 18)
@@ -1806,9 +1747,7 @@ function NoirUI:CreateWindow(settings)
             t.TextSize = 12
             t.TextXAlignment = "Left"
             
-            if useGlow then
-                CreateGlowText(t, Color3.fromRGB(200, 200, 255), 1)
-            end
+            -- KHÔNG glow cho dropdown
             
             local Arrow = Instance.new("TextLabel", t)
             Arrow.Name = "ArrowLabel"
@@ -1857,9 +1796,7 @@ function NoirUI:CreateWindow(settings)
                     it.Font = "GothamMedium"
                     it.TextSize = 11
                     
-                    if useGlow then
-                        CreateGlowText(it, Color3.fromRGB(200, 200, 255), 1)
-                    end
+                    -- KHÔNG glow cho option
                     
                     it.MouseButton1Click:Connect(function()
                         PlaySound("Element")
@@ -1907,9 +1844,7 @@ function NoirUI:CreateWindow(settings)
                     it.Font = "GothamMedium"
                     it.TextSize = 11
                     
-                    if useGlow then
-                        CreateGlowText(it, Color3.fromRGB(200, 200, 255), 1)
-                    end
+                    -- KHÔNG glow cho option
                     
                     it.MouseButton1Click:Connect(function()
                         PlaySound("Element")
@@ -1980,13 +1915,11 @@ function NoirUI:CreateWindow(settings)
             Instance.new("UICorner", r).CornerRadius = UDim.new(0, 6)
             
             if useAnimation then
-                local colors = {accentColor1, accentColor2, accentColor1}
+                local colors = {accentColor1, accentColor2}
                 CreateGradientEffect(r, colors, accentAngle, accentSpeed)
             end
             
-            if useGlow then
-                CreateGlowText(r, Color3.fromRGB(255, 200, 100), 1.5)
-            end
+            -- KHÔNG glow cho run button
             
             r.MouseButton1Click:Connect(function()
                 PlaySound("Element")
