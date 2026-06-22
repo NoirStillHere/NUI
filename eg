@@ -59,7 +59,6 @@ end
 -- ANIMATION FUNCTIONS - MƯỢT NHƯ iOS
 -- ============================================
 
--- Hiệu ứng Pulse khi bấm
 local function CreatePulseEffect(button, color)
     if not button then return end
     
@@ -91,7 +90,6 @@ local function CreatePulseEffect(button, color)
     end)
 end
 
--- Hiệu ứng Hover
 local function CreateHoverEffect(button)
     if not button then return end
     
@@ -124,7 +122,6 @@ local function CreateHoverEffect(button)
     end)
 end
 
--- Hiệu ứng Scale khi click
 local function CreateClickScaleEffect(button)
     if not button then return end
     
@@ -139,7 +136,6 @@ local function CreateClickScaleEffect(button)
     }):Play()
 end
 
--- Hiệu ứng Spring khi xuất hiện
 local function CreateSpringEffect(frame, delay)
     if not frame then return end
     
@@ -161,7 +157,6 @@ local function CreateSpringEffect(frame, delay)
     }):Play()
 end
 
--- Hiệu ứng Slide cho Tab
 local function CreateTabSlideEffect(tabContainer, direction)
     if not tabContainer then return end
     
@@ -170,29 +165,12 @@ local function CreateTabSlideEffect(tabContainer, direction)
     local endPos = UDim2.new(0, 0, 0, 0)
     
     tabContainer.Position = startPos
-    tabContainer.BackgroundTransparency = 1
     
-    TweenService:Create(tabContainer, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Position = endPos,
-        BackgroundTransparency = 0
+    TweenService:Create(tabContainer, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Position = endPos
     }):Play()
 end
 
--- Hiệu ứng Fade In
-local function CreateFadeInEffect(frame, delay)
-    if not frame then return end
-    
-    frame.Visible = true
-    frame.BackgroundTransparency = 1
-    
-    task.wait(delay or 0)
-    
-    TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        BackgroundTransparency = 0
-    }):Play()
-end
-
--- Hiệu ứng Scale In
 local function CreateScaleInEffect(frame, delay)
     if not frame then return end
     
@@ -208,7 +186,7 @@ local function CreateScaleInEffect(frame, delay)
 end
 
 -- ============================================
--- SOUND SETTINGS (ĐÃ XÓA VIBESOUND)
+-- SOUND SETTINGS
 -- ============================================
 
 local SoundSettings = {
@@ -384,7 +362,6 @@ function NoirUI:SetMusicLoopMode(mode)
 end
 
 function NoirUI:SetCustomSound(soundType, soundId)
-    local key = soundType:gsub("^%l", string.upper)
     if soundType == "Click" then SoundSettings.ClickSoundId = soundId
     elseif soundType == "Tab" then SoundSettings.TabSoundId = soundId
     elseif soundType == "Element" then SoundSettings.ElementSoundId = soundId
@@ -654,7 +631,7 @@ function NoirUI:CreateWindow(settings)
     Main.Size = UDim2.new(0, 420, 0, 300)
     Main.Position = mainDefaultPos
     Main.BackgroundColor3 = settings.MainBgColor or Color3.fromRGB(10, 10, 10)
-    Main.Visible = false  -- Ẩn ban đầu, sẽ hiện sau loading
+    Main.Visible = false
     local mainCorner = Instance.new("UICorner", Main)
     mainCorner.CornerRadius = UDim.new(0, 12)
     local MainStroke = Instance.new("UIStroke", Main)
@@ -757,7 +734,6 @@ function NoirUI:CreateWindow(settings)
     
     local function StartLoading()
         LoadingFrame.Visible = true
-        Main.Visible = false  -- Ẩn main trong lúc loading
         if not hasLoadingBg then
             TweenService:Create(LoadingFrame, TweenInfo.new(0.5), {BackgroundTransparency = 0}):Play()
             TweenService:Create(LoadingStroke, TweenInfo.new(0.5), {Transparency = 0}):Play()
@@ -777,8 +753,19 @@ function NoirUI:CreateWindow(settings)
                 TweenService:Create(LoadingStroke, TweenInfo.new(0.5), {Transparency = 1}):Play()
                 task.wait(0.5)
                 LoadingFrame:Destroy()
-                -- Sau khi loading xong, hiện main
-                ShowMainUIAfterLoading()
+                
+                -- HIỆN MAIN UI SAU KHI LOADING XONG
+                Main.Visible = true
+                Main.Size = UDim2.new(0, 0, 0, 0)
+                Main.Position = mainDefaultPos
+                TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0, 420, 0, 300)
+                }):Play()
+                
+                PlaySound("Open")
+                if settings.BackgroundMusic and settings.BackgroundMusic.AutoPlay then
+                    NoirUI:StartMusic()
+                end
             end
         end)
         table.insert(NoirUI.Connections, loadingConnection)
@@ -786,22 +773,6 @@ function NoirUI:CreateWindow(settings)
     
     local KeySolved = false
     local KUI = nil
-    local isMinimized = false  -- Trạng thái minimize của main
-    
-    local function ShowMainUIAfterLoading()
-        task.wait(0.2)
-        Main.Visible = true
-        -- Reset size về bình thường nếu đang bị minimize
-        if isMinimized then
-            Main.Size = UDim2.new(0, 420, 0, 300)
-            isMinimized = false
-        end
-        CreateSpringEffect(Main)
-        PlaySound("Open")
-        if settings.BackgroundMusic and settings.BackgroundMusic.AutoPlay then
-            NoirUI:StartMusic()
-        end
-    end
     
     if settings.KeySystem then
         local KS = settings.KeySettings or {}
@@ -819,7 +790,6 @@ function NoirUI:CreateWindow(settings)
             if CheckKeys(saved) then
                 KeySolved = true
                 StartLoading()
-                -- ShowMainUIAfterLoading sẽ được gọi trong StartLoading sau khi load xong
             end
         end
         
@@ -934,7 +904,6 @@ function NoirUI:CreateWindow(settings)
                     KUI:Destroy()
                     KeySolved = true
                     StartLoading()
-                    -- ShowMainUIAfterLoading sẽ được gọi trong StartLoading
                 else
                     PlaySound("Error")
                     KI.Text = ""
@@ -946,7 +915,6 @@ function NoirUI:CreateWindow(settings)
         end
     else
         StartLoading()
-        -- ShowMainUIAfterLoading sẽ được gọi trong StartLoading
     end
     
     local Header = Instance.new("Frame", Main)
@@ -1009,11 +977,12 @@ function NoirUI:CreateWindow(settings)
         end)
     end
     
+    local isM = false
     TopB("—", Color3.fromRGB(255, 200, 50), function()
         PlaySound("Click")
-        isMinimized = not isMinimized
+        isM = not isM
         TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = isMinimized and UDim2.new(0, 420, 0, 40) or UDim2.new(0, 420, 0, 300)
+            Size = isM and UDim2.new(0, 420, 0, 40) or UDim2.new(0, 420, 0, 300)
         }):Play()
     end)
     
@@ -1126,18 +1095,6 @@ function NoirUI:CreateWindow(settings)
     TScroll.ScrollBarImageTransparency = 0.5
     TScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
     TScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-    
-    -- Tạo thanh stroke di chuyển cho tab
-    local MovingStroke = Instance.new("Frame", TScroll)
-    MovingStroke.Size = UDim2.new(0.9, 0, 0, 32)
-    MovingStroke.Position = UDim2.new(0, 0, 0, 0)
-    MovingStroke.BackgroundTransparency = 1
-    MovingStroke.ZIndex = 1
-    local strokeLine = Instance.new("UIStroke", MovingStroke)
-    strokeLine.Color = ACCENT
-    strokeLine.Thickness = 2
-    strokeLine.Transparency = 0
-    strokeLine.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     
     local TLayout = Instance.new("UIListLayout", TScroll)
     TLayout.Padding = UDim.new(0, 5)
@@ -1322,13 +1279,11 @@ function NoirUI:CreateWindow(settings)
                 if BackgroundMusic.CurrentSound and BackgroundMusic.IsPlaying then
                     BackgroundMusic.CurrentSound.Volume = 0
                 end
-                -- Thu nhỏ về 0 rồi ẩn
                 TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     Size = UDim2.new(0, 0, 0, 0)
                 }):Play()
                 task.wait(0.3)
                 Main.Visible = false
-                -- Reset size về bình thường để lần sau hiện đúng
                 Main.Size = UDim2.new(0, 420, 0, 300)
             else
                 PlaySound("Open")
@@ -1339,13 +1294,11 @@ function NoirUI:CreateWindow(settings)
                     NoirUI:StartMusic()
                 end
                 Main.Visible = true
-                -- Reset size về bình thường nếu đang bị minimize
-                if isMinimized then
-                    Main.Size = UDim2.new(0, 420, 0, 300)
-                    isMinimized = false
-                end
-                CreateSpringEffect(Main)
+                Main.Size = UDim2.new(0, 0, 0, 0)
                 Main.Position = mainDefaultPos
+                TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0, 420, 0, 300)
+                }):Play()
             end
         end
     end)
@@ -1444,8 +1397,6 @@ function NoirUI:CreateWindow(settings)
     end
     
     local Window = {}
-    local currentTabIndex = 0
-    local tabButtons = {}
     
     function Window:CreateTab(name, icon)
         local B = Instance.new("TextButton", TScroll)
@@ -1458,7 +1409,13 @@ function NoirUI:CreateWindow(settings)
         
         CreateHoverEffect(B)
         
-        -- Không dùng stroke riêng của tab nữa, dùng MovingStroke chung
+        local tabStroke = Instance.new("UIStroke", B)
+        tabStroke.Color = ACCENT
+        tabStroke.Thickness = 2
+        tabStroke.Transparency = 1
+        tabStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        tabStroke.ZIndex = 2
+        
         local BT = Instance.new("TextLabel", B)
         BT.Size = UDim2.new(1, -10, 1, 0)
         BT.Position = UDim2.new(0, icon and 35 or 8, 0, 0)
@@ -1509,13 +1466,16 @@ function NoirUI:CreateWindow(settings)
         
         local TabContainer = Instance.new("ScrollingFrame", Cont)
         TabContainer.Size = UDim2.new(1, 0, 1, 0)
-        TabContainer.BackgroundTransparency = 1  -- Ẩn lớp trắng
+        TabContainer.BackgroundTransparency = 1
+        TabContainer.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
         TabContainer.Visible = false
         TabContainer.ScrollBarThickness = 3
         TabContainer.ScrollBarImageColor3 = ACCENT
         TabContainer.ScrollBarImageTransparency = 0.5
         TabContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
         TabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+        TabContainer.BorderSizePixel = 0
+        TabContainer.ClipsDescendants = true
         
         local SearchFrame = Instance.new("Frame", TabContainer)
         SearchFrame.Size = UDim2.new(1, -20, 0, 35)
@@ -1587,12 +1547,13 @@ function NoirUI:CreateWindow(settings)
                     if img then 
                         img.ImageColor3 = Color3.fromRGB(150, 150, 150)
                     end
+                    local stroke = v:FindFirstChildWhichIsA("UIStroke")
+                    if stroke then 
+                        stroke.Transparency = 1
+                    end
                 end
             end
         end
-        
-        -- Lưu tab button vào danh sách để di chuyển stroke
-        table.insert(tabButtons, B)
         
         B.MouseButton1Click:Connect(function()
             PlaySound("Tab")
@@ -1607,44 +1568,29 @@ function NoirUI:CreateWindow(settings)
             
             resetAllTabs()
             
-            -- SLIDE EFFECT CHO TAB
             CreateTabSlideEffect(TabContainer, 0.15)
             
-            -- Đổi màu chữ tab được chọn
             BT.TextColor3 = ACCENT
+            tabStroke.Transparency = 0
+            
             local tabImg = B:FindFirstChild("ImageLabel")
             if tabImg then 
                 tabImg.ImageColor3 = ACCENT
             end
-            
-            -- Di chuyển stroke đến tab hiện tại
-            local tabIndex = table.find(tabButtons, B)
-            if tabIndex then
-                currentTabIndex = tabIndex
-                local targetPos = UDim2.new(0, 0, 0, (tabIndex - 1) * (32 + 5))  -- 32 height + 5 padding
-                TweenService:Create(MovingStroke, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    Position = targetPos
-                }):Play()
-            end
-            
             updateCanvas()
         end)
         
-        -- Tab đầu tiên được chọn mặc định - CÓ SLIDE EFFECT VÀ STROKE
         if #TScroll:GetChildren() == 0 then
             TabContainer.Visible = true
             BT.TextColor3 = ACCENT
-            -- SLIDE EFFECT CHO TAB ĐẦU TIÊN
+            tabStroke.Transparency = 0
+            
             CreateTabSlideEffect(TabContainer, 0.15)
             
             local tabImg = B:FindFirstChild("ImageLabel")
             if tabImg then 
                 tabImg.ImageColor3 = ACCENT
             end
-            
-            -- Đặt stroke ở vị trí tab đầu tiên
-            currentTabIndex = 1
-            MovingStroke.Position = UDim2.new(0, 0, 0, 0)
         end
         
         local Tab = { Count = 0, Elements = {}, Connections = {}, _currentSectionContent = nil, _sectionLayout = nil }
