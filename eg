@@ -1332,7 +1332,7 @@ function NoirUI:CreateWindow(settings)
         groupFrame.ClipsDescendants = true
         groupFrame.LayoutOrder = #TScroll:GetChildren() + 1
         
-        -- Header (click để collapse/expand)
+        -- Header
         local header = Instance.new("TextButton", groupFrame)
         header.Size = UDim2.new(1, 0, 0, 28)
         header.BackgroundTransparency = 1
@@ -1371,32 +1371,41 @@ function NoirUI:CreateWindow(settings)
         arrow.TextYAlignment = "Center"
         arrow.Name = "Arrow"
         
-        -- Container chứa các tab con
+        -- Container chứa tab
         local content = Instance.new("Frame", groupFrame)
         content.Size = UDim2.new(1, 0, 0, 0)
         content.Position = UDim2.new(0, 0, 0, 28)
         content.BackgroundTransparency = 1
-        content.Name = "TabGroupContent"
         local contentLayout = Instance.new("UIListLayout", content)
         contentLayout.Padding = UDim.new(0, 2)
         contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
         
-        -- Hàm thêm tab vào group
+        -- Hàm thêm tab vào group (CÓ HIỆU ỨNG SLIDE)
         function group:CreateTab(name, icon)
-            -- Tạo tab bằng hàm CreateTab gốc
             local tab = Window:CreateTab(name, icon)
-            -- Lấy button của tab và di chuyển vào group
             local btn = tab._button
+            local container = tab._container
+            
             if btn then
                 btn.Parent = content
-                btn.Position = UDim2.new(0, 15, 0, 0) -- Thụt lề
+                btn.Position = UDim2.new(0, 15, 0, 0)
                 btn.Size = UDim2.new(1, -5, 0, 32)
-                -- Cập nhật lại background theo setting
-                if settings.TabBackgroundColor then
-                    btn.BackgroundColor3 = settings.TabBackgroundColor
-                end
+                
+                -- Ghi đè sự kiện click để có slide
+                local oldSelect = tab._selectThisTab
+                btn.MouseButton1Click:Connect(function()
+                    PlaySound("Tab")
+                    CreateClickScaleEffect(btn)
+                    if oldSelect then oldSelect() end
+                    if container then
+                        CreateTabSlideEffect(container, 0.15)
+                    end
+                end)
             end
-            -- Cập nhật chiều cao group
+            
+            -- Lưu container
+            tab._container = container
+            
             task.wait()
             local contentHeight = contentLayout.AbsoluteContentSize.Y + 10
             if isOpen then
@@ -1435,7 +1444,7 @@ function NoirUI:CreateWindow(settings)
     end
     
     -- ============================================
-    -- HÀM TẠO TAB ROOT (gốc - không nằm trong group)
+    -- HÀM TẠO TAB ROOT
     -- ============================================
     function Window:CreateTab(name, icon)
         local B = Instance.new("TextButton", TScroll)
@@ -1518,7 +1527,7 @@ function NoirUI:CreateWindow(settings)
         TabContainer.BorderSizePixel = 0
         TabContainer.ClipsDescendants = true
         
-        -- Search
+        -- SEARCH
         local SearchFrame = Instance.new("Frame", TabContainer)
         SearchFrame.Size = UDim2.new(1, -20, 0, 35)
         SearchFrame.Position = UDim2.new(0, 10, 0, 0)
@@ -1611,16 +1620,22 @@ function NoirUI:CreateWindow(settings)
             updateCanvas()
         end
         
+        -- Lưu selectThisTab để TabGroup có thể gọi
+        tab._selectThisTab = selectThisTab
+        
         B.MouseButton1Click:Connect(function()
             PlaySound("Tab")
             CreateClickScaleEffect(B)
             selectThisTab()
+            -- Hiệu ứng slide khi chọn tab root
+            CreateTabSlideEffect(TabContainer, 0.15)
         end)
         
         table.insert(allTabButtons, B)
         
         if #TScroll:GetChildren() == 1 then
             selectThisTab()
+            CreateTabSlideEffect(TabContainer, 0.15)
         end
         
         -- Tab Object
@@ -2548,6 +2563,8 @@ function NoirUI:CreateWindow(settings)
         
         -- Lưu button để TabGroup có thể di chuyển
         Tab._button = B
+        -- Lưu container
+        Tab._container = TabContainer
         
         return Tab
     end
