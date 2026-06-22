@@ -1,10 +1,15 @@
-📘 NoirUI V3 Ultimate - Hướng Dẫn Sử Dụng
-
-NoirUI V3 Ultimate là thư viện giao diện người dùng hiện đại, tối giản và tùy biến cao cho Roblox Executor (Synapse, Krnl, ScriptWare…). Hỗ trợ hiệu ứng mượt mà, âm thanh, nhạc nền, hệ thống key, và nhiều tùy chỉnh màu sắc.
+Để bảng hiển thị đẹp trên GitHub (trong file README.md), bạn cần sử dụng cú pháp Markdown cho bảng. Dưới đây là toàn bộ nội dung README.md hoàn chỉnh, bao gồm các bảng, hướng dẫn, ví dụ – bạn có thể copy-paste trực tiếp vào file README.md của dự án.
 
 ---
 
-🚀 Cài Đặt
+```markdown
+# NoirUI V3 Ultimate
+
+**NoirUI V3 Ultimate** là thư viện giao diện người dùng hiện đại, tối giản và tùy biến cao dành cho các Roblox Executor (Synapse, Krnl, ScriptWare…). Hỗ trợ hiệu ứng mượt mà, âm thanh, nhạc nền, hệ thống key và nhiều tùy chỉnh màu sắc.
+
+---
+
+## 🚀 Cài Đặt
 
 ```lua
 local NoirUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/ui.lua"))()
@@ -20,7 +25,7 @@ local Window = NoirUI:CreateWindow({
 })
 ```
 
-Bảng Tham Số CreateWindow
+Bảng tham số CreateWindow
 
 Tham số Loại Mô tả Mặc định
 Name string Tiêu đề cửa sổ "NOIR HUB"
@@ -53,7 +58,7 @@ BackgroundMusic table Cấu hình nhạc nền (xem bên dưới) nil
 
 Hỗ trợ nền ảnh
 
-Bạn có thể đặt ảnh nền cho các thành phần bằng cách sử dụng các tham số sau, mỗi tham số là một table với cấu trúc { Image = "rbxassetid://..." hoặc "http://...", Transparency = 0.5 }:
+Các tham số sau dùng để đặt ảnh nền cho từng thành phần (mỗi tham số là một table với cấu trúc { Image = "rbxassetid://..." hoặc "http://...", Transparency = 0.5 }):
 
 Tham số Mô tả
 Background Ảnh nền cho cửa sổ chính
@@ -160,11 +165,11 @@ Tab:CreateDropdown({
     Callback = function(option) print(option) end
 })
 
--- Động:
+-- Động (cập nhật mỗi khi mở):
 Tab:CreateDropdown({
     Name = "Danh sách động",
     GetOptions = function() return {"X", "Y", "Z"} end,
-    RefreshOnOpen = true,  -- cập nhật mỗi khi mở
+    RefreshOnOpen = true,
     Callback = function(opt) print(opt) end
 })
 ```
@@ -201,9 +206,10 @@ Hỗ trợ:
 
 ```lua
 NoirUI:Notify("Tiêu đề", "Nội dung", "icon", "Success")
--- icon: tên Lucide hoặc rbxassetid, có thể nil
--- soundType: "Success", "Error", "Notification" (mặc định)
 ```
+
+· icon: tên Lucide hoặc rbxassetid, có thể để nil
+· soundType: "Success", "Error", "Notification" (mặc định)
 
 ---
 
@@ -349,3 +355,24 @@ settingTab:CreateColorPicker({
 ---
 
 Chúc bạn tạo được giao diện đẹp mắt và chuyên nghiệp! 🌟
+
+```
+
+---
+
+## 📌 Giải thích về cú pháp bảng Markdown
+
+- Dòng đầu tiên: `| Tiêu đề 1 | Tiêu đề 2 | ... |`
+- Dòng thứ hai: `|---------|---------| ... |` (dấu `-` tối thiểu 3 ký tự; có thể thêm `:` để căn lề: `:---`, `---:`, `:---:`)
+- Các dòng sau: dữ liệu, phân cách bởi `|`.
+
+Ví dụ một bảng đơn giản:
+
+```markdown
+| Tên | Tuổi |
+|-----|------|
+| An  | 20   |
+| Bình| 25   |
+```
+
+Khi push lên GitHub, nó sẽ tự động render thành bảng đẹp mắt. Bạn có thể copy nội dung trên vào file README.md và commit.
