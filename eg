@@ -56,6 +56,65 @@ local function GetContrastColor(backgroundColor)
 end
 
 -- ============================================
+-- GLOW STROKE FUNCTIONS
+-- ============================================
+
+local function CreateGlowStroke(frame, color, intensity)
+    if not frame then return nil end
+    
+    -- Xóa glow cũ nếu có
+    local oldGlow = frame:FindFirstChild("_GlowStroke")
+    if oldGlow then oldGlow:Destroy() end
+    local oldGlow1 = frame:FindFirstChild("_GlowStroke_1")
+    if oldGlow1 then oldGlow1:Destroy() end
+    local oldGlow2 = frame:FindFirstChild("_GlowStroke_2")
+    if oldGlow2 then oldGlow2:Destroy() end
+    local oldGlow3 = frame:FindFirstChild("_GlowStroke_3")
+    if oldGlow3 then oldGlow3:Destroy() end
+    
+    local mainStroke = frame:FindFirstChildWhichIsA("UIStroke")
+    local baseThickness = mainStroke and mainStroke.Thickness or 2
+    
+    -- Lớp glow xa nhất (mờ nhất, to nhất)
+    local glow1 = Instance.new("UIStroke", frame)
+    glow1.Name = "_GlowStroke_1"
+    glow1.Color = color or Color3.fromRGB(170, 85, 255)
+    glow1.Thickness = baseThickness + 8
+    glow1.Transparency = 0.85 - (intensity or 0.3)
+    glow1.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    glow1.ZIndex = frame.ZIndex - 3
+    
+    -- Lớp glow giữa
+    local glow2 = Instance.new("UIStroke", frame)
+    glow2.Name = "_GlowStroke_2"
+    glow2.Color = color or Color3.fromRGB(170, 85, 255)
+    glow2.Thickness = baseThickness + 5
+    glow2.Transparency = 0.7 - (intensity or 0.3)
+    glow2.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    glow2.ZIndex = frame.ZIndex - 2
+    
+    -- Lớp glow sát nhất
+    local glow3 = Instance.new("UIStroke", frame)
+    glow3.Name = "_GlowStroke_3"
+    glow3.Color = color or Color3.fromRGB(170, 85, 255)
+    glow3.Thickness = baseThickness + 2
+    glow3.Transparency = 0.5 - (intensity or 0.3)
+    glow3.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    glow3.ZIndex = frame.ZIndex - 1
+    
+    return {glow1, glow2, glow3}
+end
+
+local function RemoveGlowStroke(frame)
+    if not frame then return end
+    local names = {"_GlowStroke_1", "_GlowStroke_2", "_GlowStroke_3"}
+    for _, name in pairs(names) do
+        local glow = frame:FindFirstChild(name)
+        if glow then glow:Destroy() end
+    end
+end
+
+-- ============================================
 -- ANIMATION FUNCTIONS
 -- ============================================
 
@@ -128,7 +187,7 @@ local function CreateScaleInEffect(frame, delay)
     }):Play()
 end
 
--- HOVER EFFECT
+-- HOVER EFFECT - CHỈ DÙNG CHO TAB, HEADER, DROPDOWN TEXT
 local function CreateHoverEffect(button)
     if not button then return end
     
@@ -159,62 +218,6 @@ local function CreateHoverEffect(button)
         })
         hoverTween:Play()
     end)
-end
-
--- ============================================
--- GLOW STROKE FUNCTIONS
--- ============================================
-
--- HÀM TẠO GLOW STROKE THEO MÀU ACCENT
-local function CreateGlowStroke(frame, color, thickness, intensity)
-    if not frame then return end
-    
-    -- Xóa glow stroke cũ nếu có
-    local oldGlow = frame:FindFirstChild("_GlowStroke")
-    if oldGlow then oldGlow:Destroy() end
-    
-    -- Tạo glow stroke container
-    local glowContainer = Instance.new("Frame", frame.Parent)
-    glowContainer.Name = "_GlowStroke"
-    glowContainer.Size = frame.Size + UDim2.new(0, thickness * 4, 0, thickness * 4)
-    glowContainer.Position = frame.Position - UDim2.new(0, thickness * 2, 0, thickness * 2)
-    glowContainer.BackgroundTransparency = 1
-    glowContainer.ZIndex = frame.ZIndex - 1
-    glowContainer.Visible = frame.Visible
-    glowContainer.ClipsDescendants = false
-    
-    -- Tạo nhiều lớp glow với độ mờ khác nhau
-    for i = 1, 4 do
-        local glow = Instance.new("ImageLabel", glowContainer)
-        local size = 1 - (i - 1) * 0.06
-        local offset = (i - 1) * 0.03
-        glow.Size = UDim2.new(size, 0, size, 0)
-        glow.Position = UDim2.new(offset, 0, offset, 0)
-        glow.BackgroundTransparency = 1
-        glow.Image = "rbxassetid://1312311753"
-        glow.ImageColor3 = color or Color3.fromRGB(170, 85, 255)
-        glow.ImageTransparency = 0.6 - (i - 1) * 0.12 - (intensity or 0.3) * 0.5
-        glow.ScaleType = Enum.ScaleType.Slice
-        glow.SliceCenter = Rect.new(thickness * 2, thickness * 2, thickness * 2, thickness * 2)
-        glow.ZIndex = i - 1
-    end
-    
-    -- Đồng bộ vị trí với frame
-    local connection
-    connection = RunService.RenderStepped:Connect(function()
-        if not frame or not frame.Parent then
-            if connection then connection:Disconnect() end
-            return
-        end
-        glowContainer.Size = frame.Size + UDim2.new(0, thickness * 4, 0, thickness * 4)
-        glowContainer.Position = frame.Position - UDim2.new(0, thickness * 2, 0, thickness * 2)
-        glowContainer.Visible = frame.Visible
-        glowContainer.ZIndex = frame.ZIndex - 1
-    end)
-    table.insert(NoirUI.Connections, connection)
-    table.insert(NoirUI.Glows, glowContainer)
-    
-    return glowContainer
 end
 
 -- ============================================
@@ -469,7 +472,7 @@ local function CreateGlowTextSlide(label, colors, speed)
     return gradient, connection
 end
 
--- HÀM TẠO GLOW AURA
+-- HÀM TẠO GLOW AURA (cho frame)
 local function CreateUIGlow(frame, color, intensity, parent)
     if not frame then return nil end
     if not parent then parent = frame.Parent end
@@ -536,7 +539,9 @@ local function CreateUIGlow(frame, color, intensity, parent)
     return glow
 end
 
--- SUBTITLE
+-- ============================================
+-- SUBTITLE - Inter Font
+-- ============================================
 local function AddSubtitle(parent, subtitleText, yOffset)
     if not subtitleText or subtitleText == "" then return nil end
     
@@ -652,6 +657,7 @@ function NoirUI:CreateWindow(settings)
     ScreenGui.ResetOnSpawn = false
     local ACCENT = settings.Accent or Color3.fromRGB(170, 85, 255)
     local useAutoContrast = settings.AutoContrast or false
+    local useGlowStroke = settings.UseGlowStroke or true  -- 🔥 THÊM TÙY CHỌN GLOW STROKE
     
     local mainDefaultPos = settings.DefaultPosition or UDim2.new(0.5, -210, 0.5, -150)
     local floatDefaultPos = settings.FloatDefaultPosition or UDim2.new(0, 15, 0.5, -22)
@@ -671,12 +677,15 @@ function NoirUI:CreateWindow(settings)
     MainStroke.Thickness = 2
     MainStroke.Color = ACCENT
     
+    -- 🔥 GLOW STROKE CHO MAIN UI
+    if useGlowStroke then
+        CreateGlowStroke(Main, ACCENT, 0.3)
+    end
+    
     SetupBackground(Main, settings.Background, settings.MainBgColor, settings.MainBgTransparency or 0)
     MakeDraggable(Main)
     
-    -- GLOW STROKE CHO MAIN UI
     if settings.UseGlow then
-        CreateGlowStroke(Main, ACCENT, 3, 0.4)
         local mainGlow = CreateUIGlow(Main, ACCENT, 0.3, ScreenGui)
     end
     
@@ -697,7 +706,6 @@ function NoirUI:CreateWindow(settings)
 
     if settings.UseGlow then
         local floatGlow = CreateUIGlow(TBtn, ACCENT, 0.4, ScreenGui)
-        CreateGlowStroke(TBtn, ACCENT, 3, 0.5)
     end
 
     local floatCorner = Instance.new("UICorner", TBtn)
@@ -789,6 +797,11 @@ function NoirUI:CreateWindow(settings)
     local TS = Instance.new("UIStroke", TBtn)
     TS.Color = ACCENT
     TS.Thickness = 2
+    
+    -- 🔥 GLOW STROKE CHO FLOAT BUTTON
+    if useGlowStroke then
+        CreateGlowStroke(TBtn, ACCENT, 0.4)
+    end
 
     local floatDragging = false
     local floatDragStart, floatStartPos, floatDragInput
@@ -827,14 +840,19 @@ function NoirUI:CreateWindow(settings)
     LoadingStroke.Color = ACCENT
     LoadingStroke.Thickness = 2
     
+    -- 🔥 GLOW STROKE CHO LOADING
+    if useGlowStroke then
+        CreateGlowStroke(LoadingFrame, ACCENT, 0.3)
+    end
+    
     if settings.UseGlow then
         local loadingGlow = CreateUIGlow(LoadingFrame, ACCENT, 0.3, ScreenGui)
-        CreateGlowStroke(LoadingFrame, ACCENT, 3, 0.4)
     end
     
     local hasLoadingBg = SetupBackground(LoadingFrame, settings.LoadingBackground, Color3.fromRGB(12, 12, 12), 0.95)
     LoadingStroke.Transparency = hasLoadingBg and 0 or 1
     
+    -- LOADING TITLE → Space Grotesk
     local LoadingTitle = Instance.new("TextLabel", LoadingFrame)
     LoadingTitle.Size = UDim2.new(1, -40, 0, 30)
     LoadingTitle.Position = UDim2.new(0, 20, 0, 15)
@@ -861,6 +879,7 @@ function NoirUI:CreateWindow(settings)
         }, 1.5)
     end
     
+    -- LOADING SUB → Inter
     local LoadingSub = Instance.new("TextLabel", LoadingFrame)
     LoadingSub.Size = UDim2.new(1, -40, 0, 20)
     LoadingSub.Position = UDim2.new(0, 20, 0, 45)
@@ -887,6 +906,7 @@ function NoirUI:CreateWindow(settings)
     Instance.new("UICorner", LoadingBar).CornerRadius = UDim.new(1, 0)
     LoadingBar.ZIndex = 201
     
+    -- LOADING PERCENT → Space Grotesk
     local LoadingPercent = Instance.new("TextLabel", LoadingFrame)
     LoadingPercent.Size = UDim2.new(1, 0, 0, 20)
     LoadingPercent.Position = UDim2.new(0, 0, 0.85, 0)
@@ -979,16 +999,22 @@ function NoirUI:CreateWindow(settings)
             local kstr = Instance.new("UIStroke", KUI)
             kstr.Thickness = 2
             kstr.Color = ACCENT
+            
+            -- 🔥 GLOW STROKE CHO KEY SYSTEM
+            if useGlowStroke then
+                CreateGlowStroke(KUI, ACCENT, 0.3)
+            end
+            
             MakeDraggable(KUI)
             
             if settings.UseGlow then
                 local keyGlow = CreateUIGlow(KUI, ACCENT, 0.3, ScreenGui)
-                CreateGlowStroke(KUI, ACCENT, 3, 0.4)
             end
             
             SetupBackground(KUI, settings.KeyBackground, Color3.fromRGB(12, 12, 12), 0)
             CreateSpringEffect(KUI)
             
+            -- KEY TITLE → Space Grotesk
             local KT = Instance.new("TextLabel", KUI)
             KT.Size = UDim2.new(1,0,0,35)
             KT.Position = UDim2.new(0,0,0,10)
@@ -1014,6 +1040,7 @@ function NoirUI:CreateWindow(settings)
                 }, 1.5)
             end
             
+            -- KEY SUBTITLE → Inter
             local KSub = Instance.new("TextLabel", KUI)
             KSub.Size = UDim2.new(1,0,0,20)
             KSub.Position = UDim2.new(0,0,0,30)
@@ -1025,6 +1052,7 @@ function NoirUI:CreateWindow(settings)
             KSub.BackgroundTransparency = 1
             KSub.ZIndex = 2
             
+            -- KEY INPUT PLACEHOLDER → Inter
             local KI = Instance.new("TextBox", KUI)
             KI.Size = UDim2.new(0.8, 0, 0, 35)
             KI.Position = UDim2.new(0.1, 0, 0.35, 10)
@@ -1039,6 +1067,7 @@ function NoirUI:CreateWindow(settings)
             Instance.new("UIStroke", KI).Color = Color3.fromRGB(40,40,40)
             KI.ZIndex = 2
             
+            -- KEY NOTE → Inter
             local Note = Instance.new("TextLabel", KUI)
             Note.Size = UDim2.new(0.8,0,0,30)
             Note.Position = UDim2.new(0.1,0,0.55,10)
@@ -1051,6 +1080,7 @@ function NoirUI:CreateWindow(settings)
             Note.TextWrapped = true
             Note.ZIndex = 2
             
+            -- KEY BUTTON → Space Grotesk
             local KB = Instance.new("TextButton", KUI)
             KB.Size = UDim2.new(0.8, 0, 0, 35)
             KB.Position = UDim2.new(0.1, 0, 0.75, 10)
@@ -1104,6 +1134,7 @@ function NoirUI:CreateWindow(settings)
         if logoImage then L.Image = logoImage end
     end
     
+    -- HEADER TITLE → Space Grotesk
     local Title = Instance.new("TextLabel", Header)
     Title.Size = UDim2.new(1, -120, 1, 0)
     Title.Position = UDim2.new(0, settings.LogoID and 40 or 15, 0, 0)
@@ -1175,13 +1206,18 @@ function NoirUI:CreateWindow(settings)
         s.Color = ACCENT
         s.Thickness = 2
         
+        -- 🔥 GLOW STROKE CHO CONFIRM DIALOG
+        if useGlowStroke then
+            CreateGlowStroke(Conf, ACCENT, 0.3)
+        end
+        
         if settings.UseGlow then
             local confirmGlow = CreateUIGlow(Conf, ACCENT, 0.3, ScreenGui)
-            CreateGlowStroke(Conf, ACCENT, 3, 0.4)
         end
         
         CreateScaleInEffect(Conf)
         
+        -- CONFIRM TEXT → Inter
         local t = Instance.new("TextLabel", Conf)
         t.Size = UDim2.new(1, 0, 0.5, 0)
         t.BackgroundTransparency = 1
@@ -1260,6 +1296,11 @@ function NoirUI:CreateWindow(settings)
     SideStroke.Thickness = 1
     SideStroke.Transparency = 0.7
     
+    -- 🔥 GLOW STROKE CHO SIDE
+    if useGlowStroke then
+        CreateGlowStroke(Side, ACCENT, 0.2)
+    end
+    
     local TScroll = Instance.new("ScrollingFrame", Side)
     TScroll.Size = UDim2.new(1, 0, 1, -55)
     TScroll.Position = UDim2.new(0, 0, 0, 0)
@@ -1305,6 +1346,11 @@ function NoirUI:CreateWindow(settings)
     ContStroke.Color = ACCENT
     ContStroke.Thickness = 1
     ContStroke.Transparency = 0.7
+    
+    -- 🔥 GLOW STROKE CHO CONTENT
+    if useGlowStroke then
+        CreateGlowStroke(Cont, ACCENT, 0.2)
+    end
     
     -- FLOAT BUTTON CLICK
     TBtn.MouseButton1Click:Connect(function()
@@ -1360,9 +1406,13 @@ function NoirUI:CreateWindow(settings)
         local ns = Instance.new("UIStroke", n)
         ns.Color = ACCENT
         
+        -- 🔥 GLOW STROKE CHO NOTIFICATION
+        if useGlowStroke then
+            CreateGlowStroke(n, ACCENT, 0.2)
+        end
+        
         if settings.UseGlow then
             local notifGlow = CreateUIGlow(n, ACCENT, 0.2, ScreenGui)
-            CreateGlowStroke(n, ACCENT, 2, 0.3)
         end
         
         SetupBackground(n, settings.NotificationBackground, Color3.fromRGB(15, 15, 15), 0.25)
@@ -1381,6 +1431,7 @@ function NoirUI:CreateWindow(settings)
             end
         end
         
+        -- NOTIFICATION TITLE → Space Grotesk
         local tl = Instance.new("TextLabel", n)
         tl.Size = UDim2.new(1, iconName and -45 or -15, 0, 20)
         tl.Position = UDim2.new(0, iconName and 40 or 15, 0, 5)
@@ -1406,6 +1457,7 @@ function NoirUI:CreateWindow(settings)
             }, 1.5)
         end
         
+        -- NOTIFICATION BODY → Inter
         local ml = Instance.new("TextLabel", n)
         ml.Size = UDim2.new(1, iconName and -45 or -25, 0, 35)
         ml.Position = UDim2.new(0, iconName and 40 or 15, 0, 25)
@@ -1456,6 +1508,7 @@ function NoirUI:CreateWindow(settings)
         tabStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         tabStroke.ZIndex = 2
         
+        -- TAB → Space Grotesk
         local BT = Instance.new("TextLabel", B)
         BT.Size = UDim2.new(1, -10, 1, 0)
         BT.Position = UDim2.new(0, icon and 35 or 8, 0, 0)
@@ -1517,6 +1570,7 @@ function NoirUI:CreateWindow(settings)
         TabContainer.BorderSizePixel = 0
         TabContainer.ClipsDescendants = true
         
+        -- SEARCH FRAME
         local SearchFrame = Instance.new("Frame", TabContainer)
         SearchFrame.Size = UDim2.new(1, -20, 0, 35)
         SearchFrame.Position = UDim2.new(0, 10, 0, 0)
@@ -1529,6 +1583,11 @@ function NoirUI:CreateWindow(settings)
         searchStroke.Thickness = 1
         searchStroke.Transparency = 0.7
         searchStroke.ZIndex = 2
+        
+        -- 🔥 GLOW STROKE CHO SEARCH FRAME
+        if useGlowStroke then
+            CreateGlowStroke(SearchFrame, ACCENT, 0.2)
+        end
         
         local SearchIcon = Instance.new("TextLabel", SearchFrame)
         SearchIcon.Size = UDim2.new(0, 30, 1, 0)
@@ -1591,6 +1650,10 @@ function NoirUI:CreateWindow(settings)
                     if stroke then 
                         stroke.Transparency = 1
                     end
+                    -- Xóa glow stroke của tab cũ
+                    if useGlowStroke then
+                        RemoveGlowStroke(v)
+                    end
                 end
             end
         end
@@ -1611,6 +1674,11 @@ function NoirUI:CreateWindow(settings)
             BT.TextColor3 = ACCENT
             tabStroke.Transparency = 0
             
+            -- 🔥 THÊM GLOW STROKE CHO TAB ĐƯỢC CHỌN
+            if useGlowStroke then
+                CreateGlowStroke(B, ACCENT, 0.3)
+            end
+            
             local tabImg = B:FindFirstChild("ImageLabel")
             if tabImg then 
                 tabImg.ImageColor3 = ACCENT
@@ -1623,6 +1691,11 @@ function NoirUI:CreateWindow(settings)
             BT.TextColor3 = ACCENT
             tabStroke.Transparency = 0
             CreateTabSlideEffect(TabContainer, 0.15)
+            
+            -- 🔥 THÊM GLOW STROKE CHO TAB ĐẦU TIÊN
+            if useGlowStroke then
+                CreateGlowStroke(B, ACCENT, 0.3)
+            end
             
             local tabImg = B:FindFirstChild("ImageLabel")
             if tabImg then 
@@ -1649,6 +1722,7 @@ function NoirUI:CreateWindow(settings)
             if prop == "Text" then filterElements(SearchBox.Text) end
         end)
         
+        -- LABEL → Inter
         function Tab:CreateLabel(text, updateFunction)
             local parent = Tab._currentSectionContent or ContentFrame
             local l = Instance.new("TextLabel", parent)
@@ -1685,6 +1759,7 @@ function NoirUI:CreateWindow(settings)
             return l
         end
         
+        -- SECTION → Space Grotesk
         function Tab:CreateSection(title, noLine)
             local s = Instance.new("Frame", ContentFrame)
             s.Size = UDim2.new(0.95, 0, 0, noLine and 25 or 35)
@@ -1809,6 +1884,7 @@ function NoirUI:CreateWindow(settings)
             return s
         end
         
+        -- PARAGRAPH: CARD TITLE → Space Grotesk, DESCRIPTION → Inter
         function Tab:CreateParagraph(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local f = Instance.new("Frame", parent)
@@ -1821,6 +1897,7 @@ function NoirUI:CreateWindow(settings)
             table.insert(Tab.Elements, f)
             CreateSpringEffect(f, 0.05 * Tab.Count)
             
+            -- CARD TITLE → Space Grotesk
             local title = Instance.new("TextLabel", f)
             title.Size = UDim2.new(1, -20, 0, 25)
             title.Position = UDim2.new(0, 10, 0, 5)
@@ -1838,6 +1915,7 @@ function NoirUI:CreateWindow(settings)
             title.BackgroundTransparency = 1
             title.TextXAlignment = "Left"
             
+            -- DESCRIPTION → Inter
             local content = Instance.new("TextLabel", f)
             content.Size = UDim2.new(1, -20, 0, 30)
             content.Position = UDim2.new(0, 10, 0, 25)
@@ -1853,6 +1931,7 @@ function NoirUI:CreateWindow(settings)
             return f
         end
         
+        -- TEXTBOX: ELEMENT NAME → Space Grotesk, PLACEHOLDER → Inter
         function Tab:CreateTextBox(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -1866,6 +1945,7 @@ function NoirUI:CreateWindow(settings)
             table.insert(Tab.Elements, f)
             CreateSpringEffect(f, 0.05 * Tab.Count)
             
+            -- PLACEHOLDER & TEXT → Inter
             local i = Instance.new("TextBox", f)
             i.Size = UDim2.new(1, -20, 0, 35)
             i.Position = UDim2.new(0, 10, 0, 0)
@@ -1891,6 +1971,7 @@ function NoirUI:CreateWindow(settings)
             end
         end
         
+        -- BUTTON: ELEMENT NAME → Space Grotesk, BUTTON DESC → Inter
         function Tab:CreateButton(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -1919,6 +2000,7 @@ function NoirUI:CreateWindow(settings)
             if opt.Align == false then
                 b.TextXAlignment = "Left"
                 b.Text = "  " .. opt.Name
+                -- BUTTON DESC → Inter
                 local hint = Instance.new("TextLabel", b)
                 hint.Size = UDim2.new(0, 50, 0, 35)
                 hint.Position = UDim2.new(1, -55, 0, 0)
@@ -1946,6 +2028,7 @@ function NoirUI:CreateWindow(settings)
             end)
         end
         
+        -- TOGGLE: ELEMENT NAME → Space Grotesk
         function Tab:CreateToggle(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -2002,6 +2085,7 @@ function NoirUI:CreateWindow(settings)
             end)
         end
         
+        -- SLIDER: ELEMENT NAME → Space Grotesk
         function Tab:CreateSlider(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -2024,6 +2108,7 @@ function NoirUI:CreateWindow(settings)
             table.insert(Tab.Elements, f)
             CreateSpringEffect(f, 0.05 * Tab.Count)
             
+            -- SLIDER LABEL → Space Grotesk
             local l = Instance.new("TextLabel", f)
             l.Size = UDim2.new(1, 0, 0, 20)
             l.Position = UDim2.new(0, 12, 0, hasSubtitle and 5 or 5)
@@ -2092,6 +2177,7 @@ function NoirUI:CreateWindow(settings)
             end)
         end
         
+        -- COLOR PICKER: ELEMENT NAME → Space Grotesk
         function Tab:CreateColorPicker(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -2110,6 +2196,7 @@ function NoirUI:CreateWindow(settings)
             table.insert(Tab.Elements, f)
             CreateSpringEffect(f, 0.05 * Tab.Count)
             
+            -- COLOR PICKER NAME → Space Grotesk
             local t = Instance.new("TextLabel", f)
             t.Size = UDim2.new(1, 0, 0, 35)
             t.Position = UDim2.new(0, 12, 0, 0)
@@ -2267,6 +2354,7 @@ function NoirUI:CreateWindow(settings)
             UpdateColor()
         end
         
+        -- DROPDOWN: ELEMENT NAME → Space Grotesk, OPTIONS → Space Grotesk
         function Tab:CreateDropdown(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -2281,6 +2369,7 @@ function NoirUI:CreateWindow(settings)
             table.insert(Tab.Elements, d)
             CreateSpringEffect(d, 0.05 * Tab.Count)
             
+            -- DROPDOWN TEXT → Space Grotesk (GIỮ HOVER)
             local t = Instance.new("TextButton", d)
             t.Name = "DropdownButton"
             t.Size = UDim2.new(1, 0, 0, 35)
@@ -2345,6 +2434,7 @@ function NoirUI:CreateWindow(settings)
                 end
                 
                 for _, option in pairs(newOptions) do
+                    -- DROPDOWN OPTIONS → Space Grotesk (XÓA HOVER)
                     local it = Instance.new("TextButton", il)
                     it.Size = UDim2.new(1, 0, 0, 30)
                     it.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
@@ -2458,6 +2548,7 @@ function NoirUI:CreateWindow(settings)
             end
         end
         
+        -- RUNBOX: PLACEHOLDER → Inter, BUTTON → Space Grotesk
         function Tab:CreateRunBox(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local f = Instance.new("Frame", parent)
@@ -2470,6 +2561,7 @@ function NoirUI:CreateWindow(settings)
             table.insert(Tab.Elements, f)
             CreateSpringEffect(f, 0.05 * Tab.Count)
             
+            -- RUNBOX PLACEHOLDER → Inter
             local i = Instance.new("TextBox", f)
             i.Size = UDim2.new(1, -65, 1, 0)
             i.Position = UDim2.new(0, 10, 0, 0)
@@ -2490,6 +2582,7 @@ function NoirUI:CreateWindow(settings)
             i.TextXAlignment = "Left"
             i.ClearTextOnFocus = false
             
+            -- RUN BUTTON → Space Grotesk
             local r = Instance.new("TextButton", f)
             r.Size = UDim2.new(0, 50, 0, 26)
             r.Position = UDim2.new(1, -55, 0.5, -13)
