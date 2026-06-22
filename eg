@@ -56,7 +56,7 @@ local function GetContrastColor(backgroundColor)
 end
 
 -- ============================================
--- GLOW STROKE FUNCTIONS
+-- GLOW STROKE FUNCTIONS - ĐỘ DÀY 1, 0.5, 0.2 | ĐỘ MỜ 0.8, 0.6, 0.4
 -- ============================================
 
 local function CreateGlowStroke(frame, color, intensity)
@@ -79,8 +79,8 @@ local function CreateGlowStroke(frame, color, intensity)
     local glow1 = Instance.new("UIStroke", frame)
     glow1.Name = "_GlowStroke_1"
     glow1.Color = color or Color3.fromRGB(170, 85, 255)
-    glow1.Thickness = baseThickness + 8
-    glow1.Transparency = 0.85 - (intensity or 0.3)
+    glow1.Thickness = baseThickness + 1
+    glow1.Transparency = 0.8 - (intensity or 0.3)
     glow1.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     glow1.ZIndex = frame.ZIndex - 3
     
@@ -88,8 +88,8 @@ local function CreateGlowStroke(frame, color, intensity)
     local glow2 = Instance.new("UIStroke", frame)
     glow2.Name = "_GlowStroke_2"
     glow2.Color = color or Color3.fromRGB(170, 85, 255)
-    glow2.Thickness = baseThickness + 5
-    glow2.Transparency = 0.7 - (intensity or 0.3)
+    glow2.Thickness = baseThickness + 0.5
+    glow2.Transparency = 0.6 - (intensity or 0.3)
     glow2.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     glow2.ZIndex = frame.ZIndex - 2
     
@@ -97,8 +97,8 @@ local function CreateGlowStroke(frame, color, intensity)
     local glow3 = Instance.new("UIStroke", frame)
     glow3.Name = "_GlowStroke_3"
     glow3.Color = color or Color3.fromRGB(170, 85, 255)
-    glow3.Thickness = baseThickness + 2
-    glow3.Transparency = 0.5 - (intensity or 0.3)
+    glow3.Thickness = baseThickness + 0.2
+    glow3.Transparency = 0.4 - (intensity or 0.3)
     glow3.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     glow3.ZIndex = frame.ZIndex - 1
     
@@ -657,7 +657,7 @@ function NoirUI:CreateWindow(settings)
     ScreenGui.ResetOnSpawn = false
     local ACCENT = settings.Accent or Color3.fromRGB(170, 85, 255)
     local useAutoContrast = settings.AutoContrast or false
-    local useGlowStroke = settings.UseGlowStroke or true  -- 🔥 THÊM TÙY CHỌN GLOW STROKE
+    local useGlowStroke = settings.UseGlowStroke or true
     
     local mainDefaultPos = settings.DefaultPosition or UDim2.new(0.5, -210, 0.5, -150)
     local floatDefaultPos = settings.FloatDefaultPosition or UDim2.new(0, 15, 0.5, -22)
@@ -677,7 +677,6 @@ function NoirUI:CreateWindow(settings)
     MainStroke.Thickness = 2
     MainStroke.Color = ACCENT
     
-    -- 🔥 GLOW STROKE CHO MAIN UI
     if useGlowStroke then
         CreateGlowStroke(Main, ACCENT, 0.3)
     end
@@ -798,7 +797,6 @@ function NoirUI:CreateWindow(settings)
     TS.Color = ACCENT
     TS.Thickness = 2
     
-    -- 🔥 GLOW STROKE CHO FLOAT BUTTON
     if useGlowStroke then
         CreateGlowStroke(TBtn, ACCENT, 0.4)
     end
@@ -840,7 +838,6 @@ function NoirUI:CreateWindow(settings)
     LoadingStroke.Color = ACCENT
     LoadingStroke.Thickness = 2
     
-    -- 🔥 GLOW STROKE CHO LOADING
     if useGlowStroke then
         CreateGlowStroke(LoadingFrame, ACCENT, 0.3)
     end
@@ -1000,7 +997,6 @@ function NoirUI:CreateWindow(settings)
             kstr.Thickness = 2
             kstr.Color = ACCENT
             
-            -- 🔥 GLOW STROKE CHO KEY SYSTEM
             if useGlowStroke then
                 CreateGlowStroke(KUI, ACCENT, 0.3)
             end
@@ -1206,7 +1202,6 @@ function NoirUI:CreateWindow(settings)
         s.Color = ACCENT
         s.Thickness = 2
         
-        -- 🔥 GLOW STROKE CHO CONFIRM DIALOG
         if useGlowStroke then
             CreateGlowStroke(Conf, ACCENT, 0.3)
         end
@@ -1296,7 +1291,6 @@ function NoirUI:CreateWindow(settings)
     SideStroke.Thickness = 1
     SideStroke.Transparency = 0.7
     
-    -- 🔥 GLOW STROKE CHO SIDE
     if useGlowStroke then
         CreateGlowStroke(Side, ACCENT, 0.2)
     end
@@ -1347,7 +1341,6 @@ function NoirUI:CreateWindow(settings)
     ContStroke.Thickness = 1
     ContStroke.Transparency = 0.7
     
-    -- 🔥 GLOW STROKE CHO CONTENT
     if useGlowStroke then
         CreateGlowStroke(Cont, ACCENT, 0.2)
     end
@@ -1406,7 +1399,6 @@ function NoirUI:CreateWindow(settings)
         local ns = Instance.new("UIStroke", n)
         ns.Color = ACCENT
         
-        -- 🔥 GLOW STROKE CHO NOTIFICATION
         if useGlowStroke then
             CreateGlowStroke(n, ACCENT, 0.2)
         end
@@ -1584,7 +1576,6 @@ function NoirUI:CreateWindow(settings)
         searchStroke.Transparency = 0.7
         searchStroke.ZIndex = 2
         
-        -- 🔥 GLOW STROKE CHO SEARCH FRAME
         if useGlowStroke then
             CreateGlowStroke(SearchFrame, ACCENT, 0.2)
         end
@@ -1650,7 +1641,6 @@ function NoirUI:CreateWindow(settings)
                     if stroke then 
                         stroke.Transparency = 1
                     end
-                    -- Xóa glow stroke của tab cũ
                     if useGlowStroke then
                         RemoveGlowStroke(v)
                     end
@@ -1674,7 +1664,6 @@ function NoirUI:CreateWindow(settings)
             BT.TextColor3 = ACCENT
             tabStroke.Transparency = 0
             
-            -- 🔥 THÊM GLOW STROKE CHO TAB ĐƯỢC CHỌN
             if useGlowStroke then
                 CreateGlowStroke(B, ACCENT, 0.3)
             end
@@ -1692,7 +1681,6 @@ function NoirUI:CreateWindow(settings)
             tabStroke.Transparency = 0
             CreateTabSlideEffect(TabContainer, 0.15)
             
-            -- 🔥 THÊM GLOW STROKE CHO TAB ĐẦU TIÊN
             if useGlowStroke then
                 CreateGlowStroke(B, ACCENT, 0.3)
             end
