@@ -39,6 +39,47 @@ local function ResolveIcon(iconInput)
     return nil
 end
 
+-- ============================================
+-- AUTO CONTRAST TEXT FUNCTIONS
+-- ============================================
+
+-- Hàm tính độ sáng của màu
+local function GetColorBrightness(color)
+    return (0.299 * color.R + 0.587 * color.G + 0.114 * color.B)
+end
+
+-- Hàm tự động chọn màu chữ (trắng hoặc đen) dựa trên nền
+local function GetContrastColor(backgroundColor)
+    local brightness = GetColorBrightness(backgroundColor)
+    if brightness > 0.5 then
+        return Color3.fromRGB(0, 0, 0)  -- Chữ đen
+    else
+        return Color3.fromRGB(255, 255, 255)  -- Chữ trắng
+    end
+end
+
+-- Hàm tạo text với auto contrast
+local function CreateAutoContrastText(parent, text, backgroundColor, fontSize, font, textXAlignment)
+    local label = Instance.new("TextLabel", parent)
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = GetContrastColor(backgroundColor)
+    label.TextTransparency = 0
+    label.Font = font or "GothamMedium"
+    label.TextSize = fontSize or 12
+    label.TextXAlignment = textXAlignment or "Left"
+    label.TextYAlignment = "Center"
+    return label
+end
+
+-- Hàm cập nhật contrast khi background thay đổi
+local function UpdateContrast(label, backgroundColor)
+    if label and backgroundColor then
+        label.TextColor3 = GetContrastColor(backgroundColor)
+    end
+end
+
 --VibeSound Defaut
 local VibeSounds = {
     Default = {
@@ -373,18 +414,14 @@ local function CreateGlowTextSlide(label, colors, speed)
     return gradient, connection
 end
 
--- ============================================
--- HÀM TẠO GLOW AURA - TO HƠN, BAO QUANH STROKE
--- ============================================
+-- HÀM TẠO GLOW AURA
 local function CreateUIGlow(frame, color, intensity, parent)
     if not frame then return nil end
     if not parent then parent = frame.Parent end
     
-    -- Xóa glow cũ nếu có
     local oldGlow = frame:FindFirstChild("_UIGlow")
     if oldGlow then oldGlow:Destroy() end
     
-    -- Tạo frame glow bên ngoài (TO HƠN)
     local glow = Instance.new("Frame", parent)
     glow.Name = "_UIGlow"
     glow.Size = frame.Size + UDim2.new(0, 30, 0, 30)
@@ -394,7 +431,6 @@ local function CreateUIGlow(frame, color, intensity, parent)
     glow.Visible = frame.Visible
     glow.ClipsDescendants = false
     
-    -- Lớp 1: Glow chính (to nhất, mờ nhất)
     local glow1 = Instance.new("ImageLabel", glow)
     glow1.Size = UDim2.new(1, 0, 1, 0)
     glow1.Position = UDim2.new(0, 0, 0, 0)
@@ -406,7 +442,6 @@ local function CreateUIGlow(frame, color, intensity, parent)
     glow1.SliceCenter = Rect.new(15, 15, 15, 15)
     glow1.ZIndex = 0
     
-    -- Lớp 2: Glow đậm hơn
     local glow2 = Instance.new("ImageLabel", glow)
     glow2.Size = UDim2.new(0.9, 0, 0.9, 0)
     glow2.Position = UDim2.new(0.05, 0, 0.05, 0)
@@ -418,7 +453,6 @@ local function CreateUIGlow(frame, color, intensity, parent)
     glow2.SliceCenter = Rect.new(12, 12, 12, 12)
     glow2.ZIndex = 1
     
-    -- Lớp 3: Glow sáng nhất (gần sát frame)
     local glow3 = Instance.new("ImageLabel", glow)
     glow3.Size = UDim2.new(0.8, 0, 0.8, 0)
     glow3.Position = UDim2.new(0.1, 0, 0.1, 0)
@@ -430,7 +464,6 @@ local function CreateUIGlow(frame, color, intensity, parent)
     glow3.SliceCenter = Rect.new(10, 10, 10, 10)
     glow3.ZIndex = 2
     
-    -- Đồng bộ vị trí với frame
     local connection
     connection = RunService.RenderStepped:Connect(function()
         if not frame or not frame.Parent then
@@ -456,7 +489,7 @@ local function AddSubtitle(parent, subtitleText, yOffset)
     subtitle.Position = UDim2.new(0, 10, 0, yOffset)
     subtitle.BackgroundTransparency = 1
     subtitle.Text = subtitleText
-    subtitle.TextColor3 = Color3.fromRGB(140, 140, 140)
+    subtitle.TextColor3 = Color3.fromRGB(160, 160, 160)
     subtitle.TextTransparency = 0
     subtitle.Font = "Gotham"
     subtitle.TextSize = 10
@@ -562,6 +595,7 @@ function NoirUI:CreateWindow(settings)
     ScreenGui.Name = "NoirUI_V3_Ultimate"
     ScreenGui.ResetOnSpawn = false
     local ACCENT = settings.Accent or Color3.fromRGB(170, 85, 255)
+    local useAutoContrast = settings.AutoContrast or false  -- 🔥 THÊM TÙY CHỌN AUTO CONTRAST
     
     local mainDefaultPos = settings.DefaultPosition or UDim2.new(0.5, -210, 0.5, -150)
     local floatDefaultPos = settings.FloatDefaultPosition or UDim2.new(0, 15, 0.5, -22)
@@ -584,7 +618,6 @@ function NoirUI:CreateWindow(settings)
     SetupBackground(Main, settings.Background, settings.MainBgColor, settings.MainBgTransparency or 0)
     MakeDraggable(Main)
     
-    -- GLOW AURA CHO MAIN UI
     if settings.UseGlow then
         local mainGlow = CreateUIGlow(Main, ACCENT, 0.3, ScreenGui)
     end
@@ -600,7 +633,6 @@ function NoirUI:CreateWindow(settings)
     LoadingStroke.Color = ACCENT
     LoadingStroke.Thickness = 2
     
-    -- GLOW AURA CHO LOADING
     if settings.UseGlow then
         local loadingGlow = CreateUIGlow(LoadingFrame, ACCENT, 0.3, ScreenGui)
     end
@@ -613,7 +645,14 @@ function NoirUI:CreateWindow(settings)
     LoadingTitle.Position = UDim2.new(0, 20, 0, 15)
     LoadingTitle.BackgroundTransparency = 1
     LoadingTitle.Text = settings.Name or "NOIR HUB"
-    LoadingTitle.TextColor3 = ACCENT
+    
+    -- 🔥 AUTO CONTRAST CHO LOADING TITLE
+    if useAutoContrast then
+        LoadingTitle.TextColor3 = GetContrastColor(Color3.fromRGB(12, 12, 12))
+    else
+        LoadingTitle.TextColor3 = ACCENT
+    end
+    
     LoadingTitle.TextTransparency = 0
     LoadingTitle.Font = "GothamBold"
     LoadingTitle.TextSize = 18
@@ -659,7 +698,13 @@ function NoirUI:CreateWindow(settings)
     LoadingPercent.Position = UDim2.new(0, 0, 0.85, 0)
     LoadingPercent.BackgroundTransparency = 1
     LoadingPercent.Text = "0%"
-    LoadingPercent.TextColor3 = ACCENT
+    
+    if useAutoContrast then
+        LoadingPercent.TextColor3 = GetContrastColor(Color3.fromRGB(12, 12, 12))
+    else
+        LoadingPercent.TextColor3 = ACCENT
+    end
+    
     LoadingPercent.TextTransparency = 0
     LoadingPercent.Font = "GothamBold"
     LoadingPercent.TextSize = 12
@@ -736,7 +781,6 @@ function NoirUI:CreateWindow(settings)
             kstr.Color = ACCENT
             MakeDraggable(KUI)
             
-            -- GLOW AURA CHO KEY SYSTEM
             if settings.UseGlow then
                 local keyGlow = CreateUIGlow(KUI, ACCENT, 0.3, ScreenGui)
             end
@@ -747,7 +791,13 @@ function NoirUI:CreateWindow(settings)
             KT.Size = UDim2.new(1,0,0,35)
             KT.Position = UDim2.new(0,0,0,10)
             KT.Text = KS.Title or "KEY SYSTEM"
-            KT.TextColor3 = ACCENT
+            
+            if useAutoContrast then
+                KT.TextColor3 = GetContrastColor(Color3.fromRGB(12, 12, 12))
+            else
+                KT.TextColor3 = ACCENT
+            end
+            
             KT.TextTransparency = 0
             KT.Font = "GothamBold"
             KT.TextSize = 16
@@ -803,7 +853,13 @@ function NoirUI:CreateWindow(settings)
             KB.BackgroundColor3 = ACCENT
             KB.Text = "XÁC NHẬN"
             KB.Font = "GothamBold"
-            KB.TextColor3 = Color3.new(1,1,1)
+            
+            if useAutoContrast then
+                KB.TextColor3 = GetContrastColor(ACCENT)
+            else
+                KB.TextColor3 = Color3.new(1,1,1)
+            end
+            
             KB.TextTransparency = 0
             Instance.new("UICorner", KB).CornerRadius = UDim.new(0, 6)
             KB.ZIndex = 2
@@ -907,7 +963,6 @@ function NoirUI:CreateWindow(settings)
         s.Color = ACCENT
         s.Thickness = 2
         
-        -- GLOW AURA CHO CONFIRM DIALOG
         if settings.UseGlow then
             local confirmGlow = CreateUIGlow(Conf, ACCENT, 0.3, ScreenGui)
         end
@@ -936,7 +991,13 @@ function NoirUI:CreateWindow(settings)
         fbtn.Position = UDim2.new(0.53, 0, 0.6, 0)
         fbtn.BackgroundColor3 = ACCENT
         fbtn.Text = "Confirm"
-        fbtn.TextColor3 = Color3.new(1,1,1)
+        
+        if useAutoContrast then
+            fbtn.TextColor3 = GetContrastColor(ACCENT)
+        else
+            fbtn.TextColor3 = Color3.new(1,1,1)
+        end
+        
         fbtn.TextTransparency = 0
         fbtn.ZIndex = 101
         Instance.new("UICorner", fbtn).CornerRadius = UDim.new(0, 6)
@@ -1030,7 +1091,6 @@ function NoirUI:CreateWindow(settings)
     TBtn.ClipsDescendants = true
     TBtn.AutoButtonColor = false
 
-    -- GLOW AURA CHO FLOAT BUTTON
     if settings.UseGlow then
         local floatGlow = CreateUIGlow(TBtn, ACCENT, 0.4, ScreenGui)
     end
@@ -1194,7 +1254,6 @@ function NoirUI:CreateWindow(settings)
         local ns = Instance.new("UIStroke", n)
         ns.Color = ACCENT
         
-        -- GLOW AURA CHO NOTIFICATION
         if settings.UseGlow then
             local notifGlow = CreateUIGlow(n, ACCENT, 0.2, ScreenGui)
         end
@@ -1218,7 +1277,13 @@ function NoirUI:CreateWindow(settings)
         tl.Size = UDim2.new(1, iconName and -45 or -15, 0, 20)
         tl.Position = UDim2.new(0, iconName and 40 or 15, 0, 5)
         tl.Text = title
-        tl.TextColor3 = ACCENT
+        
+        if useAutoContrast then
+            tl.TextColor3 = GetContrastColor(Color3.fromRGB(15, 15, 15))
+        else
+            tl.TextColor3 = ACCENT
+        end
+        
         tl.TextTransparency = 0
         tl.BackgroundTransparency = 1
         tl.Font = "GothamBold"
@@ -1287,19 +1352,26 @@ function NoirUI:CreateWindow(settings)
         BT.Position = UDim2.new(0, icon and 35 or 8, 0, 0)
         BT.BackgroundTransparency = 1
         BT.Text = name
-        BT.TextColor3 = Color3.fromRGB(150, 150, 150)
+        
+        -- 🔥 AUTO CONTRAST CHO TAB
+        if useAutoContrast then
+            BT.TextColor3 = GetContrastColor(Color3.fromRGB(20, 20, 20))
+        else
+            BT.TextColor3 = Color3.fromRGB(255, 255, 255)
+        end
+        
         BT.TextTransparency = 0
-        BT.Font = "GothamSemibold"
-        BT.TextSize = 12
+        BT.Font = "GothamBold"
+        BT.TextSize = 13
         BT.TextXAlignment = "Left"
         BT.ZIndex = 2
         BT.TextTruncate = Enum.TextTruncate.None
         
         if settings.UseGlow then
             CreateGlowTextSlide(BT, {
-                Color3.fromRGB(180, 180, 180),
-                Color3.fromRGB(255, 200, 255),
-                Color3.fromRGB(180, 180, 180)
+                Color3.fromRGB(200, 200, 200),
+                Color3.fromRGB(255, 255, 255),
+                Color3.fromRGB(200, 200, 200)
             }, 1)
         end
         
@@ -1351,7 +1423,13 @@ function NoirUI:CreateWindow(settings)
         SearchIcon.Size = UDim2.new(0, 30, 1, 0)
         SearchIcon.BackgroundTransparency = 1
         SearchIcon.Text = "🔍"
-        SearchIcon.TextColor3 = Color3.fromRGB(150, 150, 150)
+        
+        if useAutoContrast then
+            SearchIcon.TextColor3 = GetContrastColor(Color3.fromRGB(20, 20, 20))
+        else
+            SearchIcon.TextColor3 = Color3.fromRGB(150, 150, 150)
+        end
+        
         SearchIcon.TextTransparency = 0
         SearchIcon.Font = "GothamMedium"
         SearchIcon.TextSize = 14
@@ -1388,7 +1466,11 @@ function NoirUI:CreateWindow(settings)
                 if v:IsA("TextButton") then
                     local t = v:FindFirstChild("TextLabel")
                     if t then 
-                        t.TextColor3 = Color3.fromRGB(150, 150, 150)
+                        if useAutoContrast then
+                            t.TextColor3 = GetContrastColor(Color3.fromRGB(20, 20, 20))
+                        else
+                            t.TextColor3 = Color3.fromRGB(150, 150, 150)
+                        end
                     end
                     local img = v:FindFirstChild("ImageLabel")
                     if img then 
@@ -1455,7 +1537,14 @@ function NoirUI:CreateWindow(settings)
             l.Size = UDim2.new(0.95, 0, 0, 20)
             l.BackgroundTransparency = 1
             l.Text = type(text) == "function" and text() or text
-            l.TextColor3 = Color3.fromRGB(200, 200, 200)
+            
+            -- 🔥 AUTO CONTRAST CHO LABEL
+            if useAutoContrast then
+                l.TextColor3 = GetContrastColor(Color3.fromRGB(15, 15, 15))
+            else
+                l.TextColor3 = Color3.fromRGB(255, 255, 255)
+            end
+            
             l.TextTransparency = 0
             l.Font = "GothamMedium"
             l.TextSize = 12
@@ -1498,7 +1587,14 @@ function NoirUI:CreateWindow(settings)
             lbl.Size = UDim2.new(1, -30, 1, 0)
             lbl.Position = UDim2.new(0, 0, 0, 0)
             lbl.Text = title:upper()
-            lbl.TextColor3 = ACCENT
+            
+            -- 🔥 AUTO CONTRAST CHO SECTION TITLE
+            if useAutoContrast then
+                lbl.TextColor3 = GetContrastColor(Color3.fromRGB(15, 15, 15))
+            else
+                lbl.TextColor3 = ACCENT
+            end
+            
             lbl.TextTransparency = 0
             lbl.Font = "GothamBold"
             lbl.TextSize = 11
@@ -1507,9 +1603,9 @@ function NoirUI:CreateWindow(settings)
             
             if settings.UseGlow then
                 CreateGlowTextSlide(lbl, {
-                    Color3.fromRGB(180, 180, 180),
-                    Color3.fromRGB(255, 220, 150),
-                    Color3.fromRGB(180, 180, 180)
+                    Color3.fromRGB(200, 200, 200),
+                    Color3.fromRGB(255, 255, 255),
+                    Color3.fromRGB(200, 200, 200)
                 }, 1.2)
             end
             
@@ -1518,7 +1614,13 @@ function NoirUI:CreateWindow(settings)
             arrow.Position = UDim2.new(1, -25, 0, 0)
             arrow.BackgroundTransparency = 1
             arrow.Text = "▼"
-            arrow.TextColor3 = Color3.fromRGB(180, 180, 180)
+            
+            if useAutoContrast then
+                arrow.TextColor3 = GetContrastColor(Color3.fromRGB(15, 15, 15))
+            else
+                arrow.TextColor3 = Color3.fromRGB(180, 180, 180)
+            end
+            
             arrow.TextTransparency = 0
             arrow.Font = "GothamMedium"
             arrow.TextSize = 10
@@ -1593,7 +1695,13 @@ function NoirUI:CreateWindow(settings)
             title.Size = UDim2.new(1, -20, 0, 25)
             title.Position = UDim2.new(0, 10, 0, 5)
             title.Text = opt.Title or ""
-            title.TextColor3 = ACCENT
+            
+            if useAutoContrast then
+                title.TextColor3 = GetContrastColor(Color3.fromRGB(15, 15, 15))
+            else
+                title.TextColor3 = Color3.fromRGB(255, 255, 255)
+            end
+            
             title.TextTransparency = 0
             title.Font = "GothamBold"
             title.TextSize = 13
@@ -1604,7 +1712,7 @@ function NoirUI:CreateWindow(settings)
             content.Size = UDim2.new(1, -20, 0, 30)
             content.Position = UDim2.new(0, 10, 0, 25)
             content.Text = opt.Content or ""
-            content.TextColor3 = Color3.new(1, 1, 1)
+            content.TextColor3 = Color3.fromRGB(200, 200, 200)
             content.TextTransparency = 0
             content.Font = "GothamMedium"
             content.TextSize = 11
@@ -1632,8 +1740,15 @@ function NoirUI:CreateWindow(settings)
             i.Position = UDim2.new(0, 10, 0, 0)
             i.BackgroundTransparency = 1
             i.PlaceholderText = opt.Name
+            i.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
             i.Text = opt.Default or ""
-            i.TextColor3 = Color3.new(1, 1, 1)
+            
+            if useAutoContrast then
+                i.TextColor3 = GetContrastColor(Color3.fromRGB(22, 22, 22))
+            else
+                i.TextColor3 = Color3.fromRGB(255, 255, 255)
+            end
+            
             i.TextTransparency = 0
             i.Font = "GothamMedium"
             i.TextSize = 12
@@ -1653,7 +1768,13 @@ function NoirUI:CreateWindow(settings)
             b.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
             b.BackgroundTransparency = 0.6
             b.Text = opt.Name
-            b.TextColor3 = Color3.new(1, 1, 1)
+            
+            if useAutoContrast then
+                b.TextColor3 = GetContrastColor(Color3.fromRGB(25, 25, 25))
+            else
+                b.TextColor3 = Color3.fromRGB(255, 255, 255)
+            end
+            
             b.TextTransparency = 0
             b.Font = "GothamMedium"
             b.TextSize = 12
@@ -1671,7 +1792,7 @@ function NoirUI:CreateWindow(settings)
                 hint.Position = UDim2.new(1, -55, 0, 0)
                 hint.BackgroundTransparency = 1
                 hint.Text = "button"
-                hint.TextColor3 = Color3.fromRGB(120, 120, 120)
+                hint.TextColor3 = Color3.fromRGB(150, 150, 150)
                 hint.TextTransparency = 0
                 hint.Font = "GothamMedium"
                 hint.TextSize = 10
@@ -1701,7 +1822,13 @@ function NoirUI:CreateWindow(settings)
             t.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
             t.BackgroundTransparency = 0.6
             t.Text = "  " .. opt.Name
-            t.TextColor3 = s and ACCENT or Color3.fromRGB(180, 180, 180)
+            
+            if useAutoContrast then
+                t.TextColor3 = s and GetContrastColor(Color3.fromRGB(25, 25, 25)) or Color3.fromRGB(180, 180, 180)
+            else
+                t.TextColor3 = s and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 180)
+            end
+            
             t.TextTransparency = 0
             t.TextXAlignment = "Left"
             t.TextSize = 12
@@ -1726,7 +1853,11 @@ function NoirUI:CreateWindow(settings)
             t.MouseButton1Click:Connect(function()
                 PlaySound("Element")
                 s = not s
-                t.TextColor3 = s and ACCENT or Color3.fromRGB(180, 180, 180)
+                if useAutoContrast then
+                    t.TextColor3 = s and GetContrastColor(Color3.fromRGB(25, 25, 25)) or Color3.fromRGB(180, 180, 180)
+                else
+                    t.TextColor3 = s and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 180)
+                end
                 bx.BackgroundColor3 = s and ACCENT or Color3.fromRGB(40, 40, 40)
                 if opt.Callback then opt.Callback(s) end
             end)
@@ -1758,7 +1889,13 @@ function NoirUI:CreateWindow(settings)
             l.Position = UDim2.new(0, 12, 0, hasSubtitle and 5 or 5)
             l.BackgroundTransparency = 1
             l.Text = opt.Name .. ": " .. defaultValue
-            l.TextColor3 = Color3.new(1, 1, 1)
+            
+            if useAutoContrast then
+                l.TextColor3 = GetContrastColor(Color3.fromRGB(22, 22, 22))
+            else
+                l.TextColor3 = Color3.fromRGB(255, 255, 255)
+            end
+            
             l.TextTransparency = 0
             l.TextXAlignment = "Left"
             l.TextSize = 11
@@ -1833,7 +1970,13 @@ function NoirUI:CreateWindow(settings)
             t.Position = UDim2.new(0, 12, 0, 0)
             t.BackgroundTransparency = 1
             t.Text = opt.Name
-            t.TextColor3 = Color3.new(1, 1, 1)
+            
+            if useAutoContrast then
+                t.TextColor3 = GetContrastColor(Color3.fromRGB(22, 22, 22))
+            else
+                t.TextColor3 = Color3.fromRGB(255, 255, 255)
+            end
+            
             t.TextTransparency = 0
             t.Font = "GothamMedium"
             t.TextSize = 12
@@ -1996,7 +2139,13 @@ function NoirUI:CreateWindow(settings)
             t.Size = UDim2.new(1, 0, 0, 35)
             t.BackgroundTransparency = 1
             t.Text = "  " .. opt.Name .. " : " .. (opt.Default or (opt.Options and opt.Options[1] or "Đang tải..."))
-            t.TextColor3 = Color3.new(1, 1, 1)
+            
+            if useAutoContrast then
+                t.TextColor3 = GetContrastColor(Color3.fromRGB(22, 22, 22))
+            else
+                t.TextColor3 = Color3.fromRGB(255, 255, 255)
+            end
+            
             t.TextTransparency = 0
             t.Font = "GothamMedium"
             t.TextSize = 12
@@ -2009,7 +2158,13 @@ function NoirUI:CreateWindow(settings)
             Arrow.Position = UDim2.new(1, -35, 0, 0)
             Arrow.BackgroundTransparency = 1
             Arrow.Text = "▼"
-            Arrow.TextColor3 = Color3.fromRGB(180, 180, 180)
+            
+            if useAutoContrast then
+                Arrow.TextColor3 = GetContrastColor(Color3.fromRGB(22, 22, 22))
+            else
+                Arrow.TextColor3 = Color3.fromRGB(180, 180, 180)
+            end
+            
             Arrow.TextTransparency = 0
             Arrow.Font = "GothamMedium"
             Arrow.TextSize = 14
@@ -2047,7 +2202,13 @@ function NoirUI:CreateWindow(settings)
                     it.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
                     it.BackgroundTransparency = 0.5
                     it.Text = option
-                    it.TextColor3 = Color3.fromRGB(200, 200, 200)
+                    
+                    if useAutoContrast then
+                        it.TextColor3 = GetContrastColor(Color3.fromRGB(28, 28, 28))
+                    else
+                        it.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    end
+                    
                     it.TextTransparency = 0
                     it.Font = "GothamMedium"
                     it.TextSize = 11
@@ -2094,7 +2255,13 @@ function NoirUI:CreateWindow(settings)
                     it.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
                     it.BackgroundTransparency = 0.5
                     it.Text = v
-                    it.TextColor3 = Color3.fromRGB(200, 200, 200)
+                    
+                    if useAutoContrast then
+                        it.TextColor3 = GetContrastColor(Color3.fromRGB(28, 28, 28))
+                    else
+                        it.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    end
+                    
                     it.TextTransparency = 0
                     it.Font = "GothamMedium"
                     it.TextSize = 11
@@ -2151,8 +2318,15 @@ function NoirUI:CreateWindow(settings)
             i.Position = UDim2.new(0, 10, 0, 0)
             i.BackgroundTransparency = 1
             i.PlaceholderText = opt.Placeholder or "Nhập: .cmd, loadstring('url'), or lua code"
+            i.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
             i.Text = ""
-            i.TextColor3 = Color3.new(1, 1, 1)
+            
+            if useAutoContrast then
+                i.TextColor3 = GetContrastColor(Color3.fromRGB(18, 18, 18))
+            else
+                i.TextColor3 = Color3.fromRGB(255, 255, 255)
+            end
+            
             i.TextTransparency = 0
             i.Font = "GothamMedium"
             i.TextSize = 11
@@ -2164,7 +2338,13 @@ function NoirUI:CreateWindow(settings)
             r.Position = UDim2.new(1, -55, 0.5, -13)
             r.BackgroundColor3 = ACCENT
             r.Text = "RUN"
-            r.TextColor3 = Color3.new(1, 1, 1)
+            
+            if useAutoContrast then
+                r.TextColor3 = GetContrastColor(ACCENT)
+            else
+                r.TextColor3 = Color3.new(1,1,1)
+            end
+            
             r.TextTransparency = 0
             r.Font = "GothamBold"
             r.TextSize = 10
