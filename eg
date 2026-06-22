@@ -373,7 +373,9 @@ local function CreateGlowTextSlide(label, colors, speed)
     return gradient, connection
 end
 
--- HÀM TẠO GLOW AURA CHO UI
+-- ============================================
+-- HÀM TẠO GLOW AURA - TO HƠN, BAO QUANH STROKE
+-- ============================================
 local function CreateUIGlow(frame, color, intensity, parent)
     if not frame then return nil end
     if not parent then parent = frame.Parent end
@@ -382,27 +384,51 @@ local function CreateUIGlow(frame, color, intensity, parent)
     local oldGlow = frame:FindFirstChild("_UIGlow")
     if oldGlow then oldGlow:Destroy() end
     
-    -- Tạo frame glow bên ngoài
+    -- Tạo frame glow bên ngoài (TO HƠN)
     local glow = Instance.new("Frame", parent)
     glow.Name = "_UIGlow"
-    glow.Size = frame.Size + UDim2.new(0, 24, 0, 24)
-    glow.Position = frame.Position - UDim2.new(0, 12, 0, 12)
+    glow.Size = frame.Size + UDim2.new(0, 30, 0, 30)
+    glow.Position = frame.Position - UDim2.new(0, 15, 0, 15)
     glow.BackgroundTransparency = 1
     glow.ZIndex = frame.ZIndex - 1
     glow.Visible = frame.Visible
     glow.ClipsDescendants = false
     
-    -- Tạo shadow/glow effect
-    local shadow = Instance.new("ImageLabel", glow)
-    shadow.Size = UDim2.new(1, 0, 1, 0)
-    shadow.Position = UDim2.new(0, 0, 0, 0)
-    shadow.BackgroundTransparency = 1
-    shadow.Image = "rbxassetid://1312311753" -- Soft glow texture
-    shadow.ImageColor3 = color or Color3.fromRGB(170, 85, 255)
-    shadow.ImageTransparency = 0.5 - (intensity or 0.3)
-    shadow.ScaleType = Enum.ScaleType.Slice
-    shadow.SliceCenter = Rect.new(12, 12, 12, 12)
-    shadow.ZIndex = 0
+    -- Lớp 1: Glow chính (to nhất, mờ nhất)
+    local glow1 = Instance.new("ImageLabel", glow)
+    glow1.Size = UDim2.new(1, 0, 1, 0)
+    glow1.Position = UDim2.new(0, 0, 0, 0)
+    glow1.BackgroundTransparency = 1
+    glow1.Image = "rbxassetid://1312311753"
+    glow1.ImageColor3 = color or Color3.fromRGB(170, 85, 255)
+    glow1.ImageTransparency = 0.3 - (intensity or 0.3)
+    glow1.ScaleType = Enum.ScaleType.Slice
+    glow1.SliceCenter = Rect.new(15, 15, 15, 15)
+    glow1.ZIndex = 0
+    
+    -- Lớp 2: Glow đậm hơn
+    local glow2 = Instance.new("ImageLabel", glow)
+    glow2.Size = UDim2.new(0.9, 0, 0.9, 0)
+    glow2.Position = UDim2.new(0.05, 0, 0.05, 0)
+    glow2.BackgroundTransparency = 1
+    glow2.Image = "rbxassetid://1312311753"
+    glow2.ImageColor3 = color or Color3.fromRGB(170, 85, 255)
+    glow2.ImageTransparency = 0.5 - (intensity or 0.3)
+    glow2.ScaleType = Enum.ScaleType.Slice
+    glow2.SliceCenter = Rect.new(12, 12, 12, 12)
+    glow2.ZIndex = 1
+    
+    -- Lớp 3: Glow sáng nhất (gần sát frame)
+    local glow3 = Instance.new("ImageLabel", glow)
+    glow3.Size = UDim2.new(0.8, 0, 0.8, 0)
+    glow3.Position = UDim2.new(0.1, 0, 0.1, 0)
+    glow3.BackgroundTransparency = 1
+    glow3.Image = "rbxassetid://1312311753"
+    glow3.ImageColor3 = color or Color3.fromRGB(170, 85, 255)
+    glow3.ImageTransparency = 0.7 - (intensity or 0.3)
+    glow3.ScaleType = Enum.ScaleType.Slice
+    glow3.SliceCenter = Rect.new(10, 10, 10, 10)
+    glow3.ZIndex = 2
     
     -- Đồng bộ vị trí với frame
     local connection
@@ -411,8 +437,8 @@ local function CreateUIGlow(frame, color, intensity, parent)
             if connection then connection:Disconnect() end
             return
         end
-        glow.Size = frame.Size + UDim2.new(0, 24, 0, 24)
-        glow.Position = frame.Position - UDim2.new(0, 12, 0, 12)
+        glow.Size = frame.Size + UDim2.new(0, 30, 0, 30)
+        glow.Position = frame.Position - UDim2.new(0, 15, 0, 15)
         glow.Visible = frame.Visible
         glow.ZIndex = frame.ZIndex - 1
     end)
@@ -553,7 +579,7 @@ function NoirUI:CreateWindow(settings)
     mainCorner.CornerRadius = UDim.new(0, 12)
     local MainStroke = Instance.new("UIStroke", Main)
     MainStroke.Thickness = 2
-    MainStroke.Color = ACCENT  -- Dùng accent, không nhấp nháy
+    MainStroke.Color = ACCENT
     
     SetupBackground(Main, settings.Background, settings.MainBgColor, settings.MainBgTransparency or 0)
     MakeDraggable(Main)
