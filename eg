@@ -1166,8 +1166,8 @@ function NoirUI:CreateWindow(settings)
         t.Text = "Bạn có muốn đóng UI không?"
         t.TextColor3 = Color3.new(1,1,1)
         t.TextTransparency = 0
-        t.Font = "GothamBold"  -- 🔥 BODY TEXT → Inter
-        t.TextSize = 16
+        t.Font = "Gotham"  -- 🔥 BODY TEXT → Inter
+        t.TextSize = 13
         t.ZIndex = 101
         
         local cbtn = Instance.new("TextButton", Conf)
@@ -1436,7 +1436,7 @@ function NoirUI:CreateWindow(settings)
         
         local tabStroke = Instance.new("UIStroke", B)
         tabStroke.Color = ACCENT
-        tabStroke.Thickness = 2
+        tabStroke.Thickness = 1
         tabStroke.Transparency = 1
         tabStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         tabStroke.ZIndex = 2
