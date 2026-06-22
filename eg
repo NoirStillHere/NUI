@@ -128,7 +128,7 @@ local function CreateScaleInEffect(frame, delay)
     }):Play()
 end
 
--- HOVER EFFECT - CHỈ DÙNG CHO TAB, HEADER, DROPDOWN TEXT
+-- HOVER EFFECT
 local function CreateHoverEffect(button)
     if not button then return end
     
@@ -159,6 +159,62 @@ local function CreateHoverEffect(button)
         })
         hoverTween:Play()
     end)
+end
+
+-- ============================================
+-- GLOW STROKE FUNCTIONS
+-- ============================================
+
+-- HÀM TẠO GLOW STROKE THEO MÀU ACCENT
+local function CreateGlowStroke(frame, color, thickness, intensity)
+    if not frame then return end
+    
+    -- Xóa glow stroke cũ nếu có
+    local oldGlow = frame:FindFirstChild("_GlowStroke")
+    if oldGlow then oldGlow:Destroy() end
+    
+    -- Tạo glow stroke container
+    local glowContainer = Instance.new("Frame", frame.Parent)
+    glowContainer.Name = "_GlowStroke"
+    glowContainer.Size = frame.Size + UDim2.new(0, thickness * 4, 0, thickness * 4)
+    glowContainer.Position = frame.Position - UDim2.new(0, thickness * 2, 0, thickness * 2)
+    glowContainer.BackgroundTransparency = 1
+    glowContainer.ZIndex = frame.ZIndex - 1
+    glowContainer.Visible = frame.Visible
+    glowContainer.ClipsDescendants = false
+    
+    -- Tạo nhiều lớp glow với độ mờ khác nhau
+    for i = 1, 4 do
+        local glow = Instance.new("ImageLabel", glowContainer)
+        local size = 1 - (i - 1) * 0.06
+        local offset = (i - 1) * 0.03
+        glow.Size = UDim2.new(size, 0, size, 0)
+        glow.Position = UDim2.new(offset, 0, offset, 0)
+        glow.BackgroundTransparency = 1
+        glow.Image = "rbxassetid://1312311753"
+        glow.ImageColor3 = color or Color3.fromRGB(170, 85, 255)
+        glow.ImageTransparency = 0.6 - (i - 1) * 0.12 - (intensity or 0.3) * 0.5
+        glow.ScaleType = Enum.ScaleType.Slice
+        glow.SliceCenter = Rect.new(thickness * 2, thickness * 2, thickness * 2, thickness * 2)
+        glow.ZIndex = i - 1
+    end
+    
+    -- Đồng bộ vị trí với frame
+    local connection
+    connection = RunService.RenderStepped:Connect(function()
+        if not frame or not frame.Parent then
+            if connection then connection:Disconnect() end
+            return
+        end
+        glowContainer.Size = frame.Size + UDim2.new(0, thickness * 4, 0, thickness * 4)
+        glowContainer.Position = frame.Position - UDim2.new(0, thickness * 2, 0, thickness * 2)
+        glowContainer.Visible = frame.Visible
+        glowContainer.ZIndex = frame.ZIndex - 1
+    end)
+    table.insert(NoirUI.Connections, connection)
+    table.insert(NoirUI.Glows, glowContainer)
+    
+    return glowContainer
 end
 
 -- ============================================
@@ -480,9 +536,7 @@ local function CreateUIGlow(frame, color, intensity, parent)
     return glow
 end
 
--- ============================================
--- SUBTITLE - Inter Font
--- ============================================
+-- SUBTITLE
 local function AddSubtitle(parent, subtitleText, yOffset)
     if not subtitleText or subtitleText == "" then return nil end
     
@@ -493,7 +547,7 @@ local function AddSubtitle(parent, subtitleText, yOffset)
     subtitle.Text = subtitleText
     subtitle.TextColor3 = Color3.fromRGB(160, 160, 160)
     subtitle.TextTransparency = 0
-    subtitle.Font = "Gotham"  -- 🔥 SUBTITLE → Inter
+    subtitle.Font = "Gotham"
     subtitle.TextSize = 10
     subtitle.TextXAlignment = "Left"
     subtitle.TextYAlignment = "Top"
@@ -620,7 +674,9 @@ function NoirUI:CreateWindow(settings)
     SetupBackground(Main, settings.Background, settings.MainBgColor, settings.MainBgTransparency or 0)
     MakeDraggable(Main)
     
+    -- GLOW STROKE CHO MAIN UI
     if settings.UseGlow then
+        CreateGlowStroke(Main, ACCENT, 3, 0.4)
         local mainGlow = CreateUIGlow(Main, ACCENT, 0.3, ScreenGui)
     end
     
@@ -641,6 +697,7 @@ function NoirUI:CreateWindow(settings)
 
     if settings.UseGlow then
         local floatGlow = CreateUIGlow(TBtn, ACCENT, 0.4, ScreenGui)
+        CreateGlowStroke(TBtn, ACCENT, 3, 0.5)
     end
 
     local floatCorner = Instance.new("UICorner", TBtn)
@@ -772,12 +829,12 @@ function NoirUI:CreateWindow(settings)
     
     if settings.UseGlow then
         local loadingGlow = CreateUIGlow(LoadingFrame, ACCENT, 0.3, ScreenGui)
+        CreateGlowStroke(LoadingFrame, ACCENT, 3, 0.4)
     end
     
     local hasLoadingBg = SetupBackground(LoadingFrame, settings.LoadingBackground, Color3.fromRGB(12, 12, 12), 0.95)
     LoadingStroke.Transparency = hasLoadingBg and 0 or 1
     
-    -- LOADING TITLE → Space Grotesk
     local LoadingTitle = Instance.new("TextLabel", LoadingFrame)
     LoadingTitle.Size = UDim2.new(1, -40, 0, 30)
     LoadingTitle.Position = UDim2.new(0, 20, 0, 15)
@@ -791,7 +848,7 @@ function NoirUI:CreateWindow(settings)
     end
     
     LoadingTitle.TextTransparency = 0
-    LoadingTitle.Font = "GothamBold"  -- 🔥 HEADER → Space Grotesk
+    LoadingTitle.Font = "GothamBold"
     LoadingTitle.TextSize = 18
     LoadingTitle.TextXAlignment = "Left"
     LoadingTitle.ZIndex = 201
@@ -804,7 +861,6 @@ function NoirUI:CreateWindow(settings)
         }, 1.5)
     end
     
-    -- LOADING SUB → Inter
     local LoadingSub = Instance.new("TextLabel", LoadingFrame)
     LoadingSub.Size = UDim2.new(1, -40, 0, 20)
     LoadingSub.Position = UDim2.new(0, 20, 0, 45)
@@ -812,7 +868,7 @@ function NoirUI:CreateWindow(settings)
     LoadingSub.Text = "Đang khởi tạo..."
     LoadingSub.TextColor3 = Color3.fromRGB(180, 180, 180)
     LoadingSub.TextTransparency = 0
-    LoadingSub.Font = "Gotham"  -- 🔥 BODY TEXT → Inter
+    LoadingSub.Font = "Gotham"
     LoadingSub.TextSize = 12
     LoadingSub.TextXAlignment = "Left"
     LoadingSub.ZIndex = 201
@@ -831,7 +887,6 @@ function NoirUI:CreateWindow(settings)
     Instance.new("UICorner", LoadingBar).CornerRadius = UDim.new(1, 0)
     LoadingBar.ZIndex = 201
     
-    -- LOADING PERCENT → Space Grotesk
     local LoadingPercent = Instance.new("TextLabel", LoadingFrame)
     LoadingPercent.Size = UDim2.new(1, 0, 0, 20)
     LoadingPercent.Position = UDim2.new(0, 0, 0.85, 0)
@@ -845,7 +900,7 @@ function NoirUI:CreateWindow(settings)
     end
     
     LoadingPercent.TextTransparency = 0
-    LoadingPercent.Font = "GothamBold"  -- 🔥 ELEMENT NAME → Space Grotesk
+    LoadingPercent.Font = "GothamBold"
     LoadingPercent.TextSize = 12
     LoadingPercent.ZIndex = 201
     
@@ -928,12 +983,12 @@ function NoirUI:CreateWindow(settings)
             
             if settings.UseGlow then
                 local keyGlow = CreateUIGlow(KUI, ACCENT, 0.3, ScreenGui)
+                CreateGlowStroke(KUI, ACCENT, 3, 0.4)
             end
             
             SetupBackground(KUI, settings.KeyBackground, Color3.fromRGB(12, 12, 12), 0)
             CreateSpringEffect(KUI)
             
-            -- KEY TITLE → Space Grotesk
             local KT = Instance.new("TextLabel", KUI)
             KT.Size = UDim2.new(1,0,0,35)
             KT.Position = UDim2.new(0,0,0,10)
@@ -946,7 +1001,7 @@ function NoirUI:CreateWindow(settings)
             end
             
             KT.TextTransparency = 0
-            KT.Font = "GothamBold"  -- 🔥 HEADER → Space Grotesk
+            KT.Font = "GothamBold"
             KT.TextSize = 16
             KT.BackgroundTransparency = 1
             KT.ZIndex = 2
@@ -959,19 +1014,17 @@ function NoirUI:CreateWindow(settings)
                 }, 1.5)
             end
             
-            -- KEY SUBTITLE → Inter
             local KSub = Instance.new("TextLabel", KUI)
             KSub.Size = UDim2.new(1,0,0,20)
             KSub.Position = UDim2.new(0,0,0,30)
             KSub.Text = KS.Subtitle or "Vui lòng nhập key để tiếp tục"
             KSub.TextColor3 = Color3.fromRGB(150,150,150)
             KSub.TextTransparency = 0
-            KSub.Font = "Gotham"  -- 🔥 SUBTITLE → Inter
+            KSub.Font = "Gotham"
             KSub.TextSize = 12
             KSub.BackgroundTransparency = 1
             KSub.ZIndex = 2
             
-            -- KEY INPUT PLACEHOLDER → Inter
             local KI = Instance.new("TextBox", KUI)
             KI.Size = UDim2.new(0.8, 0, 0, 35)
             KI.Position = UDim2.new(0.1, 0, 0.35, 10)
@@ -980,32 +1033,30 @@ function NoirUI:CreateWindow(settings)
             KI.TextTransparency = 0
             KI.PlaceholderText = "Nhập Key..."
             KI.Text = ""
-            KI.Font = "Gotham"  -- 🔥 PLACEHOLDER → Inter
+            KI.Font = "Gotham"
             KI.TextSize = 12
             Instance.new("UICorner", KI).CornerRadius = UDim.new(0, 6)
             Instance.new("UIStroke", KI).Color = Color3.fromRGB(40,40,40)
             KI.ZIndex = 2
             
-            -- KEY NOTE → Inter
             local Note = Instance.new("TextLabel", KUI)
             Note.Size = UDim2.new(0.8,0,0,30)
             Note.Position = UDim2.new(0.1,0,0.55,10)
             Note.Text = KS.Note or ""
             Note.TextColor3 = Color3.fromRGB(120,120,120)
             Note.TextTransparency = 0
-            Note.Font = "Gotham"  -- 🔥 BODY TEXT → Inter
+            Note.Font = "Gotham"
             Note.TextSize = 10
             Note.BackgroundTransparency = 1
             Note.TextWrapped = true
             Note.ZIndex = 2
             
-            -- KEY BUTTON → Space Grotesk
             local KB = Instance.new("TextButton", KUI)
             KB.Size = UDim2.new(0.8, 0, 0, 35)
             KB.Position = UDim2.new(0.1, 0, 0.75, 10)
             KB.BackgroundColor3 = ACCENT
             KB.Text = "XÁC NHẬN"
-            KB.Font = "GothamBold"  -- 🔥 ELEMENT NAME → Space Grotesk
+            KB.Font = "GothamBold"
             
             if useAutoContrast then
                 KB.TextColor3 = GetContrastColor(ACCENT)
@@ -1053,7 +1104,6 @@ function NoirUI:CreateWindow(settings)
         if logoImage then L.Image = logoImage end
     end
     
-    -- HEADER TITLE → Space Grotesk
     local Title = Instance.new("TextLabel", Header)
     Title.Size = UDim2.new(1, -120, 1, 0)
     Title.Position = UDim2.new(0, settings.LogoID and 40 or 15, 0, 0)
@@ -1061,7 +1111,7 @@ function NoirUI:CreateWindow(settings)
     Title.Text = settings.Name or "NOIR HUB"
     Title.TextColor3 = Color3.new(1,1,1)
     Title.TextTransparency = 0
-    Title.Font = "GothamBold"  -- 🔥 HEADER → Space Grotesk
+    Title.Font = "GothamBold"
     Title.TextSize = 14
     Title.TextXAlignment = "Left"
     
@@ -1127,18 +1177,18 @@ function NoirUI:CreateWindow(settings)
         
         if settings.UseGlow then
             local confirmGlow = CreateUIGlow(Conf, ACCENT, 0.3, ScreenGui)
+            CreateGlowStroke(Conf, ACCENT, 3, 0.4)
         end
         
         CreateScaleInEffect(Conf)
         
-        -- CONFIRM TEXT → Inter
         local t = Instance.new("TextLabel", Conf)
         t.Size = UDim2.new(1, 0, 0.5, 0)
         t.BackgroundTransparency = 1
         t.Text = "Bạn có muốn đóng UI không?"
         t.TextColor3 = Color3.new(1,1,1)
         t.TextTransparency = 0
-        t.Font = "Gotham"  -- 🔥 BODY TEXT → Inter
+        t.Font = "Gotham"
         t.TextSize = 13
         t.ZIndex = 101
         
@@ -1152,7 +1202,7 @@ function NoirUI:CreateWindow(settings)
         cbtn.ZIndex = 101
         Instance.new("UICorner", cbtn).CornerRadius = UDim.new(0, 6)
         cbtn.AutoButtonColor = false
-        cbtn.Font = "GothamBold"  -- 🔥 ELEMENT NAME → Space Grotesk
+        cbtn.Font = "GothamBold"
         CreateHoverEffect(cbtn)
         
         local fbtn = Instance.new("TextButton", Conf)
@@ -1171,7 +1221,7 @@ function NoirUI:CreateWindow(settings)
         fbtn.ZIndex = 101
         Instance.new("UICorner", fbtn).CornerRadius = UDim.new(0, 6)
         fbtn.AutoButtonColor = false
-        fbtn.Font = "GothamBold"  -- 🔥 ELEMENT NAME → Space Grotesk
+        fbtn.Font = "GothamBold"
         CreateHoverEffect(fbtn)
         
         local function destroyConfirm()
@@ -1312,6 +1362,7 @@ function NoirUI:CreateWindow(settings)
         
         if settings.UseGlow then
             local notifGlow = CreateUIGlow(n, ACCENT, 0.2, ScreenGui)
+            CreateGlowStroke(n, ACCENT, 2, 0.3)
         end
         
         SetupBackground(n, settings.NotificationBackground, Color3.fromRGB(15, 15, 15), 0.25)
@@ -1330,7 +1381,6 @@ function NoirUI:CreateWindow(settings)
             end
         end
         
-        -- NOTIFICATION TITLE → Space Grotesk
         local tl = Instance.new("TextLabel", n)
         tl.Size = UDim2.new(1, iconName and -45 or -15, 0, 20)
         tl.Position = UDim2.new(0, iconName and 40 or 15, 0, 5)
@@ -1344,7 +1394,7 @@ function NoirUI:CreateWindow(settings)
         
         tl.TextTransparency = 0
         tl.BackgroundTransparency = 1
-        tl.Font = "GothamBold"  -- 🔥 HEADER → Space Grotesk
+        tl.Font = "GothamBold"
         tl.TextSize = 13
         tl.TextXAlignment = "Left"
         
@@ -1356,7 +1406,6 @@ function NoirUI:CreateWindow(settings)
             }, 1.5)
         end
         
-        -- NOTIFICATION BODY → Inter
         local ml = Instance.new("TextLabel", n)
         ml.Size = UDim2.new(1, iconName and -45 or -25, 0, 35)
         ml.Position = UDim2.new(0, iconName and 40 or 15, 0, 25)
@@ -1367,7 +1416,7 @@ function NoirUI:CreateWindow(settings)
         ml.TextWrapped = true
         ml.TextXAlignment = "Left"
         ml.TextYAlignment = "Top"
-        ml.Font = "Gotham"  -- 🔥 BODY TEXT → Inter
+        ml.Font = "Gotham"
         ml.TextSize = 11
         
         for i, v in ipairs(NoirUI.Notifications) do
@@ -1407,7 +1456,6 @@ function NoirUI:CreateWindow(settings)
         tabStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         tabStroke.ZIndex = 2
         
-        -- TAB → Space Grotesk
         local BT = Instance.new("TextLabel", B)
         BT.Size = UDim2.new(1, -10, 1, 0)
         BT.Position = UDim2.new(0, icon and 35 or 8, 0, 0)
@@ -1421,7 +1469,7 @@ function NoirUI:CreateWindow(settings)
         end
         
         BT.TextTransparency = 0
-        BT.Font = "GothamBold"  -- 🔥 TAB → Space Grotesk
+        BT.Font = "GothamBold"
         BT.TextSize = 13
         BT.TextXAlignment = "Left"
         BT.ZIndex = 2
@@ -1469,7 +1517,6 @@ function NoirUI:CreateWindow(settings)
         TabContainer.BorderSizePixel = 0
         TabContainer.ClipsDescendants = true
         
-        -- SEARCH PLACEHOLDER → Inter
         local SearchFrame = Instance.new("Frame", TabContainer)
         SearchFrame.Size = UDim2.new(1, -20, 0, 35)
         SearchFrame.Position = UDim2.new(0, 10, 0, 0)
@@ -1495,7 +1542,7 @@ function NoirUI:CreateWindow(settings)
         end
         
         SearchIcon.TextTransparency = 0
-        SearchIcon.Font = "GothamMedium"  -- 🔥 ELEMENT NAME → Space Grotesk
+        SearchIcon.Font = "GothamMedium"
         SearchIcon.TextSize = 14
         
         local SearchBox = Instance.new("TextBox", SearchFrame)
@@ -1506,7 +1553,7 @@ function NoirUI:CreateWindow(settings)
         SearchBox.Text = ""
         SearchBox.TextColor3 = Color3.new(1,1,1)
         SearchBox.TextTransparency = 0
-        SearchBox.Font = "Gotham"  -- 🔥 PLACEHOLDER → Inter
+        SearchBox.Font = "Gotham"
         SearchBox.TextSize = 12
         SearchBox.ClearTextOnFocus = false
         
@@ -1602,7 +1649,6 @@ function NoirUI:CreateWindow(settings)
             if prop == "Text" then filterElements(SearchBox.Text) end
         end)
         
-        -- LABEL → Inter
         function Tab:CreateLabel(text, updateFunction)
             local parent = Tab._currentSectionContent or ContentFrame
             local l = Instance.new("TextLabel", parent)
@@ -1617,7 +1663,7 @@ function NoirUI:CreateWindow(settings)
             end
             
             l.TextTransparency = 0
-            l.Font = "Gotham"  -- 🔥 BODY TEXT → Inter
+            l.Font = "Gotham"
             l.TextSize = 12
             l.TextXAlignment = "Left"
             l.LayoutOrder = GetO()
@@ -1639,7 +1685,6 @@ function NoirUI:CreateWindow(settings)
             return l
         end
         
-        -- SECTION → Space Grotesk
         function Tab:CreateSection(title, noLine)
             local s = Instance.new("Frame", ContentFrame)
             s.Size = UDim2.new(0.95, 0, 0, noLine and 25 or 35)
@@ -1670,7 +1715,7 @@ function NoirUI:CreateWindow(settings)
             end
             
             lbl.TextTransparency = 0
-            lbl.Font = "GothamBold"  -- 🔥 SECTION → Space Grotesk
+            lbl.Font = "GothamBold"
             lbl.TextSize = 11
             lbl.TextXAlignment = "Left"
             lbl.BackgroundTransparency = 1
@@ -1696,7 +1741,7 @@ function NoirUI:CreateWindow(settings)
             end
             
             arrow.TextTransparency = 0
-            arrow.Font = "GothamMedium"  -- 🔥 ELEMENT NAME → Space Grotesk
+            arrow.Font = "GothamMedium"
             arrow.TextSize = 10
             arrow.TextXAlignment = "Center"
             arrow.TextYAlignment = "Center"
@@ -1764,7 +1809,6 @@ function NoirUI:CreateWindow(settings)
             return s
         end
         
-        -- PARAGRAPH: CARD TITLE → Space Grotesk, DESCRIPTION → Inter
         function Tab:CreateParagraph(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local f = Instance.new("Frame", parent)
@@ -1777,7 +1821,6 @@ function NoirUI:CreateWindow(settings)
             table.insert(Tab.Elements, f)
             CreateSpringEffect(f, 0.05 * Tab.Count)
             
-            -- CARD TITLE → Space Grotesk
             local title = Instance.new("TextLabel", f)
             title.Size = UDim2.new(1, -20, 0, 25)
             title.Position = UDim2.new(0, 10, 0, 5)
@@ -1790,19 +1833,18 @@ function NoirUI:CreateWindow(settings)
             end
             
             title.TextTransparency = 0
-            title.Font = "GothamBold"  -- 🔥 CARD TITLE → Space Grotesk
+            title.Font = "GothamBold"
             title.TextSize = 13
             title.BackgroundTransparency = 1
             title.TextXAlignment = "Left"
             
-            -- DESCRIPTION → Inter
             local content = Instance.new("TextLabel", f)
             content.Size = UDim2.new(1, -20, 0, 30)
             content.Position = UDim2.new(0, 10, 0, 25)
             content.Text = opt.Content or ""
             content.TextColor3 = Color3.fromRGB(200, 200, 200)
             content.TextTransparency = 0
-            content.Font = "Gotham"  -- 🔥 DESCRIPTION → Inter
+            content.Font = "Gotham"
             content.TextSize = 11
             content.BackgroundTransparency = 1
             content.TextWrapped = true
@@ -1811,7 +1853,6 @@ function NoirUI:CreateWindow(settings)
             return f
         end
         
-        -- TEXTBOX: ELEMENT NAME → Space Grotesk, PLACEHOLDER → Inter
         function Tab:CreateTextBox(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -1825,7 +1866,6 @@ function NoirUI:CreateWindow(settings)
             table.insert(Tab.Elements, f)
             CreateSpringEffect(f, 0.05 * Tab.Count)
             
-            -- PLACEHOLDER & TEXT → Inter
             local i = Instance.new("TextBox", f)
             i.Size = UDim2.new(1, -20, 0, 35)
             i.Position = UDim2.new(0, 10, 0, 0)
@@ -1841,7 +1881,7 @@ function NoirUI:CreateWindow(settings)
             end
             
             i.TextTransparency = 0
-            i.Font = "Gotham"  -- 🔥 PLACEHOLDER → Inter
+            i.Font = "Gotham"
             i.TextSize = 12
             i.TextXAlignment = "Left"
             i.FocusLost:Connect(function() if opt.Callback then opt.Callback(i.Text) end end)
@@ -1851,7 +1891,6 @@ function NoirUI:CreateWindow(settings)
             end
         end
         
-        -- BUTTON: ELEMENT NAME → Space Grotesk, BUTTON DESC → Inter
         function Tab:CreateButton(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -1868,7 +1907,7 @@ function NoirUI:CreateWindow(settings)
             end
             
             b.TextTransparency = 0
-            b.Font = "GothamMedium"  -- 🔥 ELEMENT NAME → Space Grotesk
+            b.Font = "GothamMedium"
             b.TextSize = 12
             Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
             b.LayoutOrder = GetO()
@@ -1880,7 +1919,6 @@ function NoirUI:CreateWindow(settings)
             if opt.Align == false then
                 b.TextXAlignment = "Left"
                 b.Text = "  " .. opt.Name
-                -- BUTTON DESC → Inter
                 local hint = Instance.new("TextLabel", b)
                 hint.Size = UDim2.new(0, 50, 0, 35)
                 hint.Position = UDim2.new(1, -55, 0, 0)
@@ -1888,7 +1926,7 @@ function NoirUI:CreateWindow(settings)
                 hint.Text = "button"
                 hint.TextColor3 = Color3.fromRGB(150, 150, 150)
                 hint.TextTransparency = 0
-                hint.Font = "Gotham"  -- 🔥 BUTTON DESC → Inter
+                hint.Font = "Gotham"
                 hint.TextSize = 10
                 hint.TextXAlignment = "Right"
                 hint.TextYAlignment = "Center"
@@ -1908,7 +1946,6 @@ function NoirUI:CreateWindow(settings)
             end)
         end
         
-        -- TOGGLE: ELEMENT NAME → Space Grotesk
         function Tab:CreateToggle(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -1928,7 +1965,7 @@ function NoirUI:CreateWindow(settings)
             t.TextTransparency = 0
             t.TextXAlignment = "Left"
             t.TextSize = 12
-            t.Font = "GothamMedium"  -- 🔥 ELEMENT NAME → Space Grotesk
+            t.Font = "GothamMedium"
             Instance.new("UICorner", t).CornerRadius = UDim.new(0, 8)
             t.LayoutOrder = GetO()
             t.Name = opt.Name
@@ -1965,7 +2002,6 @@ function NoirUI:CreateWindow(settings)
             end)
         end
         
-        -- SLIDER: ELEMENT NAME → Space Grotesk
         function Tab:CreateSlider(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -1988,7 +2024,6 @@ function NoirUI:CreateWindow(settings)
             table.insert(Tab.Elements, f)
             CreateSpringEffect(f, 0.05 * Tab.Count)
             
-            -- SLIDER LABEL → Space Grotesk
             local l = Instance.new("TextLabel", f)
             l.Size = UDim2.new(1, 0, 0, 20)
             l.Position = UDim2.new(0, 12, 0, hasSubtitle and 5 or 5)
@@ -2004,7 +2039,7 @@ function NoirUI:CreateWindow(settings)
             l.TextTransparency = 0
             l.TextXAlignment = "Left"
             l.TextSize = 11
-            l.Font = "GothamMedium"  -- 🔥 ELEMENT NAME → Space Grotesk
+            l.Font = "GothamMedium"
             
             local sbg = Instance.new("Frame", f)
             sbg.Size = UDim2.new(0.9, 0, 0, 8)
@@ -2057,7 +2092,6 @@ function NoirUI:CreateWindow(settings)
             end)
         end
         
-        -- COLOR PICKER: ELEMENT NAME → Space Grotesk
         function Tab:CreateColorPicker(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -2076,7 +2110,6 @@ function NoirUI:CreateWindow(settings)
             table.insert(Tab.Elements, f)
             CreateSpringEffect(f, 0.05 * Tab.Count)
             
-            -- COLOR PICKER NAME → Space Grotesk
             local t = Instance.new("TextLabel", f)
             t.Size = UDim2.new(1, 0, 0, 35)
             t.Position = UDim2.new(0, 12, 0, 0)
@@ -2090,7 +2123,7 @@ function NoirUI:CreateWindow(settings)
             end
             
             t.TextTransparency = 0
-            t.Font = "GothamMedium"  -- 🔥 ELEMENT NAME → Space Grotesk
+            t.Font = "GothamMedium"
             t.TextSize = 12
             t.TextXAlignment = "Left"
             
@@ -2234,7 +2267,6 @@ function NoirUI:CreateWindow(settings)
             UpdateColor()
         end
         
-        -- DROPDOWN: ELEMENT NAME → Space Grotesk, OPTIONS → Space Grotesk
         function Tab:CreateDropdown(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -2249,7 +2281,6 @@ function NoirUI:CreateWindow(settings)
             table.insert(Tab.Elements, d)
             CreateSpringEffect(d, 0.05 * Tab.Count)
             
-            -- DROPDOWN TEXT → Space Grotesk (GIỮ HOVER)
             local t = Instance.new("TextButton", d)
             t.Name = "DropdownButton"
             t.Size = UDim2.new(1, 0, 0, 35)
@@ -2263,11 +2294,11 @@ function NoirUI:CreateWindow(settings)
             end
             
             t.TextTransparency = 0
-            t.Font = "GothamMedium"  -- 🔥 ELEMENT NAME → Space Grotesk
+            t.Font = "GothamMedium"
             t.TextSize = 12
             t.TextXAlignment = "Left"
             t.AutoButtonColor = false
-            CreateHoverEffect(t)  -- GIỮ HOVER
+            CreateHoverEffect(t)
             
             local Arrow = Instance.new("TextLabel", t)
             Arrow.Name = "ArrowLabel"
@@ -2283,7 +2314,7 @@ function NoirUI:CreateWindow(settings)
             end
             
             Arrow.TextTransparency = 0
-            Arrow.Font = "GothamMedium"  -- 🔥 ELEMENT NAME → Space Grotesk
+            Arrow.Font = "GothamMedium"
             Arrow.TextSize = 14
             Arrow.TextXAlignment = "Center"
             
@@ -2314,7 +2345,6 @@ function NoirUI:CreateWindow(settings)
                 end
                 
                 for _, option in pairs(newOptions) do
-                    -- DROPDOWN OPTIONS → Space Grotesk (XÓA HOVER)
                     local it = Instance.new("TextButton", il)
                     it.Size = UDim2.new(1, 0, 0, 30)
                     it.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
@@ -2328,7 +2358,7 @@ function NoirUI:CreateWindow(settings)
                     end
                     
                     it.TextTransparency = 0
-                    it.Font = "GothamMedium"  -- 🔥 ELEMENT NAME → Space Grotesk
+                    it.Font = "GothamMedium"
                     it.TextSize = 11
                     it.AutoButtonColor = false
                     
@@ -2386,7 +2416,7 @@ function NoirUI:CreateWindow(settings)
                     end
                     
                     it.TextTransparency = 0
-                    it.Font = "GothamMedium"  -- 🔥 ELEMENT NAME → Space Grotesk
+                    it.Font = "GothamMedium"
                     it.TextSize = 11
                     it.AutoButtonColor = false
                     
@@ -2428,7 +2458,6 @@ function NoirUI:CreateWindow(settings)
             end
         end
         
-        -- RUNBOX: PLACEHOLDER → Inter, BUTTON → Space Grotesk
         function Tab:CreateRunBox(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local f = Instance.new("Frame", parent)
@@ -2441,7 +2470,6 @@ function NoirUI:CreateWindow(settings)
             table.insert(Tab.Elements, f)
             CreateSpringEffect(f, 0.05 * Tab.Count)
             
-            -- RUNBOX PLACEHOLDER → Inter
             local i = Instance.new("TextBox", f)
             i.Size = UDim2.new(1, -65, 1, 0)
             i.Position = UDim2.new(0, 10, 0, 0)
@@ -2457,12 +2485,11 @@ function NoirUI:CreateWindow(settings)
             end
             
             i.TextTransparency = 0
-            i.Font = "Gotham"  -- 🔥 PLACEHOLDER → Inter
+            i.Font = "Gotham"
             i.TextSize = 11
             i.TextXAlignment = "Left"
             i.ClearTextOnFocus = false
             
-            -- RUN BUTTON → Space Grotesk
             local r = Instance.new("TextButton", f)
             r.Size = UDim2.new(0, 50, 0, 26)
             r.Position = UDim2.new(1, -55, 0.5, -13)
@@ -2476,7 +2503,7 @@ function NoirUI:CreateWindow(settings)
             end
             
             r.TextTransparency = 0
-            r.Font = "GothamBold"  -- 🔥 ELEMENT NAME → Space Grotesk
+            r.Font = "GothamBold"
             r.TextSize = 10
             Instance.new("UICorner", r).CornerRadius = UDim.new(0, 6)
             r.AutoButtonColor = false
