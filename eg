@@ -4061,4 +4061,4 @@ function NoirUI:CreateWindow(settings)
     return Window
 end
 
-return NoirUIalue
+return NoirUI
