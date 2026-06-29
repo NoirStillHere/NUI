@@ -1,4 +1,4 @@
--- Noir UI V3 Ultimate - Full Version (ĐÃ SỬA LỖI)
+-- Noir UI V3 Ultimate - Full Version (ĐÃ SỬA LỖI & TÙY CHỈNH BLUR CORNER)
 --[[
 	Library Owner: NoirNF
 	UI Engineer: NoirNF
@@ -7,12 +7,13 @@
 	Animation Engineer: Adono
 	Version: 3.0 Ultimate - COMPLETE
 	Features: 
-	- Glow Stroke, Blur Overlay (có corner), TabGroup, Minimize
+	- Glow Stroke, Blur Overlay (có corner tùy chỉnh), TabGroup, Minimize
 	- Auto Contrast
 	- Card (7 loại) - ĐÃ SỬA
 	- Dropdown nâng cấp (Popup bên trái Main UI) - ĐÃ SỬA
 	- Paragraph tự động kéo dài - ĐÃ SỬA
 	- Search Icon sử dụng ID 5107220207 - ĐÃ SỬA
+	- Blur Corner tùy chỉnh - ĐÃ SỬA
 	- ĐÃ XÓA RUNBOX
 	- Tất cả components đã được fix và hoạt động ổn định
 ]]
@@ -152,9 +153,9 @@ local function AddGlowStroke(parent, accentColor, baseThickness, glowThickness, 
 end
 
 -- ============================================
--- BLUR OVERLAY (CÓ CẮT THEO VIỀN - CORNER)
+-- BLUR OVERLAY (CÓ CẮT THEO VIỀN - CORNER TÙY CHỈNH)
 -- ============================================
-local function AddBlurOverlay(parent, blurAmount)
+local function AddBlurOverlay(parent, blurAmount, customCornerRadius)
     if not parent or not blurAmount or blurAmount <= 0 then return nil end
     local existing = parent:FindFirstChild("BlurWrapper")
     if existing then existing:Destroy() end
@@ -167,13 +168,17 @@ local function AddBlurOverlay(parent, blurAmount)
     wrapper.ZIndex = 0
     wrapper.ClipsDescendants = true
 
-    local parentCorner = parent:FindFirstChild("UICorner")
-    if parentCorner then
-        local corner = Instance.new("UICorner", wrapper)
-        corner.CornerRadius = parentCorner.CornerRadius
+    -- Sử dụng customCornerRadius nếu có, không thì lấy từ parent
+    local corner = Instance.new("UICorner", wrapper)
+    if customCornerRadius then
+        corner.CornerRadius = customCornerRadius
     else
-        local corner = Instance.new("UICorner", wrapper)
-        corner.CornerRadius = UDim.new(0, 12)
+        local parentCorner = parent:FindFirstChild("UICorner")
+        if parentCorner then
+            corner.CornerRadius = parentCorner.CornerRadius
+        else
+            corner.CornerRadius = UDim.new(0, 12) -- Mặc định
+        end
     end
 
     local blur = Instance.new("Frame", wrapper)
@@ -185,6 +190,17 @@ local function AddBlurOverlay(parent, blurAmount)
     blur.BorderSizePixel = 0
 
     return wrapper
+end
+
+-- Hàm cập nhật bo góc cho blur
+local function UpdateBlurCorner(parent, newCornerRadius)
+    local wrapper = parent:FindFirstChild("BlurWrapper")
+    if wrapper then
+        local corner = wrapper:FindFirstChild("UICorner")
+        if corner then
+            corner.CornerRadius = newCornerRadius
+        end
+    end
 end
 
 -- ============================================
@@ -680,6 +696,7 @@ function NoirUI:CreateWindow(settings)
     ScreenGui.ResetOnSpawn = false
     windowRef._screen = ScreenGui
     
+    -- Settings với corner radius tùy chỉnh
     settings.MainBlur = settings.MainBlur or 0
     settings.KeyBlur = settings.KeyBlur or 0
     settings.LoadingBlur = settings.LoadingBlur or 0
@@ -691,6 +708,13 @@ function NoirUI:CreateWindow(settings)
     settings.TabBackgroundColor = settings.TabBackgroundColor or nil
     settings.ConfirmBackgroundColor = settings.ConfirmBackgroundColor or Color3.fromRGB(15, 15, 15)
     settings.NotificationBackgroundColor = settings.NotificationBackgroundColor or Color3.fromRGB(15, 15, 15)
+    
+    -- Corner radius settings
+    settings.MainCornerRadius = settings.MainCornerRadius or UDim.new(0, 12)
+    settings.LoadingCornerRadius = settings.LoadingCornerRadius or UDim.new(0, 12)
+    settings.KeyCornerRadius = settings.KeyCornerRadius or UDim.new(0, 12)
+    settings.ConfirmCornerRadius = settings.ConfirmCornerRadius or UDim.new(0, 12)
+    settings.NotificationCornerRadius = settings.NotificationCornerRadius or UDim.new(0, 12)
     
     settings.UseGlow = settings.UseGlow or false
     
@@ -710,12 +734,12 @@ function NoirUI:CreateWindow(settings)
     Main.BackgroundColor3 = settings.MainBgColor or Color3.fromRGB(10, 10, 10)
     Main.Visible = false
     local mainCorner = Instance.new("UICorner", Main)
-    mainCorner.CornerRadius = UDim.new(0, 12)
+    mainCorner.CornerRadius = settings.MainCornerRadius
     MainStroke = Instance.new("UIStroke", Main)
     MainStroke.Thickness = 2
     MainStroke.Color = ACCENT
     AddGlowStroke(Main, ACCENT, 2, 6, 0.7)
-    AddBlurOverlay(Main, settings.MainBlur)
+    AddBlurOverlay(Main, settings.MainBlur, settings.MainCornerRadius)
     SetupBackground(Main, settings.Background, settings.MainBgColor, settings.MainBgTransparency or 0)
     MakeDraggable(Main)
     if settings.UseGlow then
@@ -853,12 +877,12 @@ function NoirUI:CreateWindow(settings)
     LoadingFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
     LoadingFrame.ZIndex = 200
     local loadingCorner = Instance.new("UICorner", LoadingFrame)
-    loadingCorner.CornerRadius = UDim.new(0, 12)
+    loadingCorner.CornerRadius = settings.LoadingCornerRadius
     local LoadingStroke = Instance.new("UIStroke", LoadingFrame)
     LoadingStroke.Color = ACCENT
     LoadingStroke.Thickness = 2
     AddGlowStroke(LoadingFrame, ACCENT, 2, 5, 0.75)
-    AddBlurOverlay(LoadingFrame, settings.LoadingBlur)
+    AddBlurOverlay(LoadingFrame, settings.LoadingBlur, settings.LoadingCornerRadius)
     if settings.UseGlow then
         local loadingGlow = CreateUIGlow(LoadingFrame, ACCENT, 0.3, ScreenGui)
     end
@@ -993,12 +1017,12 @@ function NoirUI:CreateWindow(settings)
             KUI.Position = UDim2.new(0.5, -160, 0.5, -100)
             KUI.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
             local keyCorner = Instance.new("UICorner", KUI)
-            keyCorner.CornerRadius = UDim.new(0, 12)
+            keyCorner.CornerRadius = settings.KeyCornerRadius
             local kstr = Instance.new("UIStroke", KUI)
             kstr.Thickness = 2
             kstr.Color = ACCENT
             AddGlowStroke(KUI, ACCENT, 2, 8, 0.6)
-            AddBlurOverlay(KUI, settings.KeyBlur)
+            AddBlurOverlay(KUI, settings.KeyBlur, settings.KeyCornerRadius)
             MakeDraggable(KUI)
             if settings.UseGlow then
                 local keyGlow = CreateUIGlow(KUI, ACCENT, 0.3, ScreenGui)
@@ -1283,12 +1307,12 @@ function NoirUI:CreateWindow(settings)
         Conf.BackgroundColor3 = settings.ConfirmBackgroundColor
         Conf.ZIndex = 100
         local confCorner = Instance.new("UICorner", Conf)
-        confCorner.CornerRadius = UDim.new(0, 12)
+        confCorner.CornerRadius = settings.ConfirmCornerRadius
         local s = Instance.new("UIStroke", Conf)
         s.Color = ACCENT
         s.Thickness = 2
         AddGlowStroke(Conf, ACCENT, 2, 4, 0.85)
-        AddBlurOverlay(Conf, settings.ConfirmBlur)
+        AddBlurOverlay(Conf, settings.ConfirmBlur, settings.ConfirmCornerRadius)
         if settings.UseGlow then
             local confirmGlow = CreateUIGlow(Conf, ACCENT, 0.3, ScreenGui)
         end
@@ -1467,11 +1491,11 @@ function NoirUI:CreateWindow(settings)
         n.Position = UDim2.new(1, 20, 0.8, 0)
         n.BackgroundColor3 = settings.NotificationBackgroundColor
         local notifCorner = Instance.new("UICorner", n)
-        notifCorner.CornerRadius = UDim.new(0, 8)
+        notifCorner.CornerRadius = settings.NotificationCornerRadius
         local ns = Instance.new("UIStroke", n)
         ns.Color = ACCENT
         AddGlowStroke(n, ACCENT, 2, 5, 0.75)
-        AddBlurOverlay(n, settings.NotificationBlur)
+        AddBlurOverlay(n, settings.NotificationBlur, settings.NotificationCornerRadius)
         if settings.UseGlow then
             local notifGlow = CreateUIGlow(n, ACCENT, 0.2, ScreenGui)
         end
@@ -1741,7 +1765,7 @@ function NoirUI:CreateWindow(settings)
         TabContainer.ClipsDescendants = true
         
         -- ============================================
-        -- SEARCH FRAME (ĐÃ SỬA ICON)
+        -- SEARCH FRAME
         -- ============================================
         local SearchFrame = Instance.new("Frame", TabContainer)
         SearchFrame.Size = UDim2.new(1, -20, 0, 35)
