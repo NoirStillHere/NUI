@@ -42,7 +42,7 @@ local LucideIconsCache = nil
 local function GetLucideIcons()
     if LucideIconsCache then return LucideIconsCache end
     local success, result = pcall(function()
-        return loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirNotFun/NUI/refs/heads/main/NoirUI/Icons.lua"))()
     end)
     if success and result then
         LucideIconsCache = result
