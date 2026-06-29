@@ -10,10 +10,10 @@ local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 
 -- Load modules
-local Effects = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/NoirUI/main/Effects.lua"))()
-local Components = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/NoirUI/main/Components.lua"))()
-local Themes = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/NoirUI/main/Themes.lua"))()
-local SoundManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/NoirUI/main/Sound.lua"))()
+local Effects = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirNotFun/NUI/refs/heads/main/NoirUI/Effects.lua"))()
+local Components = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirNotFun/NUI/refs/heads/main/NoirUI/Components.lua"))()
+local Themes = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirNotFun/NUI/refs/heads/main/NoirUI/Themes.lua"))()
+local SoundManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirNotFun/NUI/refs/heads/main/NoirUI/Sound.lua"))()
 
 -- ============================================
 -- CORE NOIRUI
