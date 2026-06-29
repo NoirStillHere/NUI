@@ -4,14 +4,15 @@
 	Lua Scripter: NoirNF, Adono
 	Executor Compatibility Tester: Adono
 	Animation Engineer: Adono
-	Version: 3.0 Ultimate
-	Features: Glow Stroke, Blur Overlay, TabGroup, Minimize (thu gọn về 350px + Description), 
+	Version: 3.0 Ultimate - Fixed
+	Features: Glow Stroke, Blur Overlay (có corner), TabGroup, Minimize (thu gọn về 350px + Description, không còn lớp trắng), 
 	Icon Button, Grid, Badge, Segmented Control, Progress Bar, Radio Group, Card, 
 	Loading Spinner, Undo/Redo, Particle Background, Ripple Effect, Neon Pulse, 
 	Glitch Effect, Pop Effect, Bounce Effect, Slide Effect, Floating Animation, 
 	Confetti Burst, Typing Effect, Dynamic Update System, Theme System (Background, Float Background, Vibe Sound)
 	Lưu ý: Các component mới (Icon Button, Grid, Badge, Segmented Control, Progress Bar, Radio Group, Card, Loading Spinner)
 	CHỈ có thể sử dụng từ TAB, không sử dụng từ Window.
+	FIXED: windowRef scope, SetElementBackground, Destroy, SoundManager, ResolveIcon, AutoContrast, TabGroup check, Sidebar update check
 ]]
 
 -- ============================================
@@ -36,13 +37,28 @@ local NoirUI = {
     Glows = {},
     TabGroups = {},
     History = { max = 20, undo = {}, redo = {} },
-    Themes = {}
+    Themes = {},
+    _windows = {},
 }
 
 -- ============================================
--- ICON LIBRARY
+-- ICON LIBRARY (CÓ CACHE)
 -- ============================================
-local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
+local LucideIconsCache = nil
+
+local function GetLucideIcons()
+    if LucideIconsCache then return LucideIconsCache end
+    local success, result = pcall(function()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
+    end)
+    if success and result then
+        LucideIconsCache = result
+        return LucideIconsCache
+    end
+    warn("⚠️ Không thể tải icon library, sử dụng fallback")
+    LucideIconsCache = {}
+    return LucideIconsCache
+end
 
 local function ResolveIcon(iconInput)
     if not iconInput then return nil end
@@ -54,13 +70,55 @@ local function ResolveIcon(iconInput)
             return iconInput
         end
         local iconName = iconInput:lower()
-        if LucideIcons[iconName] then
-            return LucideIcons[iconName]
+        local icons = GetLucideIcons()
+        if icons and icons[iconName] then
+            return icons[iconName]
+        end
+        if tonumber(iconInput) then
+            return "rbxassetid://" .. iconInput
         end
         return nil
     end
     return nil
 end
+
+-- ============================================
+-- SOUND MANAGER
+-- ============================================
+local SoundManager = {
+    pool = {},
+    pool_size = 5,
+}
+
+function SoundManager.init()
+    for i = 1, SoundManager.pool_size do
+        local sound = Instance.new("Sound")
+        sound.Volume = 0.3
+        sound.Parent = game:GetService("CoreGui")
+        table.insert(SoundManager.pool, sound)
+    end
+end
+
+function SoundManager.play(sound_id, volume)
+    if not SoundSettings.Enabled then return end
+    for _, sound in ipairs(SoundManager.pool) do
+        if not sound.IsPlaying then
+            sound.SoundId = sound_id
+            sound.Volume = volume or 0.3
+            sound:Play()
+            return sound
+        end
+    end
+    local sound = Instance.new("Sound")
+    sound.SoundId = sound_id
+    sound.Volume = volume or 0.3
+    sound.Parent = game:GetService("CoreGui")
+    sound:Play()
+    table.insert(SoundManager.pool, sound)
+    return sound
+end
+
+SoundManager.init()
 
 -- ============================================
 -- AUTO CONTRAST TEXT FUNCTIONS
@@ -96,13 +154,13 @@ local function AddGlowStroke(parent, accentColor, baseThickness, glowThickness, 
 end
 
 -- ============================================
--- BLUR OVERLAY (CÓ CẮT THEO VIỀN)
+-- BLUR OVERLAY (CÓ CẮT THEO VIỀN - CORNER)
 -- ============================================
 local function AddBlurOverlay(parent, blurAmount)
     if not parent or not blurAmount or blurAmount <= 0 then return nil end
     local existing = parent:FindFirstChild("BlurWrapper")
     if existing then existing:Destroy() end
-    
+
     local wrapper = Instance.new("Frame", parent)
     wrapper.Name = "BlurWrapper"
     wrapper.Size = UDim2.new(1, 0, 1, 0)
@@ -110,13 +168,13 @@ local function AddBlurOverlay(parent, blurAmount)
     wrapper.BackgroundTransparency = 1
     wrapper.ZIndex = 0
     wrapper.ClipsDescendants = true
-    
+
     local parentCorner = parent:FindFirstChild("UICorner")
     if parentCorner then
         local corner = Instance.new("UICorner", wrapper)
         corner.CornerRadius = parentCorner.CornerRadius
     end
-    
+
     local blur = Instance.new("Frame", wrapper)
     blur.Name = "BlurOverlay"
     blur.Size = UDim2.new(1, 0, 1, 0)
@@ -124,7 +182,7 @@ local function AddBlurOverlay(parent, blurAmount)
     blur.BackgroundTransparency = 1 - math.clamp(blurAmount, 0, 1)
     blur.ZIndex = 0
     blur.BorderSizePixel = 0
-    
+
     return wrapper
 end
 
@@ -504,13 +562,7 @@ local function PlaySound(soundType)
     elseif soundType == "Success" then soundId = SoundSettings.SuccessSoundId
     end
     if not soundId then return end
-    local sound = Instance.new("Sound")
-    sound.SoundId = soundId
-    sound.Volume = SoundSettings.Volume
-    sound.Parent = game:GetService("CoreGui")
-    sound:Play()
-    sound.Ended:Connect(function() sound:Destroy() end)
-    task.delay(3, function() if sound then sound:Destroy() end end)
+    SoundManager.play(soundId, SoundSettings.Volume)
 end
 
 local function PlayTrackById(trackId)
@@ -685,10 +737,18 @@ end
 
 function NoirUI:Destroy()
     StopAndCleanupMusic()
-    if Window and Window._vibeSound then
-        Window._vibeSound:Stop()
-        Window._vibeSound:Destroy()
+    BackgroundMusic.UIHidden = false
+    
+    if NoirUI._windows then
+        for _, win in pairs(NoirUI._windows) do
+            if win and win._vibeSound then
+                win._vibeSound:Stop()
+                win._vibeSound:Destroy()
+            end
+        end
+        NoirUI._windows = {}
     end
+    
     for _, connection in pairs(NoirUI.Connections) do
         pcall(function() connection:Disconnect() end)
     end
@@ -921,16 +981,16 @@ NoirUI.Themes = {
         sidebarTrans = 0.8,
         textColor = Color3.fromRGB(255, 255, 255),
     },
-    
-    -- ANIME THEMES
+
+    -- ANIME THEMES (⚠️ Các rbxassetid là ID giả mẫu, cần thay bằng ID thật)
     demonSlayer = {
         name = "⚔️ Demon Slayer",
         accent = Color3.fromRGB(255, 100, 50),
         mainBg = Color3.fromRGB(15, 5, 10),
-        mainBgImage = "rbxassetid://1234567890",
-        floatBgImage = "rbxassetid://1234567891",
+        mainBgImage = "rbxassetid://1234567890",  -- ⚠️ THAY BẰNG ID ẢNH THẬT
+        floatBgImage = "rbxassetid://1234567891", -- ⚠️ THAY BẰNG ID ẢNH THẬT
         blur = 0.15,
-        vibeSound = "rbxassetid://9876543210",
+        vibeSound = "rbxassetid://9876543210",    -- ⚠️ THAY BẰNG ID SOUND THẬT
         elementBg = Color3.fromRGB(30, 15, 25),
         sidebarBg = Color3.fromRGB(20, 8, 15),
         tabBg = Color3.fromRGB(25, 12, 20),
@@ -938,15 +998,15 @@ NoirUI.Themes = {
         sidebarTrans = 0.85,
         textColor = Color3.fromRGB(255, 200, 180),
     },
-    
+
     jujutsuKaisen = {
         name = "🔮 Jujutsu Kaisen",
         accent = Color3.fromRGB(50, 200, 255),
         mainBg = Color3.fromRGB(5, 10, 20),
-        mainBgImage = "rbxassetid://2234567890",
-        floatBgImage = "rbxassetid://2234567891",
+        mainBgImage = "rbxassetid://2234567890",  -- ⚠️ THAY BẰNG ID ẢNH THẬT
+        floatBgImage = "rbxassetid://2234567891", -- ⚠️ THAY BẰNG ID ẢNH THẬT
         blur = 0.2,
-        vibeSound = "rbxassetid://9876543211",
+        vibeSound = "rbxassetid://9876543211",    -- ⚠️ THAY BẰNG ID SOUND THẬT
         elementBg = Color3.fromRGB(15, 25, 40),
         sidebarBg = Color3.fromRGB(8, 15, 30),
         tabBg = Color3.fromRGB(12, 20, 35),
@@ -954,15 +1014,15 @@ NoirUI.Themes = {
         sidebarTrans = 0.85,
         textColor = Color3.fromRGB(180, 230, 255),
     },
-    
+
     naruto = {
         name = "🍥 Naruto",
         accent = Color3.fromRGB(255, 150, 50),
         mainBg = Color3.fromRGB(20, 10, 5),
-        mainBgImage = "rbxassetid://3234567890",
-        floatBgImage = "rbxassetid://3234567891",
+        mainBgImage = "rbxassetid://3234567890",  -- ⚠️ THAY BẰNG ID ẢNH THẬT
+        floatBgImage = "rbxassetid://3234567891", -- ⚠️ THAY BẰNG ID ẢNH THẬT
         blur = 0.15,
-        vibeSound = "rbxassetid://9876543212",
+        vibeSound = "rbxassetid://9876543212",    -- ⚠️ THAY BẰNG ID SOUND THẬT
         elementBg = Color3.fromRGB(40, 25, 15),
         sidebarBg = Color3.fromRGB(30, 15, 8),
         tabBg = Color3.fromRGB(35, 20, 12),
@@ -970,15 +1030,15 @@ NoirUI.Themes = {
         sidebarTrans = 0.85,
         textColor = Color3.fromRGB(255, 220, 180),
     },
-    
+
     attackOnTitan = {
         name = "⚔️ Attack on Titan",
         accent = Color3.fromRGB(150, 100, 50),
         mainBg = Color3.fromRGB(15, 10, 8),
-        mainBgImage = "rbxassetid://4234567890",
-        floatBgImage = "rbxassetid://4234567891",
+        mainBgImage = "rbxassetid://4234567890",  -- ⚠️ THAY BẰNG ID ẢNH THẬT
+        floatBgImage = "rbxassetid://4234567891", -- ⚠️ THAY BẰNG ID ẢNH THẬT
         blur = 0.25,
-        vibeSound = "rbxassetid://9876543213",
+        vibeSound = "rbxassetid://9876543213",    -- ⚠️ THAY BẰNG ID SOUND THẬT
         elementBg = Color3.fromRGB(35, 25, 20),
         sidebarBg = Color3.fromRGB(25, 15, 12),
         tabBg = Color3.fromRGB(30, 20, 15),
@@ -986,15 +1046,15 @@ NoirUI.Themes = {
         sidebarTrans = 0.85,
         textColor = Color3.fromRGB(200, 180, 160),
     },
-    
+
     onePiece = {
-        name = "🏴‍☠️ One Piece",
+        name = "🏴☠️ One Piece",
         accent = Color3.fromRGB(255, 200, 0),
         mainBg = Color3.fromRGB(10, 15, 20),
-        mainBgImage = "rbxassetid://5234567890",
-        floatBgImage = "rbxassetid://5234567891",
+        mainBgImage = "rbxassetid://5234567890",  -- ⚠️ THAY BẰNG ID ẢNH THẬT
+        floatBgImage = "rbxassetid://5234567891", -- ⚠️ THAY BẰNG ID ẢNH THẬT
         blur = 0.15,
-        vibeSound = "rbxassetid://9876543214",
+        vibeSound = "rbxassetid://9876543214",    -- ⚠️ THAY BẰNG ID SOUND THẬT
         elementBg = Color3.fromRGB(20, 30, 40),
         sidebarBg = Color3.fromRGB(12, 20, 30),
         tabBg = Color3.fromRGB(15, 25, 35),
@@ -1002,15 +1062,15 @@ NoirUI.Themes = {
         sidebarTrans = 0.85,
         textColor = Color3.fromRGB(255, 235, 180),
     },
-    
+
     myHeroAcademia = {
         name = "🦸 My Hero Academia",
         accent = Color3.fromRGB(255, 100, 200),
         mainBg = Color3.fromRGB(20, 10, 20),
-        mainBgImage = "rbxassetid://6234567890",
-        floatBgImage = "rbxassetid://6234567891",
+        mainBgImage = "rbxassetid://6234567890",  -- ⚠️ THAY BẰNG ID ẢNH THẬT
+        floatBgImage = "rbxassetid://6234567891", -- ⚠️ THAY BẰNG ID ẢNH THẬT
         blur = 0.15,
-        vibeSound = "rbxassetid://9876543215",
+        vibeSound = "rbxassetid://9876543215",    -- ⚠️ THAY BẰNG ID SOUND THẬT
         elementBg = Color3.fromRGB(40, 20, 40),
         sidebarBg = Color3.fromRGB(30, 12, 30),
         tabBg = Color3.fromRGB(35, 15, 35),
@@ -1018,15 +1078,15 @@ NoirUI.Themes = {
         sidebarTrans = 0.85,
         textColor = Color3.fromRGB(255, 200, 240),
     },
-    
+
     dragonBall = {
         name = "🐉 Dragon Ball",
         accent = Color3.fromRGB(255, 150, 0),
         mainBg = Color3.fromRGB(10, 10, 20),
-        mainBgImage = "rbxassetid://7234567890",
-        floatBgImage = "rbxassetid://7234567891",
+        mainBgImage = "rbxassetid://7234567890",  -- ⚠️ THAY BẰNG ID ẢNH THẬT
+        floatBgImage = "rbxassetid://7234567891", -- ⚠️ THAY BẰNG ID ẢNH THẬT
         blur = 0.15,
-        vibeSound = "rbxassetid://9876543216",
+        vibeSound = "rbxassetid://9876543216",    -- ⚠️ THAY BẰNG ID SOUND THẬT
         elementBg = Color3.fromRGB(25, 20, 40),
         sidebarBg = Color3.fromRGB(15, 12, 30),
         tabBg = Color3.fromRGB(20, 15, 35),
@@ -1034,15 +1094,15 @@ NoirUI.Themes = {
         sidebarTrans = 0.85,
         textColor = Color3.fromRGB(255, 220, 180),
     },
-    
+
     swordArtOnline = {
         name = "⚔️ SAO",
         accent = Color3.fromRGB(100, 200, 255),
         mainBg = Color3.fromRGB(5, 10, 25),
-        mainBgImage = "rbxassetid://8234567890",
-        floatBgImage = "rbxassetid://8234567891",
+        mainBgImage = "rbxassetid://8234567890",  -- ⚠️ THAY BẰNG ID ẢNH THẬT
+        floatBgImage = "rbxassetid://8234567891", -- ⚠️ THAY BẰNG ID ẢNH THẬT
         blur = 0.2,
-        vibeSound = "rbxassetid://9876543217",
+        vibeSound = "rbxassetid://9876543217",    -- ⚠️ THAY BẰNG ID SOUND THẬT
         elementBg = Color3.fromRGB(10, 25, 45),
         sidebarBg = Color3.fromRGB(5, 15, 35),
         tabBg = Color3.fromRGB(8, 20, 40),
@@ -1050,16 +1110,16 @@ NoirUI.Themes = {
         sidebarTrans = 0.85,
         textColor = Color3.fromRGB(180, 220, 255),
     },
-    
+
     -- THÊM CÁC THEME KHÁC
     cyberpunk = {
         name = "🔮 Cyberpunk",
         accent = Color3.fromRGB(0, 255, 200),
         mainBg = Color3.fromRGB(8, 8, 20),
-        mainBgImage = "rbxassetid://9234567890",
-        floatBgImage = "rbxassetid://9234567891",
+        mainBgImage = "rbxassetid://9234567890",  -- ⚠️ THAY BẰNG ID ẢNH THẬT
+        floatBgImage = "rbxassetid://9234567891", -- ⚠️ THAY BẰNG ID ẢNH THẬT
         blur = 0.2,
-        vibeSound = "rbxassetid://9876543218",
+        vibeSound = "rbxassetid://9876543218",    -- ⚠️ THAY BẰNG ID SOUND THẬT
         elementBg = Color3.fromRGB(18, 18, 40),
         sidebarBg = Color3.fromRGB(12, 12, 30),
         tabBg = Color3.fromRGB(15, 15, 35),
@@ -1067,15 +1127,15 @@ NoirUI.Themes = {
         sidebarTrans = 0.8,
         textColor = Color3.fromRGB(180, 255, 240),
     },
-    
+
     vaporwave = {
         name = "🌴 Vaporwave",
         accent = Color3.fromRGB(255, 100, 255),
         mainBg = Color3.fromRGB(20, 5, 30),
-        mainBgImage = "rbxassetid://0234567890",
-        floatBgImage = "rbxassetid://0234567891",
+        mainBgImage = "rbxassetid://0234567890",  -- ⚠️ THAY BẰNG ID ẢNH THẬT
+        floatBgImage = "rbxassetid://0234567891", -- ⚠️ THAY BẰNG ID ẢNH THẬT
         blur = 0.15,
-        vibeSound = "rbxassetid://9876543219",
+        vibeSound = "rbxassetid://9876543219",    -- ⚠️ THAY BẰNG ID SOUND THẬT
         elementBg = Color3.fromRGB(40, 15, 50),
         sidebarBg = Color3.fromRGB(30, 8, 40),
         tabBg = Color3.fromRGB(35, 12, 45),
@@ -1089,11 +1149,236 @@ NoirUI.Themes = {
 -- CREATE WINDOW
 -- ============================================
 function NoirUI:CreateWindow(settings)
+    -- ============================================
+    -- 1. TẠO WINDOW REF (ĐỂ DÙNG TRONG STARTLOADING)
+    -- ============================================
+    local windowRef = {}
+    
+    -- ============================================
+    -- 2. ĐỊNH NGHĨA CÁC HÀM CỦA WINDOW (TRƯỚC KHI GỌI STARTLOADING)
+    -- ============================================
+    
+    -- 2.1. Các biến sẽ được gán sau
+    local ACCENT = settings.Accent or Color3.fromRGB(170, 85, 255)
+    local Main, Header, Title, Description, Side, Cont, TBtn, LoadingBar, MainStroke
+    local allTabButtons = {}
+    local useAutoContrast = settings.AutoContrast or false
+    local windowTabs = {}
+    local vibeSound = nil
+    local currentTheme = "default"
+    
+    -- 2.2. Định nghĩa các hàm dynamic update (sẽ được gán sau)
+    function windowRef:SetAccent(color)
+        local newAccent = color or ACCENT
+        if MainStroke then MainStroke.Color = newAccent end
+        local glowStroke = Main and Main:FindFirstChild("GlowStroke")
+        if glowStroke then glowStroke.Color = newAccent end
+        for _, btn in pairs(allTabButtons) do
+            local stroke = btn:FindFirstChildWhichIsA("UIStroke")
+            if stroke and stroke.Name ~= "GlowStroke" then stroke.Color = newAccent end
+            local glow = btn:FindFirstChild("GlowStroke")
+            if glow then glow.Color = newAccent end
+            local label = btn:FindFirstChild("TextLabel")
+            if label and label.TextColor3 == ACCENT then label.TextColor3 = newAccent end
+        end
+        if LoadingBar then LoadingBar.BackgroundColor3 = newAccent end
+        ACCENT = newAccent
+        return true
+    end
+    
+    function windowRef:SetMainBackground(color, transparency)
+        if Main then
+            if color then
+                Main.BackgroundColor3 = color
+                if useAutoContrast and Title then
+                    Title.TextColor3 = GetContrastColor(color)
+                end
+                if useAutoContrast and Description then
+                    Description.TextColor3 = GetContrastColor(color)
+                end
+            end
+            if transparency ~= nil then
+                Main.BackgroundTransparency = transparency
+            end
+        end
+        return true
+    end
+    
+    function windowRef:SetBlur(amount)
+        if Main then
+            local blurWrapper = Main:FindFirstChild("BlurWrapper")
+            if blurWrapper then
+                local blur = blurWrapper:FindFirstChild("BlurOverlay")
+                if blur then
+                    blur.BackgroundTransparency = 1 - math.clamp(amount, 0, 1)
+                end
+            end
+        end
+        return true
+    end
+    
+    function windowRef:SetSidebarBackground(color, transparency)
+        if Side then
+            if color then Side.BackgroundColor3 = color end
+            if transparency ~= nil then Side.BackgroundTransparency = transparency end
+        end
+        return true
+    end
+    
+    function windowRef:SetTabBackground(color)
+        for _, btn in pairs(allTabButtons) do
+            if btn then
+                btn.BackgroundColor3 = color or Color3.fromRGB(20, 20, 20)
+                local label = btn:FindFirstChild("TextLabel")
+                if label and useAutoContrast then
+                    label.TextColor3 = GetContrastColor(btn.BackgroundColor3)
+                end
+            end
+        end
+        return true
+    end
+    
+    function windowRef:SetElementBackground(color)
+        for _, tab in pairs(windowTabs) do
+            if tab.Elements then
+                for _, elem in pairs(tab.Elements) do
+                    if elem:IsA("Frame") or elem:IsA("TextButton") then
+                        if elem.BackgroundColor3 ~= Color3.fromRGB(0,0,0) then
+                            elem.BackgroundColor3 = color or Color3.fromRGB(25, 25, 35)
+                        end
+                    end
+                end
+            end
+        end
+        return true
+    end
+    
+    function windowRef:SetFloatIcon(iconName)
+        if TBtn then
+            local clipGroup = TBtn:FindFirstChild("ClipGroup")
+            if clipGroup then
+                local icon = clipGroup:FindFirstChild("ImageLabel") or clipGroup:FindFirstChild("TextLabel")
+                if icon then
+                    local resolved = ResolveIcon(iconName)
+                    if resolved then
+                        if icon:IsA("ImageLabel") then icon.Image = resolved
+                        else icon.Text = iconName end
+                    end
+                end
+            end
+        end
+        return true
+    end
+    
+    function windowRef:SetTitle(title)
+        if Title then Title.Text = title or "NOIR HUB" end
+        return true
+    end
+    
+    function windowRef:SetDescription(desc)
+        if Description then Description.Text = desc or "NoirUI V3" end
+        return true
+    end
+    
+    function windowRef:SetBackgroundImage(imageId, transparency)
+        if Main then
+            local bgImage = Main:FindFirstChild("_BackgroundImage")
+            if bgImage then
+                if imageId then bgImage.Image = imageId end
+                if transparency ~= nil then bgImage.ImageTransparency = transparency end
+            end
+        end
+        return true
+    end
+    
+    function windowRef:SetFloatBackgroundImage(imageId, transparency)
+        if TBtn then
+            local clipGroup = TBtn:FindFirstChild("ClipGroup")
+            if clipGroup then
+                local bgImage = clipGroup:FindFirstChild("BackgroundImage")
+                if bgImage then
+                    if imageId then bgImage.Image = imageId end
+                    if transparency ~= nil then bgImage.ImageTransparency = transparency end
+                end
+            end
+        end
+        return true
+    end
+    
+    function windowRef:ApplyTheme(themeName)
+        local theme = NoirUI.Themes[themeName]
+        if not theme then
+            NoirUI:Notify("Theme", "Không tìm thấy theme: " .. tostring(themeName), "x", "Error")
+            return false
+        end
+        
+        if theme.accent then windowRef:SetAccent(theme.accent) end
+        if theme.mainBg then windowRef:SetMainBackground(theme.mainBg, 0) end
+        if theme.mainBgImage then windowRef:SetBackgroundImage(theme.mainBgImage, 0.5) end
+        if theme.floatBgImage then windowRef:SetFloatBackgroundImage(theme.floatBgImage, 0.5) end
+        if theme.blur ~= nil then windowRef:SetBlur(theme.blur) end
+        if theme.elementBg then windowRef:SetElementBackground(theme.elementBg) end
+        if theme.sidebarBg then windowRef:SetSidebarBackground(theme.sidebarBg, theme.sidebarTrans or 0.8) end
+        if theme.tabBg then windowRef:SetTabBackground(theme.tabBg) end
+        if theme.description then windowRef:SetDescription(theme.description) end
+        if Title and theme.textColor then Title.TextColor3 = theme.textColor end
+        
+        if theme.vibeSound then
+            if vibeSound then
+                vibeSound:Stop()
+                vibeSound:Destroy()
+            end
+            local sound = Instance.new("Sound")
+            sound.SoundId = theme.vibeSound
+            sound.Volume = 0.3
+            sound.Looped = true
+            sound.Parent = game:GetService("CoreGui")
+            sound:Play()
+            vibeSound = sound
+            windowRef._vibeSound = sound
+        end
+        
+        currentTheme = themeName
+        NoirUI:Notify("🎨 Theme", "Đã áp dụng: " .. theme.name, "palette", "Success")
+        return true
+    end
+    
+    function windowRef:StopVibeSound()
+        if vibeSound then
+            vibeSound:Stop()
+            vibeSound:Destroy()
+            vibeSound = nil
+            windowRef._vibeSound = nil
+        end
+    end
+    
+    function windowRef:GetCurrentTheme()
+        return currentTheme
+    end
+    
+    function windowRef:GetAccent()
+        return ACCENT
+    end
+    
+    function windowRef:PushHistory(state)
+        NoirUI:PushHistory(state)
+    end
+    
+    function windowRef:Undo(callback)
+        NoirUI:Undo(callback)
+    end
+    
+    function windowRef:Redo(callback)
+        NoirUI:Redo(callback)
+    end
+    
+    -- ============================================
+    -- 3. TẠO SCREENGUI
+    -- ============================================
     local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
     ScreenGui.Name = "NoirUI_V3_Ultimate"
     ScreenGui.ResetOnSpawn = false
-    local ACCENT = settings.Accent or Color3.fromRGB(170, 85, 255)
-    local useAutoContrast = settings.AutoContrast or false
+    windowRef._screen = ScreenGui
     
     settings.MainBlur = settings.MainBlur or 0
     settings.KeyBlur = settings.KeyBlur or 0
@@ -1107,7 +1392,6 @@ function NoirUI:CreateWindow(settings)
     settings.ConfirmBackgroundColor = settings.ConfirmBackgroundColor or Color3.fromRGB(15, 15, 15)
     settings.NotificationBackgroundColor = settings.NotificationBackgroundColor or Color3.fromRGB(15, 15, 15)
     
-    -- Effect settings
     settings.UseRipple = settings.UseRipple or false
     settings.UseParticles = settings.UseParticles or false
     settings.UseNeon = settings.UseNeon or false
@@ -1120,9 +1404,7 @@ function NoirUI:CreateWindow(settings)
     settings.UseTyping = settings.UseTyping or false
     settings.ParticleCount = settings.ParticleCount or 30
     
-    -- Theme settings
     settings.DefaultTheme = settings.DefaultTheme or "default"
-    settings.ThemeVibeSound = settings.ThemeVibeSound or nil
     
     local mainDefaultPos = settings.DefaultPosition or UDim2.new(0.5, -210, 0.5, -150)
     local floatDefaultPos = settings.FloatDefaultPosition or UDim2.new(0, 15, 0.5, -22)
@@ -1131,14 +1413,17 @@ function NoirUI:CreateWindow(settings)
         InitBackgroundMusic(settings.BackgroundMusic)
     end
     
-    local Main = Instance.new("Frame", ScreenGui)
+    -- ============================================
+    -- 4. TẠO MAIN FRAME
+    -- ============================================
+    Main = Instance.new("Frame", ScreenGui)
     Main.Size = UDim2.new(0, 420, 0, 300)
     Main.Position = mainDefaultPos
     Main.BackgroundColor3 = settings.MainBgColor or Color3.fromRGB(10, 10, 10)
     Main.Visible = false
     local mainCorner = Instance.new("UICorner", Main)
     mainCorner.CornerRadius = UDim.new(0, 12)
-    local MainStroke = Instance.new("UIStroke", Main)
+    MainStroke = Instance.new("UIStroke", Main)
     MainStroke.Thickness = 2
     MainStroke.Color = ACCENT
     AddGlowStroke(Main, ACCENT, 2, 6, 0.7)
@@ -1157,11 +1442,13 @@ function NoirUI:CreateWindow(settings)
         table.insert(NoirUI.Connections, neonConn)
     end
     
-    -- FLOAT BUTTON
+    -- ============================================
+    -- 5. TẠO FLOAT BUTTON
+    -- ============================================
     local floatSize = settings.FloatSize or 45
     local floatIconSize = settings.FloatIconSize or 24
     local floatCornerRadius = settings.FloatCornerRadius or 12
-    local TBtn = Instance.new("ImageButton", ScreenGui)
+    TBtn = Instance.new("ImageButton", ScreenGui)
     TBtn.Size = UDim2.new(0, floatSize, 0, floatSize)
     TBtn.Position = floatDefaultPos
     TBtn.BackgroundTransparency = 1
@@ -1285,7 +1572,9 @@ function NoirUI:CreateWindow(settings)
         end
     end)
     
-    -- LOADING FRAME
+    -- ============================================
+    -- 6. TẠO LOADING FRAME
+    -- ============================================
     local LoadingFrame = Instance.new("Frame", ScreenGui)
     LoadingFrame.Size = UDim2.new(0, 300, 0, 120)
     LoadingFrame.Position = UDim2.new(0.5, -150, 0.5, -60)
@@ -1354,7 +1643,7 @@ function NoirUI:CreateWindow(settings)
     LoadingBarBg.BackgroundTransparency = 0.5
     Instance.new("UICorner", LoadingBarBg).CornerRadius = UDim.new(1, 0)
     LoadingBarBg.ZIndex = 201
-    local LoadingBar = Instance.new("Frame", LoadingBarBg)
+    LoadingBar = Instance.new("Frame", LoadingBarBg)
     LoadingBar.Size = UDim2.new(0, 0, 1, 0)
     LoadingBar.BackgroundColor3 = ACCENT
     Instance.new("UICorner", LoadingBar).CornerRadius = UDim.new(1, 0)
@@ -1377,6 +1666,9 @@ function NoirUI:CreateWindow(settings)
     LoadingPercent.TextSize = 12
     LoadingPercent.ZIndex = 201
     
+    -- ============================================
+    -- 7. HÀM START LOADING (DÙNG windowRef ĐÃ CÓ HÀM)
+    -- ============================================
     local function StartLoading()
         TBtn.Visible = false
         LoadingFrame.Visible = true
@@ -1416,16 +1708,18 @@ function NoirUI:CreateWindow(settings)
                 if settings.BackgroundMusic and settings.BackgroundMusic.AutoPlay then
                     NoirUI:StartMusic()
                 end
-                -- Áp dụng theme mặc định sau khi load
                 if settings.DefaultTheme then
                     task.wait(0.2)
-                    Window:ApplyTheme(settings.DefaultTheme)
+                    windowRef:ApplyTheme(settings.DefaultTheme)  -- 👈 DÙNG windowRef
                 end
             end
         end)
         table.insert(NoirUI.Connections, loadingConnection)
     end
     
+    -- ============================================
+    -- 8. KEY SYSTEM (NẾU CÓ)
+    -- ============================================
     local KeySolved = false
     local KUI = nil
     if settings.KeySystem then
@@ -1568,7 +1862,10 @@ function NoirUI:CreateWindow(settings)
         StartLoading()
     end
     
-    local Header = Instance.new("Frame", Main)
+    -- ============================================
+    -- 9. TẠO HEADER
+    -- ============================================
+    Header = Instance.new("Frame", Main)
     Header.Size = UDim2.new(1, 0, 0, 40)
     Header.BackgroundTransparency = 1
     if settings.LogoID then
@@ -1580,8 +1877,7 @@ function NoirUI:CreateWindow(settings)
         if logoImage then L.Image = logoImage end
     end
     
-    -- TITLE
-    local Title = Instance.new("TextLabel", Header)
+    Title = Instance.new("TextLabel", Header)
     Title.Size = UDim2.new(1, -120, 1, 0)
     Title.Position = UDim2.new(0, settings.LogoID and 40 or 15, 0, 0)
     Title.BackgroundTransparency = 1
@@ -1607,8 +1903,7 @@ function NoirUI:CreateWindow(settings)
         table.insert(NoirUI.Connections, neonConn)
     end
     
-    -- DESCRIPTION (hiện khi minimize)
-    local Description = Instance.new("TextLabel", Header)
+    Description = Instance.new("TextLabel", Header)
     Description.Size = UDim2.new(1, -120, 0, 16)
     Description.Position = UDim2.new(0, settings.LogoID and 40 or 15, 0, 22)
     Description.BackgroundTransparency = 1
@@ -1624,6 +1919,9 @@ function NoirUI:CreateWindow(settings)
         CreateTypingEffect(Description, Description.Text, 0.03)
     end
     
+    -- ============================================
+    -- 10. TẠO BUTTONS (MINIMIZE, CLOSE)
+    -- ============================================
     local Btns = Instance.new("Frame", Header)
     Btns.Size = UDim2.new(0, 70, 1, 0)
     Btns.Position = UDim2.new(1, -75, 0, 0)
@@ -1859,6 +2157,9 @@ function NoirUI:CreateWindow(settings)
         end)
     end)
     
+    -- ============================================
+    -- 11. TẠO SIDE (SIDEBAR)
+    -- ============================================
     Side = Instance.new("Frame", Main)
     Side.Size = UDim2.new(0, 110, 1, -50)
     Side.Position = UDim2.new(0, 5, 0, 40)
@@ -1890,6 +2191,7 @@ function NoirUI:CreateWindow(settings)
     TLayout.Padding = UDim.new(0, 5)
     TLayout.SortOrder = Enum.SortOrder.LayoutOrder
     local function updateSidebarCanvas()
+        if not Side or not Side.Visible then return end  -- 👈 THÊM CHECK
         task.wait()
         TScroll.CanvasSize = UDim2.new(0, 0, 0, TLayout.AbsoluteContentSize.Y + 10)
     end
@@ -1909,6 +2211,9 @@ function NoirUI:CreateWindow(settings)
         CreateNeonPulse(AI, ACCENT, 0.5)
     end
     
+    -- ============================================
+    -- 12. TẠO CONT (CONTENT)
+    -- ============================================
     Cont = Instance.new("Frame", Main)
     Cont.Size = UDim2.new(1, -125, 1, -50)
     Cont.Position = UDim2.new(0, 120, 0, 40)
@@ -1923,7 +2228,9 @@ function NoirUI:CreateWindow(settings)
     AddGlowStroke(Cont, ACCENT, 1, 1, 0.7)
     originalContSize = Cont.Size
     
-    -- FLOAT BUTTON CLICK - KHÔNG TẮT NHẠC
+    -- ============================================
+    -- 13. FLOAT BUTTON CLICK - KHÔNG TẮT NHẠC
+    -- ============================================
     TBtn.MouseButton1Click:Connect(function()
         PlaySound("Click")
         CreateClickScaleEffect(TBtn)
@@ -1977,6 +2284,9 @@ function NoirUI:CreateWindow(settings)
         end
     end)
     
+    -- ============================================
+    -- 14. NOTIFICATION
+    -- ============================================
     function NoirUI:Notify(title, message, iconName, soundType)
         if soundType then
             PlaySound(soundType)
@@ -2079,248 +2389,11 @@ function NoirUI:CreateWindow(settings)
         end)
     end
     
-    local Window = {}
-    local allTabButtons = {}
-    
     -- ============================================
-    -- DYNAMIC UPDATE FUNCTIONS
+    -- 15. COMPONENT FUNCTIONS (CHỈ DÙNG TỪ TAB)
     -- ============================================
     
-    -- 1. Cập nhật Accent
-    function Window:SetAccent(color)
-        local newAccent = color or ACCENT
-        if MainStroke then MainStroke.Color = newAccent end
-        local glowStroke = Main:FindFirstChild("GlowStroke")
-        if glowStroke then glowStroke.Color = newAccent end
-        for _, btn in pairs(allTabButtons) do
-            local stroke = btn:FindFirstChildWhichIsA("UIStroke")
-            if stroke and stroke.Name ~= "GlowStroke" then stroke.Color = newAccent end
-            local glow = btn:FindFirstChild("GlowStroke")
-            if glow then glow.Color = newAccent end
-            local label = btn:FindFirstChild("TextLabel")
-            if label and label.TextColor3 == ACCENT then label.TextColor3 = newAccent end
-        end
-        if LoadingBar then LoadingBar.BackgroundColor3 = newAccent end
-        ACCENT = newAccent
-        return true
-    end
-    
-    -- 2. Cập nhật Main Background
-    function Window:SetMainBackground(color, transparency)
-        if Main then
-            if color then Main.BackgroundColor3 = color end
-            if transparency ~= nil then Main.BackgroundTransparency = transparency end
-        end
-        return true
-    end
-    
-    -- 3. Cập nhật Blur
-    function Window:SetBlur(amount)
-        if Main then
-            local blurWrapper = Main:FindFirstChild("BlurWrapper")
-            if blurWrapper then
-                local blur = blurWrapper:FindFirstChild("BlurOverlay")
-                if blur then blur.BackgroundTransparency = 1 - math.clamp(amount, 0, 1) end
-            end
-        end
-        return true
-    end
-    
-    -- 4. Cập nhật Sidebar
-    function Window:SetSidebarBackground(color, transparency)
-        if Side then
-            if color then Side.BackgroundColor3 = color end
-            if transparency ~= nil then Side.BackgroundTransparency = transparency end
-        end
-        return true
-    end
-    
-    -- 5. Cập nhật Tab Background
-    function Window:SetTabBackground(color)
-        for _, btn in pairs(allTabButtons) do
-            if btn then
-                btn.BackgroundColor3 = color or Color3.fromRGB(20, 20, 20)
-                local label = btn:FindFirstChild("TextLabel")
-                if label and useAutoContrast then
-                    label.TextColor3 = GetContrastColor(btn.BackgroundColor3)
-                end
-            end
-        end
-        return true
-    end
-    
-    -- 6. Cập nhật Element Background
-    function Window:SetElementBackground(color)
-        for _, tab in pairs(Window._tabs or {}) do
-            if tab._elements then
-                for _, elem in pairs(tab._elements) do
-                    if elem:IsA("Frame") or elem:IsA("TextButton") then
-                        if elem.BackgroundColor3 ~= Color3.fromRGB(0,0,0) then
-                            elem.BackgroundColor3 = color or Color3.fromRGB(25, 25, 35)
-                        end
-                    end
-                end
-            end
-        end
-        return true
-    end
-    
-    -- 7. Cập nhật Float Icon
-    function Window:SetFloatIcon(iconName)
-        if TBtn then
-            local clipGroup = TBtn:FindFirstChild("ClipGroup")
-            if clipGroup then
-                local icon = clipGroup:FindFirstChild("ImageLabel") or clipGroup:FindFirstChild("TextLabel")
-                if icon then
-                    local resolved = ResolveIcon(iconName)
-                    if resolved then
-                        if icon:IsA("ImageLabel") then icon.Image = resolved
-                        else icon.Text = iconName end
-                    end
-                end
-            end
-        end
-        return true
-    end
-    
-    -- 8. Cập nhật Title
-    function Window:SetTitle(title)
-        if Title then Title.Text = title or "NOIR HUB" end
-        return true
-    end
-    
-    -- 9. Cập nhật Description
-    function Window:SetDescription(desc)
-        if Description then Description.Text = desc or "NoirUI V3" end
-        return true
-    end
-    
-    -- 10. Cập nhật Background Image
-    function Window:SetBackgroundImage(imageId, transparency)
-        if Main then
-            local bgImage = Main:FindFirstChild("_BackgroundImage")
-            if bgImage then
-                if imageId then bgImage.Image = imageId end
-                if transparency ~= nil then bgImage.ImageTransparency = transparency end
-            end
-        end
-        return true
-    end
-    
-    -- 11. Cập nhật Float Background Image
-    function Window:SetFloatBackgroundImage(imageId, transparency)
-        if TBtn then
-            local clipGroup = TBtn:FindFirstChild("ClipGroup")
-            if clipGroup then
-                local bgImage = clipGroup:FindFirstChild("BackgroundImage")
-                if bgImage then
-                    if imageId then bgImage.Image = imageId end
-                    if transparency ~= nil then bgImage.ImageTransparency = transparency end
-                end
-            end
-        end
-        return true
-    end
-    
-    -- 12. Áp dụng Theme
-    function Window:ApplyTheme(themeName)
-        local theme = NoirUI.Themes[themeName]
-        if not theme then
-            NoirUI:Notify("Theme", "Không tìm thấy theme: " .. tostring(themeName), "x", "Error")
-            return false
-        end
-        
-        -- 1. Cập nhật accent
-        if theme.accent then self:SetAccent(theme.accent) end
-        
-        -- 2. Cập nhật main background
-        if theme.mainBg then self:SetMainBackground(theme.mainBg, 0) end
-        
-        -- 3. Cập nhật background image
-        if theme.mainBgImage then self:SetBackgroundImage(theme.mainBgImage, 0.5) end
-        
-        -- 4. Cập nhật float background
-        if theme.floatBgImage then self:SetFloatBackgroundImage(theme.floatBgImage, 0.5) end
-        
-        -- 5. Cập nhật blur
-        if theme.blur ~= nil then self:SetBlur(theme.blur) end
-        
-        -- 6. Cập nhật element background
-        if theme.elementBg then self:SetElementBackground(theme.elementBg) end
-        
-        -- 7. Cập nhật sidebar
-        if theme.sidebarBg then self:SetSidebarBackground(theme.sidebarBg, theme.sidebarTrans or 0.8) end
-        
-        -- 8. Cập nhật tab background
-        if theme.tabBg then self:SetTabBackground(theme.tabBg) end
-        
-        -- 9. Cập nhật description
-        if theme.description then self:SetDescription(theme.description) end
-        
-        -- 10. Cập nhật text color
-        if Title and theme.textColor then Title.TextColor3 = theme.textColor end
-        
-        -- 11. Cập nhật vibe sound
-        if theme.vibeSound then
-            if Window._vibeSound then
-                Window._vibeSound:Stop()
-                Window._vibeSound:Destroy()
-            end
-            local sound = Instance.new("Sound")
-            sound.SoundId = theme.vibeSound
-            sound.Volume = 0.3
-            sound.Looped = true
-            sound.Parent = game:GetService("CoreGui")
-            sound:Play()
-            Window._vibeSound = sound
-        end
-        
-        self._currentTheme = themeName
-        NoirUI:Notify("🎨 Theme", "Đã áp dụng: " .. theme.name, "palette", "Success")
-        return true
-    end
-    
-    -- 13. Dừng Vibe Sound
-    function Window:StopVibeSound()
-        if Window._vibeSound then
-            Window._vibeSound:Stop()
-            Window._vibeSound:Destroy()
-            Window._vibeSound = nil
-        end
-    end
-    
-    -- 14. Lấy theme hiện tại
-    function Window:GetCurrentTheme()
-        return self._currentTheme or "default"
-    end
-    
-    -- 15. Lấy accent hiện tại
-    function Window:GetAccent()
-        return ACCENT
-    end
-    
-    -- Lưu các tham chiếu
-    Window._Main = Main
-    Window._Header = Header
-    Window._Title = Title
-    Window._Description = Description
-    Window._Side = Side
-    Window._Cont = Cont
-    Window._FloatBtn = TBtn
-    Window._LoadingBar = LoadingBar
-    Window._MainStroke = MainStroke
-    Window._allTabButtons = allTabButtons
-    Window._tabs = {}
-    Window._useAutoContrast = useAutoContrast
-    Window._settings = settings
-    Window._vibeSound = nil
-    Window._currentTheme = "default"
-    
-    -- ============================================
-    -- COMPONENT FUNCTIONS (CHỈ DÙNG TỪ TAB)
-    -- ============================================
-    
-    -- 1. ICON BUTTON
+    -- 15.1 ICON BUTTON
     local function CreateIconButton(parent, iconName, pos, size, color, iconSize, iconColor, callback)
         size = size or 36
         iconSize = iconSize or 16
@@ -2415,8 +2488,9 @@ function NoirUI:CreateWindow(settings)
         return btn, iconImg
     end
     
-    -- 2. GRID
+    -- 15.2 GRID
     local function CreateGrid(parent, columns, cellSize, cellPadding, position, size)
+        -- Lưu ý: Số cột thực tế được tính tự động bởi UIGridLayout dựa trên CellSize và chiều rộng container
         columns = columns or 4
         cellSize = cellSize or UDim2.new(0, 60, 0, 60)
         cellPadding = cellPadding or UDim2.new(0, 5, 0, 5)
@@ -2470,7 +2544,7 @@ function NoirUI:CreateWindow(settings)
         return gridFrame, gridLayout
     end
     
-    -- 3. BADGE
+    -- 15.3 BADGE
     local function CreateBadge(parent, text, color)
         local badge = Instance.new("Frame", parent)
         badge.Size = UDim2.new(0, text and (#text * 10 + 20) or 20, 0, 20)
@@ -2494,7 +2568,7 @@ function NoirUI:CreateWindow(settings)
         return badge
     end
     
-    -- 4. SEGMENTED CONTROL
+    -- 15.4 SEGMENTED CONTROL
     local function CreateSegmentedControl(parent, options, default, callback)
         local container = Instance.new("Frame", parent)
         container.Size = UDim2.new(0.95, 0, 0, 32)
@@ -2551,7 +2625,7 @@ function NoirUI:CreateWindow(settings)
         return container, buttons
     end
     
-    -- 5. PROGRESS BAR
+    -- 15.5 PROGRESS BAR
     local function CreateProgressBar(parent, value, max, color)
         local container = Instance.new("Frame", parent)
         container.Size = UDim2.new(0.95, 0, 0, 22)
@@ -2593,7 +2667,7 @@ function NoirUI:CreateWindow(settings)
         return container, update
     end
     
-    -- 6. RADIO GROUP
+    -- 15.6 RADIO GROUP
     local function CreateRadioGroup(parent, options, default, callback)
         local container = Instance.new("Frame", parent)
         container.Size = UDim2.new(0.95, 0, 0, #options * 30 + 10)
@@ -2663,7 +2737,7 @@ function NoirUI:CreateWindow(settings)
         return container, btns
     end
     
-    -- 7. CARD
+    -- 15.7 CARD
     local function CreateCard(parent, title, content)
         local card = Instance.new("Frame", parent)
         card.Size = UDim2.new(0.95, 0, 0, 60)
@@ -2699,7 +2773,7 @@ function NoirUI:CreateWindow(settings)
         return card
     end
     
-    -- 8. LOADING SPINNER
+    -- 15.8 LOADING SPINNER
     local function CreateLoadingSpinner(parent, size)
         size = size or 32
         local spinner = Instance.new("Frame", parent)
@@ -2734,9 +2808,14 @@ function NoirUI:CreateWindow(settings)
     end
     
     -- ============================================
-    -- TAB GROUP
+    -- 16. TAB GROUP
     -- ============================================
-    function Window:CreateTabGroup(title, defaultOpen)
+    function windowRef:CreateTabGroup(title, defaultOpen)
+        if not TScroll then
+            warn("⚠️ TScroll chưa được tạo, không thể tạo TabGroup")
+            return {}
+        end
+        
         local group = {}
         local isOpen = defaultOpen ~= false
         
@@ -2803,7 +2882,7 @@ function NoirUI:CreateWindow(settings)
         contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
         
         function group:CreateTab(name, icon)
-            local tab = Window:CreateTab(name, icon)
+            local tab = windowRef:CreateTab(name, icon)
             local btn = tab._button
             if btn then
                 btn.Parent = content
@@ -2852,9 +2931,14 @@ function NoirUI:CreateWindow(settings)
     end
     
     -- ============================================
-    -- CREATE TAB ROOT
+    -- 17. CREATE TAB ROOT
     -- ============================================
-    function Window:CreateTab(name, icon)
+    function windowRef:CreateTab(name, icon)
+        if not TScroll then
+            warn("⚠️ TScroll chưa được tạo, không thể tạo Tab")
+            return {}
+        end
+        
         local B = Instance.new("TextButton", TScroll)
         B.Size = UDim2.new(1, -5, 0, 32)
         if settings.TabBackgroundColor then
@@ -3083,7 +3167,7 @@ function NoirUI:CreateWindow(settings)
         end)
         
         -- ============================================
-        -- ELEMENTS CŨ
+        -- 18. ELEMENTS CŨ
         -- ============================================
         function Tab:CreateLabel(text, updateFunction)
             local parent = Tab._currentSectionContent or ContentFrame
@@ -3998,7 +4082,6 @@ function NoirUI:CreateWindow(settings)
                 local input = i.Text
                 if input == "" then return end
                 
-                -- Kiểm tra lệnh tùy chỉnh (không cần dấu ".")
                 local parts = {}
                 for part in input:gmatch("%S+") do
                     table.insert(parts, part)
@@ -4023,7 +4106,6 @@ function NoirUI:CreateWindow(settings)
                     return
                 end
                 
-                -- Bỏ loadstring
                 if input:lower():match("loadstring") then
                     NoirUI:Notify("🚫 Không hỗ trợ", "loadstring đã bị vô hiệu hóa!", "x", "Error")
                     if opt.ClearOnExecute then
@@ -4032,7 +4114,6 @@ function NoirUI:CreateWindow(settings)
                     return
                 end
                 
-                -- Bỏ require
                 if input:lower():match("require") then
                     NoirUI:Notify("🚫 Không hỗ trợ", "require đã bị vô hiệu hóa!", "x", "Error")
                     if opt.ClearOnExecute then
@@ -4041,7 +4122,6 @@ function NoirUI:CreateWindow(settings)
                     return
                 end
                 
-                -- Thực thi lua code
                 local success, err = loadstring(input)
                 if success then
                     local execSuccess, execErr = pcall(function()
@@ -4063,7 +4143,7 @@ function NoirUI:CreateWindow(settings)
         end
         
         -- ============================================
-        -- GẮN COMPONENT MỚI VÀO TAB (CHỈ TỪ TAB)
+        -- 19. GẮN COMPONENT MỚI VÀO TAB
         -- ============================================
         Tab.CreateIconButton = CreateIconButton
         Tab.CreateGrid = CreateGrid
@@ -4076,36 +4156,43 @@ function NoirUI:CreateWindow(settings)
         Tab.CreateCard = CreateCard
         Tab.CreateLoadingSpinner = CreateLoadingSpinner
         
-        -- Lưu tab vào window
-        if not Window._tabs then Window._tabs = {} end
-        table.insert(Window._tabs, Tab)
-        
-        -- Lưu button để TabGroup có thể di chuyển
+        table.insert(windowTabs, Tab)
         Tab._button = B
         
         return Tab
     end
     
     -- ============================================
-    -- GẮN UNDO/REDO VÀO WINDOW
+    -- 20. LƯU CÁC BIẾN VÀO WINDOW REF
     -- ============================================
-    Window.PushHistory = function(state)
-        NoirUI:PushHistory(state)
-    end
+    windowRef._Main = Main
+    windowRef._Header = Header
+    windowRef._Title = Title
+    windowRef._Description = Description
+    windowRef._Side = Side
+    windowRef._Cont = Cont
+    windowRef._FloatBtn = TBtn
+    windowRef._LoadingBar = LoadingBar
+    windowRef._MainStroke = MainStroke
+    windowRef._allTabButtons = allTabButtons
+    windowRef._tabs = windowTabs
+    windowRef._useAutoContrast = useAutoContrast
+    windowRef._settings = settings
+    windowRef._vibeSound = vibeSound
+    windowRef._screen = ScreenGui
     
-    Window.Undo = function(callback)
-        NoirUI:Undo(callback)
-    end
+    -- ============================================
+    -- 21. LƯU WINDOW VÀO DANH SÁCH
+    -- ============================================
+    table.insert(NoirUI._windows, windowRef)
     
-    Window.Redo = function(callback)
-        NoirUI:Redo(callback)
-    end
-    
-    -- Cập nhật canvas lần cuối
+    -- ============================================
+    -- 22. HOÀN TẤT
+    -- ============================================
     task.wait()
     updateSidebarCanvas()
     
-    return Window
+    return windowRef
 end
 
 return NoirUI
