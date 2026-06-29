@@ -10,8 +10,9 @@
 	- Glow Stroke, Blur Overlay (có corner), TabGroup, Minimize
 	- Auto Contrast
 	- Card (7 loại) - ĐÃ SỬA
-	- Dropdown nâng cấp (Modal + Multi-select) - ĐÃ SỬA
+	- Dropdown nâng cấp (Popup bên trái Main UI) - ĐÃ SỬA
 	- Paragraph tự động kéo dài - ĐÃ SỬA
+	- Search Icon sử dụng ID 5107220207 - ĐÃ SỬA
 	- ĐÃ XÓA RUNBOX
 	- Tất cả components đã được fix và hoạt động ổn định
 ]]
@@ -170,6 +171,9 @@ local function AddBlurOverlay(parent, blurAmount)
     if parentCorner then
         local corner = Instance.new("UICorner", wrapper)
         corner.CornerRadius = parentCorner.CornerRadius
+    else
+        local corner = Instance.new("UICorner", wrapper)
+        corner.CornerRadius = UDim.new(0, 12)
     end
 
     local blur = Instance.new("Frame", wrapper)
@@ -1736,6 +1740,9 @@ function NoirUI:CreateWindow(settings)
         TabContainer.BorderSizePixel = 0
         TabContainer.ClipsDescendants = true
         
+        -- ============================================
+        -- SEARCH FRAME (ĐÃ SỬA ICON)
+        -- ============================================
         local SearchFrame = Instance.new("Frame", TabContainer)
         SearchFrame.Size = UDim2.new(1, -20, 0, 35)
         SearchFrame.Position = UDim2.new(0, 10, 0, 0)
@@ -1753,22 +1760,20 @@ function NoirUI:CreateWindow(settings)
         searchStroke.ZIndex = 2
         AddGlowStroke(SearchFrame, ACCENT, 1, 1, 0.85)
         
-        local SearchIcon = Instance.new("TextLabel", SearchFrame)
-        SearchIcon.Size = UDim2.new(0, 30, 1, 0)
+        -- Search Icon (ID: 5107220207)
+        local SearchIcon = Instance.new("ImageLabel", SearchFrame)
+        SearchIcon.Size = UDim2.new(0, 16, 0, 16)
+        SearchIcon.Position = UDim2.new(0, 10, 0.5, -8)
         SearchIcon.BackgroundTransparency = 1
-        SearchIcon.Text = "🔍"
-        if useAutoContrast then
-            SearchIcon.TextColor3 = GetContrastColor(SearchFrame.BackgroundColor3)
-        else
-            SearchIcon.TextColor3 = Color3.fromRGB(150, 150, 150)
-        end
-        SearchIcon.TextTransparency = 0
-        SearchIcon.Font = "GothamMedium"
-        SearchIcon.TextSize = 14
+        SearchIcon.Image = "rbxassetid://5107220207"
+        SearchIcon.ImageColor3 = Color3.fromRGB(150, 150, 150)
+        SearchIcon.ZIndex = 2
+        SearchIcon.Name = "SearchIcon"
         
+        -- Search Box
         local SearchBox = Instance.new("TextBox", SearchFrame)
-        SearchBox.Size = UDim2.new(1, -35, 1, 0)
-        SearchBox.Position = UDim2.new(0, 35, 0, 0)
+        SearchBox.Size = UDim2.new(1, -40, 1, 0)
+        SearchBox.Position = UDim2.new(0, 32, 0, 0)
         SearchBox.BackgroundTransparency = 1
         SearchBox.PlaceholderText = "Tìm kiếm..."
         SearchBox.Text = ""
@@ -1777,6 +1782,7 @@ function NoirUI:CreateWindow(settings)
         SearchBox.Font = "Gotham"
         SearchBox.TextSize = 12
         SearchBox.ClearTextOnFocus = false
+        SearchBox.ZIndex = 2
         
         local ContentFrame = Instance.new("Frame", TabContainer)
         ContentFrame.Size = UDim2.new(1, 0, 0, 0)
@@ -2011,7 +2017,7 @@ function NoirUI:CreateWindow(settings)
         end
         
         -- ============================================
-        -- 18. PARAGRAPH (TỰ ĐỘNG KÉO DÀI - ĐÃ SỬA)
+        -- 18. PARAGRAPH (TỰ ĐỘNG KÉO DÀI)
         -- ============================================
         function Tab:CreateParagraph(opt)
             local parent = Tab._currentSectionContent or ContentFrame
@@ -2061,7 +2067,6 @@ function NoirUI:CreateWindow(settings)
             content.AutomaticSize = Enum.AutomaticSize.Y
             content.Name = "Content"
             
-            -- Cập nhật height khi text thay đổi
             local function updateHeight()
                 task.wait()
                 local contentHeight = content.TextBounds.Y + 10
@@ -2507,7 +2512,7 @@ function NoirUI:CreateWindow(settings)
         end
         
         -- ============================================
-        -- 19. DROPDOWN NÂNG CẤP (Modal + Multi-select - ĐÃ SỬA)
+        -- 19. DROPDOWN NÂNG CẤP (Popup bên trái Main UI)
         -- ============================================
         function Tab:CreateDropdown(opt)
             local parent = Tab._currentSectionContent or ContentFrame
@@ -2526,7 +2531,7 @@ function NoirUI:CreateWindow(settings)
             container.BackgroundTransparency = 0.7
             Instance.new("UICorner", container).CornerRadius = UDim.new(0, 8)
             container.LayoutOrder = GetO()
-            container.ClipsDescendants = false -- QUAN TRỌNG
+            container.ClipsDescendants = false
             container.Name = opt.Name or "Dropdown"
             table.insert(Tab.Elements, container)
             CreateSpringEffect(container, 0.05 * Tab.Count)
@@ -2604,16 +2609,19 @@ function NoirUI:CreateWindow(settings)
                 AddSubtitle(container, opt.Subtitle, 38)
             end
             
-            -- Modal - Đặt trong parent để hiển thị đúng
-            local modalFrame = Instance.new("Frame", parent)
-            modalFrame.Name = "DropdownModal"
+            -- ============================================
+            -- POPUP - Đặt trong ScreenGui bên trái Main UI
+            -- ============================================
+            local ScreenGui = windowRef._screen
+            local modalFrame = Instance.new("Frame", ScreenGui)
+            modalFrame.Name = "DropdownPopup"
             modalFrame.Size = UDim2.new(0, 0, 0, 0)
             modalFrame.Position = UDim2.new(0, 0, 0, 0)
             modalFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 26)
             modalFrame.BackgroundTransparency = 1
             modalFrame.Visible = false
             modalFrame.ClipsDescendants = true
-            modalFrame.ZIndex = 500
+            modalFrame.ZIndex = 999
             modalFrame.AutomaticSize = Enum.AutomaticSize.None
             
             local modalCorner = Instance.new("UICorner", modalFrame)
@@ -2621,8 +2629,24 @@ function NoirUI:CreateWindow(settings)
             
             local modalStroke = Instance.new("UIStroke", modalFrame)
             modalStroke.Color = ACCENT
-            modalStroke.Thickness = 1
-            modalStroke.Transparency = 0.5
+            modalStroke.Thickness = 2
+            modalStroke.Transparency = 0.3
+            
+            -- Shadow
+            local shadow = Instance.new("Frame", modalFrame)
+            shadow.Size = UDim2.new(1, 20, 1, 20)
+            shadow.Position = UDim2.new(0, -10, 0, -10)
+            shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            shadow.BackgroundTransparency = 0.6
+            shadow.ZIndex = -1
+            local shadowCorner = Instance.new("UICorner", shadow)
+            shadowCorner.CornerRadius = UDim.new(0, 14)
+            
+            -- Glow
+            if settings.UseGlow then
+                local glow = CreateUIGlow(modalFrame, ACCENT, 0.3, ScreenGui)
+                if glow then glow.ZIndex = 998 end
+            end
             
             -- Search
             local searchFrame = Instance.new("Frame", modalFrame)
@@ -2630,24 +2654,25 @@ function NoirUI:CreateWindow(settings)
             searchFrame.Position = UDim2.new(0, 8, 0, 8)
             searchFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
             searchFrame.BackgroundTransparency = 0.5
-            searchFrame.ZIndex = 501
+            searchFrame.ZIndex = 1000
             
             local searchCorner = Instance.new("UICorner", searchFrame)
             searchCorner.CornerRadius = UDim.new(0, 6)
             
-            local searchIcon = Instance.new("TextLabel", searchFrame)
-            searchIcon.Size = UDim2.new(0, 25, 1, 0)
+            -- Search Icon (ID: 5107220207)
+            local searchIcon = Instance.new("ImageLabel", searchFrame)
+            searchIcon.Size = UDim2.new(0, 14, 0, 14)
+            searchIcon.Position = UDim2.new(0, 8, 0.5, -7)
             searchIcon.BackgroundTransparency = 1
-            searchIcon.Text = "🔍"
-            searchIcon.TextColor3 = Color3.fromRGB(150, 150, 150)
-            searchIcon.TextSize = 12
-            searchIcon.Font = "GothamMedium"
-            searchIcon.TextXAlignment = "Center"
-            searchIcon.ZIndex = 502
+            searchIcon.Image = "rbxassetid://5107220207"
+            searchIcon.ImageColor3 = Color3.fromRGB(150, 150, 150)
+            searchIcon.ZIndex = 1001
+            searchIcon.Name = "SearchIcon"
             
+            -- Search Box
             local searchBox = Instance.new("TextBox", searchFrame)
             searchBox.Size = UDim2.new(1, -30, 1, 0)
-            searchBox.Position = UDim2.new(0, 30, 0, 0)
+            searchBox.Position = UDim2.new(0, 28, 0, 0)
             searchBox.BackgroundTransparency = 1
             searchBox.PlaceholderText = "Tìm kiếm..."
             searchBox.Text = ""
@@ -2656,7 +2681,7 @@ function NoirUI:CreateWindow(settings)
             searchBox.Font = "Gotham"
             searchBox.TextSize = 12
             searchBox.ClearTextOnFocus = false
-            searchBox.ZIndex = 502
+            searchBox.ZIndex = 1001
             
             -- Options list
             local optionsScroll = Instance.new("ScrollingFrame", modalFrame)
@@ -2668,8 +2693,9 @@ function NoirUI:CreateWindow(settings)
             optionsScroll.ScrollBarImageTransparency = 0.5
             optionsScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
             optionsScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-            optionsScroll.ZIndex = 501
+            optionsScroll.ZIndex = 1000
             optionsScroll.BorderSizePixel = 0
+            optionsScroll.ClipsDescendants = true
             
             local optionsLayout = Instance.new("UIListLayout", optionsScroll)
             optionsLayout.Padding = UDim.new(0, 2)
@@ -2680,7 +2706,7 @@ function NoirUI:CreateWindow(settings)
             actionFrame.Size = UDim2.new(1, -16, 0, 35)
             actionFrame.Position = UDim2.new(0, 8, 1, -43)
             actionFrame.BackgroundTransparency = 1
-            actionFrame.ZIndex = 501
+            actionFrame.ZIndex = 1000
             
             local actionLayout = Instance.new("UIListLayout", actionFrame)
             actionLayout.FillDirection = "Horizontal"
@@ -2696,7 +2722,7 @@ function NoirUI:CreateWindow(settings)
             selectAllBtn.TextSize = 10
             selectAllBtn.Font = "GothamMedium"
             selectAllBtn.AutoButtonColor = false
-            selectAllBtn.ZIndex = 502
+            selectAllBtn.ZIndex = 1001
             Instance.new("UICorner", selectAllBtn).CornerRadius = UDim.new(0, 6)
             
             local clearBtn = Instance.new("TextButton", actionFrame)
@@ -2707,7 +2733,7 @@ function NoirUI:CreateWindow(settings)
             clearBtn.TextSize = 10
             clearBtn.Font = "GothamMedium"
             clearBtn.AutoButtonColor = false
-            clearBtn.ZIndex = 502
+            clearBtn.ZIndex = 1001
             Instance.new("UICorner", clearBtn).CornerRadius = UDim.new(0, 6)
             
             local confirmBtn = Instance.new("TextButton", actionFrame)
@@ -2722,7 +2748,7 @@ function NoirUI:CreateWindow(settings)
             confirmBtn.TextSize = 10
             confirmBtn.Font = "GothamBold"
             confirmBtn.AutoButtonColor = false
-            confirmBtn.ZIndex = 502
+            confirmBtn.ZIndex = 1001
             Instance.new("UICorner", confirmBtn).CornerRadius = UDim.new(0, 6)
             
             local function updateCountBadge()
@@ -2767,15 +2793,30 @@ function NoirUI:CreateWindow(settings)
                     btn.BackgroundTransparency = 0.3
                     btn.Text = ""
                     btn.AutoButtonColor = false
-                    btn.ZIndex = 502
+                    btn.ZIndex = 1001
                     btn.Name = option
+                    
+                    btn.MouseEnter:Connect(function()
+                        if not btn.BackgroundColor3 == Color3.fromRGB(40, 40, 60) then
+                            TweenService:Create(btn, TweenInfo.new(0.1), {
+                                BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+                            }):Play()
+                        end
+                    end)
+                    btn.MouseLeave:Connect(function()
+                        if not btn.BackgroundColor3 == Color3.fromRGB(40, 40, 60) then
+                            TweenService:Create(btn, TweenInfo.new(0.1), {
+                                BackgroundColor3 = Color3.fromRGB(22, 22, 30)
+                            }):Play()
+                        end
+                    end)
                     
                     local checkBox = Instance.new("Frame", btn)
                     checkBox.Size = UDim2.new(0, 18, 0, 18)
                     checkBox.Position = UDim2.new(0, 10, 0.5, -9)
                     checkBox.BackgroundColor3 = isSelected and ACCENT or Color3.fromRGB(35, 35, 45)
                     checkBox.BackgroundTransparency = 0
-                    checkBox.ZIndex = 503
+                    checkBox.ZIndex = 1002
                     
                     local checkCorner = Instance.new("UICorner", checkBox)
                     checkCorner.CornerRadius = UDim.new(0, 4)
@@ -2789,7 +2830,7 @@ function NoirUI:CreateWindow(settings)
                     checkMark.Font = "GothamBold"
                     checkMark.TextXAlignment = "Center"
                     checkMark.TextYAlignment = "Center"
-                    checkMark.ZIndex = 504
+                    checkMark.ZIndex = 1003
                     
                     local label = Instance.new("TextLabel", btn)
                     label.Size = UDim2.new(1, -50, 1, 0)
@@ -2800,7 +2841,7 @@ function NoirUI:CreateWindow(settings)
                     label.TextSize = 12
                     label.Font = "Gotham"
                     label.TextXAlignment = "Left"
-                    label.ZIndex = 503
+                    label.ZIndex = 1002
                     
                     btn.MouseButton1Click:Connect(function()
                         if multiSelect then
@@ -2828,40 +2869,50 @@ function NoirUI:CreateWindow(settings)
                             if opt.Callback then
                                 pcall(opt.Callback, option)
                             end
-                            closeModal()
+                            closePopup()
                         end
                     end)
                 end
                 
                 task.wait()
+                
                 local contentHeight = optionsLayout.AbsoluteContentSize.Y + 10
-                local maxHeight = 200
-                local scrollHeight = math.min(contentHeight, maxHeight)
-                optionsScroll.Size = UDim2.new(1, 0, 0, scrollHeight)
+                local mainAbsPos = Main.AbsolutePosition
+                local mainAbsSize = Main.AbsoluteSize
+                
+                local popupWidth = math.min(container.AbsoluteSize.X * 1.2, 100)
+                local maxHeight = mainAbsSize.Y - 40
+                local scrollHeight = math.min(contentHeight, maxHeight - 46 - 50)
+                
+                optionsScroll.Size = UDim2.new(1, 0, 0, math.max(scrollHeight, 30))
                 optionsScroll.CanvasSize = UDim2.new(0, 0, 0, contentHeight + 10)
                 
                 local totalHeight = 46 + scrollHeight + 50
-                modalFrame.Size = UDim2.new(0, math.min(container.AbsoluteSize.X * 1.2, 400), 0, totalHeight)
+                modalFrame.Size = UDim2.new(0, popupWidth, 0, math.max(totalHeight, 80))
+                
+                local posX = mainAbsPos.X - popupWidth - 10
+                local posY = mainAbsPos.Y + 10
+                
+                if posX < 5 then
+                    posX = 5
+                end
+                
+                modalFrame.Position = UDim2.new(0, posX, 0, posY)
                 actionFrame.Position = UDim2.new(0, 8, 1, -43)
             end
             
-            local isModalOpen = false
+            local isPopupOpen = false
             
-            local function openModal()
-                if isModalOpen then return end
-                isModalOpen = true
+            local function openPopup()
+                if isPopupOpen then return end
+                isPopupOpen = true
                 
-                local absPos = container.AbsolutePosition
-                local absSize = container.AbsoluteSize
-                local parentAbsPos = parent.AbsolutePosition
-                
-                modalFrame.Position = UDim2.new(0, absPos.X - parentAbsPos.X, 0, absPos.Y - parentAbsPos.Y + absSize.Y + 5)
                 modalFrame.Visible = true
                 modalFrame.BackgroundTransparency = 0.95
                 
                 modalFrame.Size = UDim2.new(0, 0, 0, 0)
                 TweenService:Create(modalFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    Size = UDim2.new(0, math.min(container.AbsoluteSize.X * 1.2, 400), 0, 250),
+                    Size = UDim2.new(0, math.min(container.AbsoluteSize.X * 1.2, 100), 0, 250),
                     BackgroundTransparency = 0.95
                 }):Play()
                 
@@ -2876,9 +2927,9 @@ function NoirUI:CreateWindow(settings)
                 renderOptions(allOptions)
             end
             
-            local function closeModal()
-                if not isModalOpen then return end
-                isModalOpen = false
+            local function closePopup()
+                if not isPopupOpen then return end
+                isPopupOpen = false
                 
                 TweenService:Create(modalFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
                     Size = UDim2.new(0, 0, 0, 0),
@@ -2936,30 +2987,30 @@ function NoirUI:CreateWindow(settings)
                         pcall(opt.Callback, selectedItems)
                     end
                 end
-                closeModal()
+                closePopup()
             end)
             
             triggerBtn.MouseButton1Click:Connect(function()
                 PlaySound("Element")
                 CreateClickScaleEffect(triggerBtn)
                 
-                if isModalOpen then
-                    closeModal()
+                if isPopupOpen then
+                    closePopup()
                 else
-                    openModal()
+                    openPopup()
                 end
             end)
             
             UIS.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    if isModalOpen and modalFrame.Visible then
+                    if isPopupOpen and modalFrame.Visible then
                         local pos = input.Position
                         local absPos = modalFrame.AbsolutePosition
                         local absSize = modalFrame.AbsoluteSize
                         
                         if pos.X < absPos.X or pos.X > absPos.X + absSize.X or 
                            pos.Y < absPos.Y or pos.Y > absPos.Y + absSize.Y then
-                            closeModal()
+                            closePopup()
                         end
                     end
                 end
@@ -2985,9 +3036,9 @@ function NoirUI:CreateWindow(settings)
             end
             
             local api = {
-                Open = openModal,
-                Close = closeModal,
-                IsOpen = function() return isModalOpen end,
+                Open = openPopup,
+                Close = closePopup,
+                IsOpen = function() return isPopupOpen end,
                 GetSelected = function() return selectedItems end,
                 SetSelected = function(items)
                     if multiSelect and type(items) == "table" then
@@ -3014,7 +3065,7 @@ function NoirUI:CreateWindow(settings)
         end
         
         -- ============================================
-        -- 20. CARD (7 loại - ĐÃ SỬA)
+        -- 20. CARD (7 loại)
         -- ============================================
         function Tab:CreateCard(opt)
             opt = opt or {}
