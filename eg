@@ -1,15 +1,6 @@
 --[[
     NoirUI Interface (Fork từ Compkiller)
-    
-    Original: Compkiller by 4lpaca
-    Modified by: NoirNF
     Version: 3.0
-    
-    Changes:
-    - Đổi tên CK → NoirUI
-    - Bỏ watermark
-    - Thêm Lucide icons
-    - Đổi màu xanh → tím, xám → đen
 ]]
 
 pcall(function()
@@ -244,7 +235,7 @@ NoirUI.LastDrag = tick();
 NoirUI.Flags = {};
 
 -- ============================================
--- FONTAWESOME (SỬA LỖI)
+-- FONTAWESOME (THÊM VÀO ĐỂ SỬA LỖI)
 -- ============================================
 NoirUI.FontAwesome = {
     ['keyboard'] = "rbxassetid://10723416765",
@@ -4563,7 +4554,7 @@ function NoirUI:ChangeHighlightColor(NewColor)
 end;
 
 -- ============================================
--- WINDOW CREATOR (HÀM QUAN TRỌNG NHẤT)
+-- WINDOW CREATOR
 -- ============================================
 function NoirUI.new(Config)
 
@@ -4990,7 +4981,9 @@ function NoirUI.new(Config)
         });
 
         UICorner_2.CornerRadius = UDim.new(0, 4)
-        UICorner_2.Parent = SectionFrame        UIListLayout.Parent = SectionFrame
+        UICorner_2.Parent = SectionFrame
+
+        UIListLayout.Parent = SectionFrame
         UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
         UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
         UIListLayout.Padding = UDim.new(0, 5)
@@ -5085,9 +5078,7 @@ function NoirUI.new(Config)
         end;
     end;
 
-    -- ============================================
     -- BỎ WATERMARK - Không tạo watermark
-    -- ============================================
 
     -- ============================================
     -- CLOSE BUTTON
@@ -6164,6 +6155,16 @@ function NoirUI.new(Config)
                     NoirUI:_Animation(SectionClose, TweenInfo.new(0.21), { ImageTransparency = 1 })
                 end;
             end);
+            
+            if TabOpenSignal:GetValue() then
+                NoirUI:_Animation(Section, TweenInfo.new(0.21), { BackgroundTransparency = 0 })
+                NoirUI:_Animation(SectionText, TweenInfo.new(0.21), { BackgroundTransparency = 0.500 })
+                NoirUI:_Animation(SectionClose, TweenInfo.new(0.21), { BackgroundTransparency = 0.500 })
+            else
+                NoirUI:_Animation(Section, TweenInfo.new(0.21), { BackgroundTransparency = 1 })
+                NoirUI:_Animation(SectionText, TweenInfo.new(0.21), { BackgroundTransparency = 1 })
+                NoirUI:_Animation(SectionClose, TweenInfo.new(0.21), { BackgroundTransparency = 1 })
+            end
 
             NoirUI:_Input(Header, function()
                 IsOpen = not IsOpen;
@@ -7251,45 +7252,13 @@ function NoirUI.new(Config)
         end);
     end);
 
-    -- ============================================
-    -- THÊM HÀM UPDATE (SỬA LỖI)
-    -- ============================================
-    function WindowArgs:Update(config)
-        config = config or {};
-        config.Logo = config.Logo or Config.Logo;
-        config.Username = config.Username or LocalPlayer.DisplayName;
-        config.ExpireDate = config.ExpireDate or "NEVER";
-        config.WindowName = config.WindowName or Config.Name;
-        config.UserProfile = config.UserProfile or WindowArgs.Profile or string.format("rbxthumb://type=AvatarHeadShot&id=%s&w=150&h=150", tostring(LocalPlayer.UserId));
-
-        if NoirUI.SecureMode and string.find(config.UserProfile, "rbxassetid://",1,true) then
-            config.UserProfile = NoirUI:_GetIcon("user");
-        end;
-
-        UserText.Text = config.Username;
-        CompLogo.Image = config.Logo;
-        ExpireText.Text = config.ExpireDate;
-        WindowLabel.Text = config.WindowName;
-        UserProfile.Image = config.UserProfile;
-        WindowArgs.Username = config.Username;
-
-        Config.Logo = config.Logo or Config.Logo;
-        WindowArgs.Username = config.Username or WindowArgs.Username;
-        WindowArgs.ExipreDate = config.ExpireDate or WindowArgs.ExipreDate;
-        Config.Name = config.WindowName or Config.Name;
-        WindowArgs.Profile = config.UserProfile or WindowArgs.Profile;
-    end;
-
-    -- ============================================
-    -- UPDATE VÀ RETURN (SỬA LỖI)
-    -- ============================================
     WindowArgs:Update();
 
-    return WindowArgs;  -- <-- DÒNG NÀY RẤT QUAN TRỌNG
+    return WindowArgs;
 end;
 
 -- ============================================
--- GET DATE & TIME
+-- DATE & TIME
 -- ============================================
 function NoirUI:GetDate(Time)
     Time = Time or tick();
@@ -7881,8 +7850,8 @@ function NoirUI.newNotify()
     };
 
     return NoirUI.NOTIFY_CACHE;
-end
+end;
 
 NoirUI.NilFolder.Name = "Nil-Instances";
 
-return NoirUI;  -- <-- DÒNG NÀY RẤT QUAN TRỌNG
+return NoirUI;
