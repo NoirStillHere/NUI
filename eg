@@ -1,26 +1,12 @@
 -- ============================================
--- NOIR UI V5 - ULTIMATE FULL VERSION
+-- NOIR UI V5 - REFACTOR (CK + NL)
 -- ============================================
 --[[
-	Library Owner: NoirNF
-	UI Engineer: NoirNF
-	Lua Scripter: NoirNF, Adono
-	Version: 5.0 Ultimate
-	Features:
-	- UI Copy từ Compkiller (đổi màu Noir)
-	- Lucide Icons (từ GitHub)
-	- Sound Manager (tách riêng)
-	- Background Music + Vibe Sound
-	- Config System (Neverlose style)
-	- Search (Neverlose style)
-	- Resize, Drag, Minimize, Close
-	- Components: Button, Toggle, Slider, ColorPicker, Dropdown
-	- Settings, Keybind, Info (Popup) cho mọi component
-	- Flag system cho Config
-	- Intro giống CK (màu tím)
-	- Float Button
-	- Tab sidebar auto hide
-	- Tất cả components đã được fix và hoạt động ổn định
+	UI: Compkiller Interface (đổi màu Noir)
+	Search + Config: Neverlose Style
+	Icons: Lucide Icons (GitHub)
+	Sound: NoirUISound
+	Version: 5.0
 ]]
 
 -- ============================================
@@ -46,7 +32,7 @@ local NoirUI = {
 }
 
 -- ============================================
--- LUCIDE ICONS (TỪ GITHUB)
+-- LUCIDE ICONS (GITHUB)
 -- ============================================
 local LucideIcons = nil
 
@@ -59,38 +45,9 @@ local function GetLucideIcons()
         LucideIcons = result
         return LucideIcons
     end
-    warn("⚠️ Không thể tải icon library, sử dụng fallback")
     LucideIcons = {}
     return LucideIcons
 end
-
-local function GetIcon(name)
-    local icons = GetLucideIcons()
-    if icons and icons[name] then
-        return icons[name]
-    end
-    return nil
-end
-
--- ============================================
--- ICON IDs (FALLBACK)
--- ============================================
-local ICONS = {
-    Close = "rbxassetid://4458805208",
-    Minimize = "rbxassetid://82235228007110",
-    ArrowDown = "rbxassetid://12338898398",
-    Search = "rbxassetid://5107220207",
-    Settings = "rbxassetid://14007344336",
-    Info = "rbxassetid://10723415903",
-    Config = "rbxassetid://10734941499",
-    ChevronDown = "rbxassetid://109535175596957",
-    Check = "rbxassetid://10709790644",
-    Plus = "rbxassetid://10734924532",
-    Trash = "rbxassetid://10747362393",
-    Folder = "rbxassetid://10734987548",
-    Home = "rbxassetid://10723407389",
-    Sparkles = "rbxassetid://10734966197",
-}
 
 local function ResolveIcon(iconInput)
     if not iconInput then return nil end
@@ -101,8 +58,10 @@ local function ResolveIcon(iconInput)
         if iconInput:match("^rbxassetid://") or iconInput:match("^http") then
             return iconInput
         end
-        local icon = GetIcon(iconInput)
-        if icon then return icon end
+        local icons = GetLucideIcons()
+        if icons and icons[iconInput] then
+            return icons[iconInput]
+        end
         if tonumber(iconInput) then
             return "rbxassetid://" .. iconInput
         end
@@ -110,12 +69,6 @@ local function ResolveIcon(iconInput)
     end
     return nil
 end
-
--- ============================================
--- FONT
--- ============================================
-local BuiltInBold = Font.new("rbxasset://fonts/GothamSSm-Bold.json")
-local BuiltInRegular = Font.new("rbxasset://fonts/GothamSSm-Medium.json")
 
 -- ============================================
 -- COLORS NOIR
@@ -136,336 +89,134 @@ local NoirColors = {
 }
 
 -- ============================================
--- SOUND MANAGER (TỪ FILE RIÊNG)
+-- SOUND (TỪ FILE RIÊNG)
 -- ============================================
 local NoirUISound = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirNotFun/NUI/refs/heads/main/src/Sound.lua"))() or {}
 
--- ============================================
--- AUTO CONTRAST
--- ============================================
-local function GetContrastColor(backgroundColor)
-    local brightness = (0.299 * backgroundColor.R + 0.587 * backgroundColor.G + 0.114 * backgroundColor.B)
-    if brightness > 0.5 then
-        return Color3.fromRGB(0, 0, 0)
-    else
-        return Color3.fromRGB(255, 255, 255)
-    end
-end
-
--- ============================================
--- SUBTITLE HELPER
--- ============================================
-local function AddSubtitle(parent, text, yOffset)
-    if not text or text == "" then return nil end
-    local sub = Instance.new("TextLabel", parent)
-    sub.Size = UDim2.new(1, -20, 0, 16)
-    sub.Position = UDim2.new(0, 10, 0, yOffset or 28)
-    sub.BackgroundTransparency = 1
-    sub.Text = text
-    sub.TextColor3 = NoirColors.SwitchColor
-    sub.TextTransparency = 0.5
-    sub.TextSize = 10
-    sub.Font = Enum.Font.Gotham
-    sub.TextXAlignment = Enum.TextXAlignment.Left
-    sub.TextYAlignment = Enum.TextYAlignment.Top
-    sub.ZIndex = 11
-    return sub
-end
-
--- ============================================
--- INFO POPUP (GIỐNG COMPKILLER)
--- ============================================
-local function CreateInfoPopup(button, text, parent)
-    parent = parent or game.CoreGui:FindFirstChild("NoirUI_V5_Ultimate")
-    if not parent then return end
-    
-    local popup = Instance.new("Frame", parent)
-    popup.Size = UDim2.new(0, 0, 0, 0)
-    popup.Position = UDim2.new(0, 0, 0, 0)
-    popup.BackgroundColor3 = NoirColors.BGDBColor
-    popup.BackgroundTransparency = 1
-    popup.Visible = false
-    popup.ClipsDescendants = true
-    popup.ZIndex = 200
-    popup.Name = "InfoPopup"
-    
-    Instance.new("UICorner", popup).CornerRadius = UDim.new(0, 6)
-    
-    local stroke = Instance.new("UIStroke", popup)
-    stroke.Color = NoirColors.StrokeColor
-    stroke.Thickness = 1
-    stroke.Transparency = 1
-    
-    -- Shadow
-    for i = 1, 3 do
-        local shadow = Instance.new("UIStroke", popup)
-        shadow.Color = Color3.fromRGB(0, 0, 0)
-        shadow.Thickness = 6 - i
-        shadow.Transparency = 0.9 + (i * 0.025)
-        shadow.ZIndex = -1
-    end
-    
-    local content = Instance.new("TextLabel", popup)
-    content.Size = UDim2.new(1, -20, 1, -10)
-    content.Position = UDim2.new(0, 10, 0, 5)
-    content.BackgroundTransparency = 1
-    content.Text = text or "Thông tin"
-    content.TextColor3 = NoirColors.SwitchColor
-    content.TextSize = 11
-    content.TextTransparency = 1
-    content.Font = Enum.Font.GothamMedium
-    content.TextWrapped = true
-    content.TextXAlignment = Enum.TextXAlignment.Left
-    content.TextYAlignment = Enum.TextYAlignment.Top
-    content.ZIndex = 201
-    content.Name = "Content"
-    
-    local isVisible = false
-    local hideTimer = nil
-    
-    local function updatePopup()
-        local textSize = TextService:GetTextSize(content.Text, content.TextSize, content.Font, Vector2.new(150, math.huge))
-        local width = math.min(textSize.X + 30, 200)
-        local height = math.max(textSize.Y + 15, 30)
-        
-        popup.Size = UDim2.new(0, width, 0, height)
-        content.Size = UDim2.new(1, -20, 1, -10)
-        
-        local absX = button.AbsolutePosition.X + button.AbsoluteSize.X + 5
-        local parentAbs = parent.AbsolutePosition
-        if absX + width > parentAbs.X + parent.AbsoluteSize.X then
-            absX = button.AbsolutePosition.X - width - 5
-        end
-        popup.Position = UDim2.new(0, absX, 0, button.AbsolutePosition.Y + button.AbsoluteSize.Y/2 - height/2)
-    end
-    
-    local function showPopup()
-        if hideTimer then
-            task.cancel(hideTimer)
-            hideTimer = nil
-        end
-        isVisible = true
-        
-        popup.Visible = true
-        popup.Size = UDim2.new(0, 0, 0, 0)
-        popup.BackgroundTransparency = 1
-        
-        updatePopup()
-        
-        TweenService:Create(popup, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            BackgroundTransparency = 0.035
-        }):Play()
-        TweenService:Create(stroke, TweenInfo.new(0.15), {
-            Transparency = 0.65
-        }):Play()
-        TweenService:Create(content, TweenInfo.new(0.15), {
-            TextTransparency = 0.3
-        }):Play()
-    end
-    
-    local function hidePopup()
-        if hideTimer then
-            task.cancel(hideTimer)
-            hideTimer = nil
-        end
-        
-        TweenService:Create(popup, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            BackgroundTransparency = 1
-        }):Play()
-        TweenService:Create(stroke, TweenInfo.new(0.1), {
-            Transparency = 1
-        }):Play()
-        TweenService:Create(content, TweenInfo.new(0.1), {
-            TextTransparency = 1
-        }):Play()
-        
-        task.wait(0.1)
-        popup.Visible = false
-        isVisible = false
-    end
-    
-    local function scheduleHide()
-        if hideTimer then
-            task.cancel(hideTimer)
-            hideTimer = nil
-        end
-        hideTimer = task.delay(0.5, function()
-            if not isVisible then return end
-            local pos = UIS:GetMouseLocation()
-            local popupAbs = popup.AbsolutePosition
-            local popupSize = popup.AbsoluteSize
-            local btnAbs = button.AbsolutePosition
-            local btnSize = button.AbsoluteSize
-            
-            local onPopup = pos.X >= popupAbs.X and pos.X <= popupAbs.X + popupSize.X and
-                           pos.Y >= popupAbs.Y and pos.Y <= popupAbs.Y + popupSize.Y
-            local onButton = pos.X >= btnAbs.X and pos.X <= btnAbs.X + btnSize.X and
-                             pos.Y >= btnAbs.Y and pos.Y <= btnAbs.Y + btnSize.Y
-            
-            if not onPopup and not onButton then
-                hidePopup()
-            else
-                scheduleHide()
-            end
-        end)
-    end
-    
-    button.MouseEnter:Connect(function()
-        if text and text ~= "" then
-            showPopup()
-        end
-    end)
-    
-    button.MouseLeave:Connect(function()
-        scheduleHide()
-    end)
-    
-    popup.MouseEnter:Connect(function()
-        if hideTimer then
-            task.cancel(hideTimer)
-            hideTimer = nil
-        end
-    end)
-    
-    popup.MouseLeave:Connect(function()
-        scheduleHide()
-    end)
-    
-    UIS.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            if isVisible then
-                local pos = input.Position
-                local popupAbs = popup.AbsolutePosition
-                local popupSize = popup.AbsoluteSize
-                local btnAbs = button.AbsolutePosition
-                local btnSize = button.AbsoluteSize
-                
-                local onPopup = pos.X >= popupAbs.X and pos.X <= popupAbs.X + popupSize.X and
-                               pos.Y >= popupAbs.Y and pos.Y <= popupAbs.Y + popupSize.Y
-                local onButton = pos.X >= btnAbs.X and pos.X <= btnAbs.X + btnSize.X and
-                                 pos.Y >= btnAbs.Y and pos.Y <= btnAbs.Y + btnSize.Y
-                
-                if not onPopup and not onButton then
-                    hidePopup()
-                end
-            end
-        end
-    end)
-    
-    button.Destroying:Connect(function()
-        popup:Destroy()
-    end)
-    
-    return {
-        Show = showPopup,
-        Hide = hidePopup,
-        Update = updatePopup,
-        SetText = function(newText)
-            content.Text = newText
-            updatePopup()
-        end,
-        _isVisible = isVisible,
-    }
-end
-
--- ============================================
--- NOIR UI SOUND API
--- ============================================
 function NoirUI:PlaySound(soundType)
-    if NoirUISound and NoirUISound.Play then
-        NoirUISound:Play(soundType)
-    end
+    if NoirUISound and NoirUISound.Play then NoirUISound:Play(soundType) end
 end
 
 function NoirUI:SetCustomSound(soundType, soundId)
-    if NoirUISound and NoirUISound.SetCustomSound then
-        NoirUISound:SetCustomSound(soundType, soundId)
-    end
+    if NoirUISound and NoirUISound.SetCustomSound then NoirUISound:SetCustomSound(soundType, soundId) end
 end
 
 function NoirUI:ToggleSound(enabled)
-    if NoirUISound and NoirUISound.ToggleSound then
-        NoirUISound:ToggleSound(enabled)
-    end
+    if NoirUISound and NoirUISound.ToggleSound then NoirUISound:ToggleSound(enabled) end
 end
 
 function NoirUI:SetVolume(volume)
-    if NoirUISound and NoirUISound.SetVolume then
-        NoirUISound:SetVolume(volume)
-    end
+    if NoirUISound and NoirUISound.SetVolume then NoirUISound:SetVolume(volume) end
 end
 
 function NoirUI:EnableBackgroundMusic(settings)
-    if NoirUISound and NoirUISound.EnableBackgroundMusic then
-        NoirUISound:EnableBackgroundMusic(settings)
-    end
+    if NoirUISound and NoirUISound.EnableBackgroundMusic then NoirUISound:EnableBackgroundMusic(settings) end
 end
 
 function NoirUI:StartMusic()
-    if NoirUISound and NoirUISound.StartMusic then
-        NoirUISound:StartMusic()
-    end
+    if NoirUISound and NoirUISound.StartMusic then NoirUISound:StartMusic() end
 end
 
 function NoirUI:StopMusic()
-    if NoirUISound and NoirUISound.StopMusic then
-        NoirUISound:StopMusic()
-    end
+    if NoirUISound and NoirUISound.StopMusic then NoirUISound:StopMusic() end
 end
 
 function NoirUI:PauseMusic()
-    if NoirUISound and NoirUISound.PauseMusic then
-        NoirUISound:PauseMusic()
-    end
+    if NoirUISound and NoirUISound.PauseMusic then NoirUISound:PauseMusic() end
 end
 
 function NoirUI:ResumeMusic()
-    if NoirUISound and NoirUISound.ResumeMusic then
-        NoirUISound:ResumeMusic()
-    end
+    if NoirUISound and NoirUISound.ResumeMusic then NoirUISound:ResumeMusic() end
 end
 
 function NoirUI:SetMusicVolume(volume)
-    if NoirUISound and NoirUISound.SetMusicVolume then
-        NoirUISound:SetMusicVolume(volume)
-    end
+    if NoirUISound and NoirUISound.SetMusicVolume then NoirUISound:SetMusicVolume(volume) end
 end
 
 function NoirUI:AddMusicTrack(trackId)
-    if NoirUISound and NoirUISound.AddMusicTrack then
-        NoirUISound:AddMusicTrack(trackId)
-    end
+    if NoirUISound and NoirUISound.AddMusicTrack then NoirUISound:AddMusicTrack(trackId) end
 end
 
 function NoirUI:RemoveMusicTrack(index)
-    if NoirUISound and NoirUISound.RemoveMusicTrack then
-        NoirUISound:RemoveMusicTrack(index)
-    end
+    if NoirUISound and NoirUISound.RemoveMusicTrack then NoirUISound:RemoveMusicTrack(index) end
 end
 
 function NoirUI:SetMusicLoopMode(mode)
-    if NoirUISound and NoirUISound.SetMusicLoopMode then
-        NoirUISound:SetMusicLoopMode(mode)
-    end
+    if NoirUISound and NoirUISound.SetMusicLoopMode then NoirUISound:SetMusicLoopMode(mode) end
 end
 
 function NoirUI:SetVibeSound(soundId, volume)
-    if NoirUISound and NoirUISound.SetVibeSound then
-        NoirUISound:SetVibeSound(soundId, volume)
-    end
+    if NoirUISound and NoirUISound.SetVibeSound then NoirUISound:SetVibeSound(soundId, volume) end
 end
 
 function NoirUI:StopVibeSound()
-    if NoirUISound and NoirUISound.StopVibeSound then
-        NoirUISound:StopVibeSound()
-    end
+    if NoirUISound and NoirUISound.StopVibeSound then NoirUISound:StopVibeSound() end
 end
 
 -- ============================================
--- DRAGGABLE
+-- CK ANIMATIONS (GIỮ NGUYÊN)
+-- ============================================
+local function CreateClickScaleEffect(button)
+    if not button then return end
+    local origSize = button.Size
+    TweenService:Create(button, TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Size = origSize - UDim2.new(0, 2, 0, 2)
+    }):Play()
+    task.wait(0.06)
+    TweenService:Create(button, TweenInfo.new(0.12, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Size = origSize
+    }):Play()
+end
+
+local function CreateSpringEffect(frame, delay)
+    if not frame then return end
+    local origSize = frame.Size
+    local origPos = frame.Position
+    local origTrans = frame.BackgroundTransparency
+    frame.Size = UDim2.new(origSize.X.Scale, origSize.X.Offset * 0.3, origSize.Y.Scale, origSize.Y.Offset * 0.3)
+    frame.Position = UDim2.new(origPos.X.Scale, origPos.X.Offset, origPos.Y.Scale, origPos.Y.Offset + 30)
+    frame.BackgroundTransparency = 1
+    frame.Visible = true
+    task.wait(delay or 0)
+    TweenService:Create(frame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Size = origSize,
+        Position = origPos,
+        BackgroundTransparency = origTrans
+    }):Play()
+end
+
+local function CreateHoverEffect(button)
+    if not button then return end
+    local isHovering = false
+    local hoverTween = nil
+    local origTransparency = button.BackgroundTransparency
+    local origSize = button.Size
+    button.MouseEnter:Connect(function()
+        if isHovering then return end
+        isHovering = true
+        if hoverTween then hoverTween:Cancel() end
+        hoverTween = TweenService:Create(button, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundTransparency = math.max(origTransparency - 0.05, 0),
+            Size = origSize + UDim2.new(0, 1, 0, 1)
+        })
+        hoverTween:Play()
+    end)
+    button.MouseLeave:Connect(function()
+        isHovering = false
+        if hoverTween then hoverTween:Cancel() end
+        hoverTween = TweenService:Create(button, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundTransparency = origTransparency,
+            Size = origSize
+        })
+        hoverTween:Play()
+    end)
+end
+
+-- ============================================
+-- CK DRAG
 -- ============================================
 local function MakeDraggable(frame)
-    local dragging, dragInput, dragStart, startPos
+    local dragging, dragStart, startPos
     frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
@@ -480,19 +231,16 @@ local function MakeDraggable(frame)
     end)
     frame.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-    UIS.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            if dragging then
+                local delta = input.Position - dragStart
+                frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            end
         end
     end)
 end
 
 -- ============================================
--- CREATE WINDOW
+-- CREATE WINDOW (CK + NL)
 -- ============================================
 function NoirUI:CreateWindow(settings)
     settings = settings or {}
@@ -514,24 +262,16 @@ function NoirUI:CreateWindow(settings)
         Elements = {},
     }
     
-    -- Tạo folder config
-    if not isfolder(Window.ConfigFolder) then
-        makefolder(Window.ConfigFolder)
-    end
+    if not isfolder(Window.ConfigFolder) then makefolder(Window.ConfigFolder) end
     
     -- ============================================
     -- SOUND
     -- ============================================
-    if settings.BackgroundMusic then
-        NoirUI:EnableBackgroundMusic(settings.BackgroundMusic)
-    end
-    
-    if settings.VibeSound then
-        NoirUI:SetVibeSound(settings.VibeSound, settings.VibeVolume or 0.3)
-    end
+    if settings.BackgroundMusic then NoirUI:EnableBackgroundMusic(settings.BackgroundMusic) end
+    if settings.VibeSound then NoirUI:SetVibeSound(settings.VibeSound, settings.VibeVolume or 0.3) end
     
     -- ============================================
-    -- 1. INTRO (GIỐNG CK)
+    -- 1. INTRO (CK)
     -- ============================================
     local function CreateIntro()
         local IntroScreenGui = Instance.new("ScreenGui", game.CoreGui)
@@ -605,18 +345,15 @@ function NoirUI:CreateWindow(settings)
         
         local startTime = tick()
         local duration = 2.5
-        
         local connection
         connection = RunService.RenderStepped:Connect(function()
             local elapsed = tick() - startTime
             local percent = math.min(1, elapsed / duration)
             ProgressFill.Size = UDim2.new(percent, 0, 1, 0)
             ProgressText.Text = math.floor(percent * 100) .. "%"
-            
             if percent >= 1 then
                 connection:Disconnect()
                 task.wait(0.3)
-                
                 TweenService:Create(LogoIntro, TweenInfo.new(0.4), {
                     Size = UDim2.new(0, 300, 0, 300),
                     ImageTransparency = 1
@@ -636,26 +373,21 @@ function NoirUI:CreateWindow(settings)
                 TweenService:Create(Background, TweenInfo.new(0.5), {
                     BackgroundTransparency = 1
                 }):Play()
-                
                 task.wait(0.5)
                 IntroScreenGui:Destroy()
-                
                 TBtn.Visible = true
                 Side.Visible = true
                 Main.Visible = true
-                
                 Side.Size = UDim2.new(0, 0, 0, 300)
                 Side.Position = sideDefaultPos
                 TweenService:Create(Side, TweenInfo.new(0.5, Enum.EasingStyle.Back), {
                     Size = UDim2.new(0, 175, 0, 300)
                 }):Play()
-                
                 Main.Size = UDim2.new(0, 0, 0, 300)
                 Main.Position = mainDefaultPos
                 TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Back), {
                     Size = UDim2.new(0, 465, 0, 300)
                 }):Play()
-                
                 NoirUI:PlaySound("Open")
                 if settings.BackgroundMusic and settings.BackgroundMusic.AutoPlay then
                     NoirUI:StartMusic()
@@ -671,8 +403,7 @@ function NoirUI:CreateWindow(settings)
     TBtn.Size = UDim2.new(0, 45, 0, 45)
     TBtn.Position = UDim2.new(0, 15, 0.5, -22)
     TBtn.BackgroundTransparency = 1
-    local iconImg = ResolveIcon("sparkles") or ICONS.Sparkles
-    TBtn.Image = iconImg
+    TBtn.Image = ResolveIcon("sparkles") or "rbxassetid://10734966197"
     TBtn.ImageColor3 = Color3.new(1, 1, 1)
     TBtn.ZIndex = 10
     TBtn.Visible = false
@@ -690,7 +421,7 @@ function NoirUI:CreateWindow(settings)
     FloatStroke.Thickness = 2
     
     -- ============================================
-    -- 3. MAIN FRAME
+    -- 3. MAIN FRAME (CK)
     -- ============================================
     local mainDefaultPos = UDim2.new(0.5, -320, 0.5, -240)
     local sideDefaultPos = UDim2.new(0.5, -495, 0.5, -240)
@@ -721,7 +452,7 @@ function NoirUI:CreateWindow(settings)
     MainStroke.Transparency = 0.5
     
     -- ============================================
-    -- 4. SIDEBAR HEADER (LOGO + TITLE)
+    -- 4. SIDEBAR HEADER (CK)
     -- ============================================
     local SideHeader = Instance.new("Frame", Side)
     SideHeader.Size = UDim2.new(1, 0, 0, 50)
@@ -756,7 +487,7 @@ function NoirUI:CreateWindow(settings)
     SideLine.ZIndex = 10
     
     -- ============================================
-    -- 5. TAB SCROLLING
+    -- 5. TAB SCROLLING (CK)
     -- ============================================
     local TabScrolling = Instance.new("ScrollingFrame", Side)
     TabScrolling.Size = UDim2.new(1, -10, 1, -105)
@@ -771,13 +502,12 @@ function NoirUI:CreateWindow(settings)
     TabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
     TabLayout.Padding = UDim.new(0, 5)
-    
     TabLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         TabScrolling.CanvasSize = UDim2.fromOffset(0, TabLayout.AbsoluteContentSize.Y + 1)
     end)
     
     -- ============================================
-    -- 6. BOTTOM (AVATAR + USER)
+    -- 6. BOTTOM (AVATAR + USER) - CK
     -- ============================================
     local BottomFrame = Instance.new("Frame", Side)
     BottomFrame.Size = UDim2.new(1, 0, 0, 45)
@@ -816,17 +546,8 @@ function NoirUI:CreateWindow(settings)
     AccountName.TextYAlignment = Enum.TextYAlignment.Center
     AccountName.ZIndex = 12
     
-    UserButton.MouseButton1Click:Connect(function()
-        NoirUI:PlaySound("Click")
-        if Window._userSettings then
-            Window._userSettings.Visible = not Window._userSettings.Visible
-        else
-            NoirUI:Notify("👤 User", "Mở user settings!", "user", "Notification")
-        end
-    end)
-    
     -- ============================================
-    -- 7. HEADER (SEARCH + CONFIG + BUTTONS)
+    -- 7. HEADER (NL STYLE)
     -- ============================================
     local Header = Instance.new("Frame", Main)
     Header.Size = UDim2.new(1, 0, 0, 50)
@@ -842,7 +563,7 @@ function NoirUI:CreateWindow(settings)
     HeaderLine.ZIndex = 9
     
     -- ============================================
-    -- 8. CONFIG (GIỐNG NEVERLOSE)
+    -- 8. CONFIG (NL STYLE)
     -- ============================================
     local ConfigFrame = Instance.new("Frame", Header)
     ConfigFrame.Size = UDim2.new(0, 115, 0, 30)
@@ -856,8 +577,7 @@ function NoirUI:CreateWindow(settings)
     ConfigIcon.Size = UDim2.new(0, 16, 0, 16)
     ConfigIcon.Position = UDim2.new(0, 8, 0.5, -8)
     ConfigIcon.BackgroundTransparency = 1
-    local configImg = ResolveIcon("floppy-disk") or ICONS.Config
-    ConfigIcon.Image = configImg
+    ConfigIcon.Image = ResolveIcon("floppy-disk") or "rbxassetid://10734941499"
     ConfigIcon.ImageColor3 = NoirColors.SwitchColor
     ConfigIcon.ImageTransparency = 0.5
     ConfigIcon.ZIndex = 10
@@ -887,14 +607,13 @@ function NoirUI:CreateWindow(settings)
     ConfigArrow.Position = UDim2.new(1, -18, 0.5, -7)
     ConfigArrow.AnchorPoint = Vector2.new(1, 0.5)
     ConfigArrow.BackgroundTransparency = 1
-    local arrowImg = ResolveIcon("chevron-down") or ICONS.ChevronDown
-    ConfigArrow.Image = arrowImg
+    ConfigArrow.Image = ResolveIcon("chevron-down") or "rbxassetid://109535175596957"
     ConfigArrow.ImageColor3 = NoirColors.SwitchColor
     ConfigArrow.ImageTransparency = 0.5
     ConfigArrow.ZIndex = 10
     
     -- ============================================
-    -- 9. SEARCH (GIỐNG NEVERLOSE)
+    -- 9. SEARCH (NL STYLE)
     -- ============================================
     local SearchFrame = Instance.new("Frame", Header)
     SearchFrame.Size = UDim2.new(0, 30, 0, 30)
@@ -908,8 +627,7 @@ function NoirUI:CreateWindow(settings)
     SearchIcon.Size = UDim2.new(0, 18, 0, 18)
     SearchIcon.Position = UDim2.new(0.5, -9, 0.5, -9)
     SearchIcon.BackgroundTransparency = 1
-    local searchImg = ResolveIcon("search") or ICONS.Search
-    SearchIcon.Image = searchImg
+    SearchIcon.Image = ResolveIcon("search") or "rbxassetid://5107220207"
     SearchIcon.ImageColor3 = NoirColors.SwitchColor
     SearchIcon.ImageTransparency = 0.5
     SearchIcon.ZIndex = 12
@@ -1012,7 +730,7 @@ function NoirUI:CreateWindow(settings)
     end)
     
     -- ============================================
-    -- 10. BUTTONS (MINIMIZE, CLOSE)
+    -- 10. BUTTONS (MINIMIZE, CLOSE) - CK
     -- ============================================
     local Btns = Instance.new("Frame", Header)
     Btns.Size = UDim2.new(0, 60, 1, 0)
@@ -1026,21 +744,17 @@ function NoirUI:CreateWindow(settings)
     BtnLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     BtnLayout.Padding = UDim.new(0, 4)
     
-    -- Minimize Button
     local MinBtn = Instance.new("ImageButton", Btns)
     MinBtn.Size = UDim2.new(0, 28, 0, 28)
     MinBtn.BackgroundTransparency = 1
-    local minImg = ResolveIcon("minus") or ICONS.Minimize
-    MinBtn.Image = minImg
+    MinBtn.Image = ResolveIcon("minus") or "rbxassetid://82235228007110"
     MinBtn.ImageColor3 = Color3.fromRGB(255, 200, 50)
     MinBtn.ZIndex = 10
     
-    -- Close Button
     local CloseBtn = Instance.new("ImageButton", Btns)
     CloseBtn.Size = UDim2.new(0, 28, 0, 28)
     CloseBtn.BackgroundTransparency = 1
-    local closeImg = ResolveIcon("x") or ICONS.Close
-    CloseBtn.Image = closeImg
+    CloseBtn.Image = ResolveIcon("x") or "rbxassetid://4458805208"
     CloseBtn.ImageColor3 = Color3.fromRGB(255, 100, 100)
     CloseBtn.ZIndex = 10
     
@@ -1056,13 +770,10 @@ function NoirUI:CreateWindow(settings)
             TweenService:Create(Side, TweenInfo.new(0.3), {
                 Size = UDim2.new(0, 0, 0, 50)
             }):Play()
-            local downImg = ResolveIcon("chevron-down") or ICONS.ArrowDown
-            MinBtn.Image = downImg
+            MinBtn.Image = ResolveIcon("chevron-down") or "rbxassetid://12338898398"
             MinBtn.Size = UDim2.new(0, 40, 0, 40)
             CloseBtn.Visible = false
-            if isSearchOpen then
-                SearchIcon.MouseButton1Click:Fire()
-            end
+            if isSearchOpen then SearchIcon.MouseButton1Click:Fire() end
         else
             TweenService:Create(Main, TweenInfo.new(0.3), {
                 Size = UDim2.new(0, Main.Size.X.Offset, 0, Main.Size.Y.Offset)
@@ -1070,330 +781,14 @@ function NoirUI:CreateWindow(settings)
             TweenService:Create(Side, TweenInfo.new(0.3), {
                 Size = UDim2.new(0, 175, 0, Main.Size.Y.Offset)
             }):Play()
-            local minImg2 = ResolveIcon("minus") or ICONS.Minimize
-            MinBtn.Image = minImg2
+            MinBtn.Image = ResolveIcon("minus") or "rbxassetid://82235228007110"
             MinBtn.Size = UDim2.new(0, 28, 0, 28)
             CloseBtn.Visible = true
         end
     end)
     
     -- ============================================
-    -- 11. CONFIG SYSTEM (GIỐNG NEVERLOSE)
-    -- ============================================
-    local ConfigMenu = Instance.new("Frame", ScreenGui)
-    ConfigMenu.Size = UDim2.new(0, 220, 0, 0)
-    ConfigMenu.Position = UDim2.new(0.5, -110, 0.5, -100)
-    ConfigMenu.BackgroundColor3 = NoirColors.BGDBColor
-    ConfigMenu.BackgroundTransparency = 1
-    ConfigMenu.Visible = false
-    ConfigMenu.ClipsDescendants = true
-    ConfigMenu.ZIndex = 150
-    Instance.new("UICorner", ConfigMenu).CornerRadius = UDim.new(0, 10)
-    
-    local ConfigMenuStroke = Instance.new("UIStroke", ConfigMenu)
-    ConfigMenuStroke.Color = NoirColors.StrokeColor
-    ConfigMenuStroke.Thickness = 1
-    ConfigMenuStroke.Transparency = 0.65
-    
-    local ConfigMenuLayout = Instance.new("UIListLayout", ConfigMenu)
-    ConfigMenuLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    ConfigMenuLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    ConfigMenuLayout.Padding = UDim.new(0, 4)
-    
-    ConfigMenuLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        ConfigMenu.Size = UDim2.new(0, 220, 0, ConfigMenuLayout.AbsoluteContentSize.Y + 5)
-    end)
-    
-    -- Add Config
-    local AddConfigFrame = Instance.new("Frame", ConfigMenu)
-    AddConfigFrame.Size = UDim2.new(1, 0, 0, 30)
-    AddConfigFrame.BackgroundTransparency = 1
-    AddConfigFrame.ZIndex = 151
-    
-    local AddConfigLabel = Instance.new("TextLabel", AddConfigFrame)
-    AddConfigLabel.Size = UDim2.new(0, 100, 0, 15)
-    AddConfigLabel.Position = UDim2.new(0, 11, 0, 6)
-    AddConfigLabel.BackgroundTransparency = 1
-    AddConfigLabel.Text = "Config"
-    AddConfigLabel.TextColor3 = NoirColors.SwitchColor
-    AddConfigLabel.TextSize = 13
-    AddConfigLabel.TextTransparency = 0.2
-    AddConfigLabel.Font = Enum.Font.GothamMedium
-    AddConfigLabel.TextXAlignment = Enum.TextXAlignment.Left
-    AddConfigLabel.ZIndex = 152
-    
-    local AddConfigInput = Instance.new("TextBox", AddConfigFrame)
-    AddConfigInput.Size = UDim2.new(0, 100, 0, 18)
-    AddConfigInput.Position = UDim2.new(1, -120, 0.5, -9)
-    AddConfigInput.AnchorPoint = Vector2.new(1, 0.5)
-    AddConfigInput.BackgroundColor3 = NoirColors.DropColor
-    AddConfigInput.BackgroundTransparency = 0
-    AddConfigInput.PlaceholderText = "Config Name..."
-    AddConfigInput.Text = ""
-    AddConfigInput.TextColor3 = NoirColors.SwitchColor
-    AddConfigInput.TextSize = 11
-    AddConfigInput.TextTransparency = 0.35
-    AddConfigInput.Font = Enum.Font.GothamMedium
-    AddConfigInput.ZIndex = 152
-    AddConfigInput.ClearTextOnFocus = false
-    Instance.new("UICorner", AddConfigInput).CornerRadius = UDim.new(0, 4)
-    
-    local AddConfigBtn = Instance.new("ImageButton", AddConfigFrame)
-    AddConfigBtn.Size = UDim2.new(0, 20, 0, 18)
-    AddConfigBtn.Position = UDim2.new(1, -18, 0.5, -9)
-    AddConfigBtn.AnchorPoint = Vector2.new(1, 0.5)
-    AddConfigBtn.BackgroundTransparency = 1
-    local plusImg = ResolveIcon("plus") or ICONS.Plus
-    AddConfigBtn.Image = plusImg
-    AddConfigBtn.ImageColor3 = NoirColors.SwitchColor
-    AddConfigBtn.ImageTransparency = 0.5
-    AddConfigBtn.ZIndex = 152
-    
-    -- Config List
-    local ConfigList = Instance.new("Frame", ConfigMenu)
-    ConfigList.Size = UDim2.new(1, 0, 0, 0)
-    ConfigList.BackgroundTransparency = 1
-    ConfigList.ZIndex = 151
-    ConfigList.AutomaticSize = Enum.AutomaticSize.Y
-    
-    local ConfigListLayout = Instance.new("UIListLayout", ConfigList)
-    ConfigListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    ConfigListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    ConfigListLayout.Padding = UDim.new(0, 2)
-    
-    -- Config Functions
-    local function GetConfigData()
-        local data = {}
-        for flag, v in pairs(Window.Flags) do
-            if v and v.GetValue then
-                local val = v:GetValue()
-                if typeof(val) == "Color3" then
-                    data[flag] = {Type = "Color3", R = val.R, G = val.G, B = val.B}
-                else
-                    data[flag] = {Type = "Value", Value = val}
-                end
-            end
-        end
-        return data
-    end
-    
-    local function LoadConfigData(data)
-        for flag, v in pairs(data) do
-            if Window.Flags[flag] and Window.Flags[flag].SetValue then
-                if v.Type == "Color3" then
-                    Window.Flags[flag]:SetValue(Color3.new(v.R, v.G, v.B))
-                else
-                    Window.Flags[flag]:SetValue(v.Value)
-                end
-            end
-        end
-    end
-    
-    local function SaveConfig(name)
-        local data = GetConfigData()
-        data.__INFO = {
-            Name = name,
-            Author = Players.LocalPlayer.DisplayName,
-            Date = os.date("%Y-%m-%d %H:%M:%S")
-        }
-        local json = HttpService:JSONEncode(data)
-        writefile(Window.ConfigFolder .. "/" .. name .. ".json", json)
-        RefreshConfigList()
-    end
-    
-    local function LoadConfig(name)
-        local path = Window.ConfigFolder .. "/" .. name .. ".json"
-        if isfile(path) then
-            local json = readfile(path)
-            local data = HttpService:JSONDecode(json)
-            LoadConfigData(data)
-            ConfigName.Text = name
-            RefreshConfigList()
-            NoirUI:Notify("📂 Config", "Loaded: " .. name, "folder", "Success")
-        end
-    end
-    
-    local function DeleteConfig(name)
-        local path = Window.ConfigFolder .. "/" .. name .. ".json"
-        if isfile(path) then
-            delfile(path)
-            RefreshConfigList()
-            NoirUI:Notify("🗑️ Config", "Deleted: " .. name, "trash", "Notification")
-        end
-    end
-    
-    local function RefreshConfigList()
-        for _, child in pairs(ConfigList:GetChildren()) do
-            if child:IsA("Frame") then
-                child:Destroy()
-            end
-        end
-        
-        local configs = {}
-        if isfolder(Window.ConfigFolder) then
-            for _, file in pairs(listfiles(Window.ConfigFolder)) do
-                local name = string.match(file, "([^/]+)%.json$")
-                if name then
-                    table.insert(configs, name)
-                end
-            end
-        end
-        
-        for _, name in ipairs(configs) do
-            local item = Instance.new("Frame", ConfigList)
-            item.Size = UDim2.new(1, -10, 0, 30)
-            item.BackgroundColor3 = NoirColors.BlockColor
-            item.BackgroundTransparency = 1
-            item.ZIndex = 152
-            Instance.new("UICorner", item).CornerRadius = UDim.new(0, 6)
-            
-            local label = Instance.new("TextLabel", item)
-            label.Size = UDim2.new(0, 100, 0, 15)
-            label.Position = UDim2.new(0, 11, 0, 6)
-            label.BackgroundTransparency = 1
-            label.Text = name
-            label.TextColor3 = NoirColors.SwitchColor
-            label.TextSize = 13
-            label.TextTransparency = 0.2
-            label.Font = Enum.Font.GothamMedium
-            label.TextXAlignment = Enum.TextXAlignment.Left
-            label.ZIndex = 153
-            
-            local loadBtn = Instance.new("TextButton", item)
-            loadBtn.Size = UDim2.new(0, 60, 0, 20)
-            loadBtn.Position = UDim2.new(1, -130, 0.5, -10)
-            loadBtn.AnchorPoint = Vector2.new(1, 0.5)
-            loadBtn.BackgroundColor3 = ACCENT
-            loadBtn.BackgroundTransparency = 0.5
-            loadBtn.Text = "Load"
-            loadBtn.TextColor3 = NoirColors.SwitchColor
-            loadBtn.TextSize = 10
-            loadBtn.Font = Enum.Font.GothamBold
-            loadBtn.ZIndex = 153
-            Instance.new("UICorner", loadBtn).CornerRadius = UDim.new(0, 4)
-            loadBtn.AutoButtonColor = false
-            
-            local delBtn = Instance.new("TextButton", item)
-            delBtn.Size = UDim2.new(0, 60, 0, 20)
-            delBtn.Position = UDim2.new(1, -65, 0.5, -10)
-            delBtn.AnchorPoint = Vector2.new(1, 0.5)
-            delBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-            delBtn.BackgroundTransparency = 0.5
-            delBtn.Text = "Delete"
-            delBtn.TextColor3 = NoirColors.SwitchColor
-            delBtn.TextSize = 10
-            delBtn.Font = Enum.Font.GothamBold
-            delBtn.ZIndex = 153
-            Instance.new("UICorner", delBtn).CornerRadius = UDim.new(0, 4)
-            delBtn.AutoButtonColor = false
-            
-            loadBtn.MouseButton1Click:Connect(function()
-                LoadConfig(name)
-                ToggleConfigMenu(false)
-            end)
-            
-            delBtn.MouseButton1Click:Connect(function()
-                DeleteConfig(name)
-            end)
-            
-            item.MouseEnter:Connect(function()
-                TweenService:Create(item, TweenInfo.new(0.15), {
-                    BackgroundTransparency = 0.5
-                }):Play()
-            end)
-            item.MouseLeave:Connect(function()
-                TweenService:Create(item, TweenInfo.new(0.15), {
-                    BackgroundTransparency = 1
-                }):Play()
-            end)
-        end
-    end
-    
-    local function ToggleConfigMenu(open)
-        if open then
-            local cfPos = ConfigFrame.AbsolutePosition
-            ConfigMenu.Position = UDim2.new(0, cfPos.X, 0, cfPos.Y + 35)
-            ConfigMenu.Visible = true
-            ConfigMenu.BackgroundTransparency = 1
-            ConfigMenu.Size = UDim2.new(0, 220, 0, 0)
-            TweenService:Create(ConfigMenu, TweenInfo.new(0.25), {
-                BackgroundTransparency = 0.035,
-                Size = UDim2.new(0, 220, 0, 150)
-            }):Play()
-            TweenService:Create(ConfigArrow, TweenInfo.new(0.25), {
-                Rotation = 180
-            }):Play()
-            RefreshConfigList()
-        else
-            TweenService:Create(ConfigMenu, TweenInfo.new(0.15), {
-                BackgroundTransparency = 1,
-                Size = UDim2.new(0, 220, 0, 0)
-            }):Play()
-            TweenService:Create(ConfigArrow, TweenInfo.new(0.15), {
-                Rotation = 0
-            }):Play()
-            task.wait(0.15)
-            ConfigMenu.Visible = false
-        end
-    end
-    
-    ConfigFrame.MouseButton1Click:Connect(function()
-        NoirUI:PlaySound("Click")
-        ToggleConfigMenu(not ConfigMenu.Visible)
-    end)
-    
-    AddConfigBtn.MouseButton1Click:Connect(function()
-        NoirUI:PlaySound("Click")
-        local name = AddConfigInput.Text
-        if name and name ~= "" then
-            SaveConfig(name)
-            AddConfigInput.Text = ""
-            NoirUI:Notify("💾 Config", "Saved: " .. name, "floppy-disk", "Success")
-            ToggleConfigMenu(true)
-        end
-    end)
-    
-    ConfigIcon.MouseButton1Click:Connect(function()
-        NoirUI:PlaySound("Click")
-        local name = ConfigName.Text
-        if name and name ~= "" then
-            SaveConfig(name)
-            NoirUI:Notify("💾 Config", "Saved: " .. name, "floppy-disk", "Success")
-        end
-    end)
-    
-    ConfigIcon.MouseEnter:Connect(function()
-        TweenService:Create(ConfigIcon, TweenInfo.new(0.15), {
-            ImageTransparency = 0.1
-        }):Play()
-    end)
-    ConfigIcon.MouseLeave:Connect(function()
-        TweenService:Create(ConfigIcon, TweenInfo.new(0.15), {
-            ImageTransparency = 0.5
-        }):Play()
-    end)
-    
-    UIS.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            if ConfigMenu.Visible then
-                local pos = input.Position
-                local absPos = ConfigMenu.AbsolutePosition
-                local absSize = ConfigMenu.AbsoluteSize
-                if pos.X < absPos.X or pos.X > absPos.X + absSize.X or 
-                   pos.Y < absPos.Y or pos.Y > absPos.Y + absSize.Y then
-                    local cfPos = ConfigFrame.AbsolutePosition
-                    local cfSize = ConfigFrame.AbsoluteSize
-                    if not (pos.X >= cfPos.X and pos.X <= cfPos.X + cfSize.X and
-                            pos.Y >= cfPos.Y and pos.Y <= cfPos.Y + cfSize.Y) then
-                        ToggleConfigMenu(false)
-                    end
-                end
-            end
-        end
-    end)
-    
-    -- ============================================
-    -- 12. CLOSE CONFIRM
+    -- 11. CLOSE CONFIRM (CK)
     -- ============================================
     CloseBtn.MouseButton1Click:Connect(function()
         NoirUI:PlaySound("Click")
@@ -1459,7 +854,7 @@ function NoirUI:CreateWindow(settings)
     end)
     
     -- ============================================
-    -- 13. TAB CONTAINER
+    -- 12. TAB CONTAINER (CK)
     -- ============================================
     local TabContainer = Instance.new("Frame", Main)
     TabContainer.Size = UDim2.new(1, 0, 1, -50)
@@ -1469,7 +864,7 @@ function NoirUI:CreateWindow(settings)
     TabContainer.ZIndex = 5
     
     -- ============================================
-    -- 14. RESIZE HANDLE
+    -- 13. RESIZE (NL STYLE)
     -- ============================================
     local ResizeHandle = Instance.new("Frame", ScreenGui)
     ResizeHandle.Size = UDim2.new(0, 12, 0, 12)
@@ -1482,8 +877,7 @@ function NoirUI:CreateWindow(settings)
     ResizeIcon.Size = UDim2.new(0, 10, 0, 10)
     ResizeIcon.Position = UDim2.new(0.5, -5, 0.5, -5)
     ResizeIcon.BackgroundTransparency = 1
-    local resizeImg = ResolveIcon("move") or ICONS.ArrowDown
-    ResizeIcon.Image = resizeImg
+    ResizeIcon.Image = ResolveIcon("move") or "rbxassetid://10709791015"
     ResizeIcon.ImageColor3 = NoirColors.SwitchColor
     ResizeIcon.ImageTransparency = 0.5
     ResizeIcon.ZIndex = 51
@@ -1501,73 +895,304 @@ function NoirUI:CreateWindow(settings)
             ResizeHandle.BackgroundTransparency = 0.3
         end
     end)
-    
     UIS.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             isResizing = false
             ResizeHandle.BackgroundTransparency = 0.8
         end
     end)
-    
     UIS.InputChanged:Connect(function(input)
         if isResizing and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - resizeStart
             local newWidth = math.clamp(resizeStartSize.X.Offset + delta.X, 400, 1000)
             local newHeight = math.clamp(resizeStartSize.Y.Offset + delta.Y, 300, 700)
-            
             Main.Size = UDim2.new(0, newWidth, 0, newHeight)
             Side.Size = UDim2.new(0, 175, 0, newHeight)
         end
     end)
     
     -- ============================================
-    -- 15. DRAG
+    -- 14. CONFIG SYSTEM (NL)
     -- ============================================
-    local dragToggle = false
-    local dragStart, startPos, startSidePos
+    local ConfigMenu = Instance.new("Frame", ScreenGui)
+    ConfigMenu.Size = UDim2.new(0, 220, 0, 0)
+    ConfigMenu.Position = UDim2.new(0.5, -110, 0.5, -100)
+    ConfigMenu.BackgroundColor3 = NoirColors.BGDBColor
+    ConfigMenu.BackgroundTransparency = 1
+    ConfigMenu.Visible = false
+    ConfigMenu.ClipsDescendants = true
+    ConfigMenu.ZIndex = 150
+    Instance.new("UICorner", ConfigMenu).CornerRadius = UDim.new(0, 10)
     
-    Main.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragToggle = true
-            dragStart = input.Position
-            startPos = Main.Position
-            startSidePos = Side.Position
+    local ConfigMenuStroke = Instance.new("UIStroke", ConfigMenu)
+    ConfigMenuStroke.Color = NoirColors.StrokeColor
+    ConfigMenuStroke.Thickness = 1
+    ConfigMenuStroke.Transparency = 0.65
+    
+    local ConfigMenuLayout = Instance.new("UIListLayout", ConfigMenu)
+    ConfigMenuLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    ConfigMenuLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    ConfigMenuLayout.Padding = UDim.new(0, 4)
+    ConfigMenuLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        ConfigMenu.Size = UDim2.new(0, 220, 0, ConfigMenuLayout.AbsoluteContentSize.Y + 5)
+    end)
+    
+    -- Add Config
+    local AddConfigFrame = Instance.new("Frame", ConfigMenu)
+    AddConfigFrame.Size = UDim2.new(1, 0, 0, 30)
+    AddConfigFrame.BackgroundTransparency = 1
+    AddConfigFrame.ZIndex = 151
+    
+    local AddConfigLabel = Instance.new("TextLabel", AddConfigFrame)
+    AddConfigLabel.Size = UDim2.new(0, 100, 0, 15)
+    AddConfigLabel.Position = UDim2.new(0, 11, 0, 6)
+    AddConfigLabel.BackgroundTransparency = 1
+    AddConfigLabel.Text = "Config"
+    AddConfigLabel.TextColor3 = NoirColors.SwitchColor
+    AddConfigLabel.TextSize = 13
+    AddConfigLabel.TextTransparency = 0.2
+    AddConfigLabel.Font = Enum.Font.GothamMedium
+    AddConfigLabel.TextXAlignment = Enum.TextXAlignment.Left
+    AddConfigLabel.ZIndex = 152
+    
+    local AddConfigInput = Instance.new("TextBox", AddConfigFrame)
+    AddConfigInput.Size = UDim2.new(0, 100, 0, 18)
+    AddConfigInput.Position = UDim2.new(1, -120, 0.5, -9)
+    AddConfigInput.AnchorPoint = Vector2.new(1, 0.5)
+    AddConfigInput.BackgroundColor3 = NoirColors.DropColor
+    AddConfigInput.BackgroundTransparency = 0
+    AddConfigInput.PlaceholderText = "Config Name..."
+    AddConfigInput.Text = ""
+    AddConfigInput.TextColor3 = NoirColors.SwitchColor
+    AddConfigInput.TextSize = 11
+    AddConfigInput.TextTransparency = 0.35
+    AddConfigInput.Font = Enum.Font.GothamMedium
+    AddConfigInput.ZIndex = 152
+    AddConfigInput.ClearTextOnFocus = false
+    Instance.new("UICorner", AddConfigInput).CornerRadius = UDim.new(0, 4)
+    
+    local AddConfigBtn = Instance.new("ImageButton", AddConfigFrame)
+    AddConfigBtn.Size = UDim2.new(0, 20, 0, 18)
+    AddConfigBtn.Position = UDim2.new(1, -18, 0.5, -9)
+    AddConfigBtn.AnchorPoint = Vector2.new(1, 0.5)
+    AddConfigBtn.BackgroundTransparency = 1
+    AddConfigBtn.Image = ResolveIcon("plus") or "rbxassetid://10734924532"
+    AddConfigBtn.ImageColor3 = NoirColors.SwitchColor
+    AddConfigBtn.ImageTransparency = 0.5
+    AddConfigBtn.ZIndex = 152
+    
+    -- Config List
+    local ConfigList = Instance.new("Frame", ConfigMenu)
+    ConfigList.Size = UDim2.new(1, 0, 0, 0)
+    ConfigList.BackgroundTransparency = 1
+    ConfigList.ZIndex = 151
+    ConfigList.AutomaticSize = Enum.AutomaticSize.Y
+    
+    local ConfigListLayout = Instance.new("UIListLayout", ConfigList)
+    ConfigListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    ConfigListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    ConfigListLayout.Padding = UDim.new(0, 2)
+    
+    -- Config Functions
+    local function GetConfigData()
+        local data = {}
+        for flag, v in pairs(Window.Flags) do
+            if v and v.GetValue then
+                local val = v:GetValue()
+                if typeof(val) == "Color3" then
+                    data[flag] = {Type = "Color3", R = val.R, G = val.G, B = val.B}
+                else
+                    data[flag] = {Type = "Value", Value = val}
+                end
+            end
+        end
+        return data
+    end
+    
+    local function LoadConfigData(data)
+        for flag, v in pairs(data) do
+            if Window.Flags[flag] and Window.Flags[flag].SetValue then
+                if v.Type == "Color3" then
+                    Window.Flags[flag]:SetValue(Color3.new(v.R, v.G, v.B))
+                else
+                    Window.Flags[flag]:SetValue(v.Value)
+                end
+            end
+        end
+    end
+    
+    local function SaveConfig(name)
+        local data = GetConfigData()
+        data.__INFO = {Name = name, Author = Players.LocalPlayer.DisplayName, Date = os.date("%Y-%m-%d %H:%M:%S")}
+        writefile(Window.ConfigFolder .. "/" .. name .. ".json", HttpService:JSONEncode(data))
+        RefreshConfigList()
+    end
+    
+    local function LoadConfig(name)
+        local path = Window.ConfigFolder .. "/" .. name .. ".json"
+        if isfile(path) then
+            LoadConfigData(HttpService:JSONDecode(readfile(path)))
+            ConfigName.Text = name
+            RefreshConfigList()
+            NoirUI:Notify("📂 Config", "Loaded: " .. name, "folder", "Success")
+        end
+    end
+    
+    local function DeleteConfig(name)
+        local path = Window.ConfigFolder .. "/" .. name .. ".json"
+        if isfile(path) then delfile(path) end
+        RefreshConfigList()
+        NoirUI:Notify("🗑️ Config", "Deleted: " .. name, "trash", "Notification")
+    end
+    
+    local function RefreshConfigList()
+        for _, child in pairs(ConfigList:GetChildren()) do
+            if child:IsA("Frame") then child:Destroy()
+        end
+        
+        local configs = {}
+        if isfolder(Window.ConfigFolder) then
+            for _, file in pairs(listfiles(Window.ConfigFolder)) do
+                local name = string.match(file, "([^/]+)%.json$")
+                if name then table.insert(configs, name) end
+            end
+        end
+        
+        for _, name in ipairs(configs) do
+            local item = Instance.new("Frame", ConfigList)
+            item.Size = UDim2.new(1, -10, 0, 30)
+            item.BackgroundColor3 = NoirColors.BlockColor
+            item.BackgroundTransparency = 1
+            item.ZIndex = 152
+            Instance.new("UICorner", item).CornerRadius = UDim.new(0, 6)
+            
+            local label = Instance.new("TextLabel", item)
+            label.Size = UDim2.new(0, 100, 0, 15)
+            label.Position = UDim2.new(0, 11, 0, 6)
+            label.BackgroundTransparency = 1
+            label.Text = name
+            label.TextColor3 = NoirColors.SwitchColor
+            label.TextSize = 13
+            label.TextTransparency = 0.2
+            label.Font = Enum.Font.GothamMedium
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.ZIndex = 153
+            
+            local loadBtn = Instance.new("TextButton", item)
+            loadBtn.Size = UDim2.new(0, 60, 0, 20)
+            loadBtn.Position = UDim2.new(1, -130, 0.5, -10)
+            loadBtn.AnchorPoint = Vector2.new(1, 0.5)
+            loadBtn.BackgroundColor3 = ACCENT
+            loadBtn.BackgroundTransparency = 0.5
+            loadBtn.Text = "Load"
+            loadBtn.TextColor3 = NoirColors.SwitchColor
+            loadBtn.TextSize = 10
+            loadBtn.Font = Enum.Font.GothamBold
+            loadBtn.ZIndex = 153
+            Instance.new("UICorner", loadBtn).CornerRadius = UDim.new(0, 4)
+            loadBtn.AutoButtonColor = false
+            
+            local delBtn = Instance.new("TextButton", item)
+            delBtn.Size = UDim2.new(0, 60, 0, 20)
+            delBtn.Position = UDim2.new(1, -65, 0.5, -10)
+            delBtn.AnchorPoint = Vector2.new(1, 0.5)
+            delBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+            delBtn.BackgroundTransparency = 0.5
+            delBtn.Text = "Delete"
+            delBtn.TextColor3 = NoirColors.SwitchColor
+            delBtn.TextSize = 10
+            delBtn.Font = Enum.Font.GothamBold
+            delBtn.ZIndex = 153
+            Instance.new("UICorner", delBtn).CornerRadius = UDim.new(0, 4)
+            delBtn.AutoButtonColor = false
+            
+            loadBtn.MouseButton1Click:Connect(function() LoadConfig(name); ToggleConfigMenu(false) end)
+            delBtn.MouseButton1Click:Connect(function() DeleteConfig(name) end)
+            
+            item.MouseEnter:Connect(function()
+                TweenService:Create(item, TweenInfo.new(0.15), {BackgroundTransparency = 0.5}):Play()
+            end)
+            item.MouseLeave:Connect(function()
+                TweenService:Create(item, TweenInfo.new(0.15), {BackgroundTransparency = 1}):Play()
+            end)
+        end
+    end
+    
+    local function ToggleConfigMenu(open)
+        if open then
+            local cfPos = ConfigFrame.AbsolutePosition
+            ConfigMenu.Position = UDim2.new(0, cfPos.X, 0, cfPos.Y + 35)
+            ConfigMenu.Visible = true
+            ConfigMenu.BackgroundTransparency = 1
+            ConfigMenu.Size = UDim2.new(0, 220, 0, 0)
+            TweenService:Create(ConfigMenu, TweenInfo.new(0.25), {
+                BackgroundTransparency = 0.035,
+                Size = UDim2.new(0, 220, 0, 150)
+            }):Play()
+            TweenService:Create(ConfigArrow, TweenInfo.new(0.25), {Rotation = 180}):Play()
+            RefreshConfigList()
+        else
+            TweenService:Create(ConfigMenu, TweenInfo.new(0.15), {
+                BackgroundTransparency = 1,
+                Size = UDim2.new(0, 220, 0, 0)
+            }):Play()
+            TweenService:Create(ConfigArrow, TweenInfo.new(0.15), {Rotation = 0}):Play()
+            task.wait(0.15)
+            ConfigMenu.Visible = false
+        end
+    end
+    
+    ConfigFrame.MouseButton1Click:Connect(function()
+        NoirUI:PlaySound("Click")
+        ToggleConfigMenu(not ConfigMenu.Visible)
+    end)
+    
+    AddConfigBtn.MouseButton1Click:Connect(function()
+        NoirUI:PlaySound("Click")
+        local name = AddConfigInput.Text
+        if name and name ~= "" then
+            SaveConfig(name)
+            AddConfigInput.Text = ""
+            NoirUI:Notify("💾 Config", "Saved: " .. name, "floppy-disk", "Success")
+            ToggleConfigMenu(true)
         end
     end)
     
-    UIS.InputChanged:Connect(function(input)
-        if dragToggle and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStart
-            Main.Position = UDim2.new(
-                startPos.X.Scale,
-                startPos.X.Offset + delta.X,
-                startPos.Y.Scale,
-                startPos.Y.Offset + delta.Y
-            )
-            Side.Position = UDim2.new(
-                startSidePos.X.Scale,
-                startSidePos.X.Offset + delta.X,
-                startSidePos.Y.Scale,
-                startSidePos.Y.Offset + delta.Y
-            )
-        end
+    ConfigIcon.MouseButton1Click:Connect(function()
+        NoirUI:PlaySound("Click")
+        local name = ConfigName.Text
+        if name and name ~= "" then SaveConfig(name); NoirUI:Notify("💾 Config", "Saved: " .. name, "floppy-disk", "Success") end
     end)
     
-    UIS.InputEnded:Connect(function(input)
+    ConfigIcon.MouseEnter:Connect(function()
+        TweenService:Create(ConfigIcon, TweenInfo.new(0.15), {ImageTransparency = 0.1}):Play()
+    end)
+    ConfigIcon.MouseLeave:Connect(function()
+        TweenService:Create(ConfigIcon, TweenInfo.new(0.15), {ImageTransparency = 0.5}):Play()
+    end)
+    
+    UIS.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragToggle = false
+            if ConfigMenu.Visible then
+                local pos = input.Position
+                local absPos = ConfigMenu.AbsolutePosition
+                local absSize = ConfigMenu.AbsoluteSize
+                if pos.X < absPos.X or pos.X > absPos.X + absSize.X or pos.Y < absPos.Y or pos.Y > absPos.Y + absSize.Y then
+                    local cfPos = ConfigFrame.AbsolutePosition
+                    local cfSize = ConfigFrame.AbsoluteSize
+                    if not (pos.X >= cfPos.X and pos.X <= cfPos.X + cfSize.X and pos.Y >= cfPos.Y and pos.Y <= cfPos.Y + cfSize.Y) then
+                        ToggleConfigMenu(false)
+                    end
+                end
+            end
         end
     end)
     
     -- ============================================
-    -- 16. NOTIFICATION
+    -- 15. NOTIFICATION (CK)
     -- ============================================
     function NoirUI:Notify(title, message, iconName, soundType)
-        if soundType then
-            NoirUI:PlaySound(soundType)
-        else
-            NoirUI:PlaySound("Notification")
-        end
+        if soundType then NoirUI:PlaySound(soundType) else NoirUI:PlaySound("Notification") end
         
         local n = Instance.new("Frame", ScreenGui)
         n.Size = UDim2.new(0, 260, 0, 65)
@@ -1586,12 +1211,7 @@ function NoirUI:CreateWindow(settings)
             icon.Size = UDim2.new(0, 24, 0, 24)
             icon.Position = UDim2.new(0, 10, 0.5, -12)
             icon.BackgroundTransparency = 1
-            local iconImg = ResolveIcon(iconName)
-            if iconImg then
-                icon.Image = iconImg
-            else
-                icon.Image = iconName
-            end
+            icon.Image = ResolveIcon(iconName) or iconName
             icon.ZIndex = 52
         end
         
@@ -1634,7 +1254,7 @@ function NoirUI:CreateWindow(settings)
     end
     
     -- ============================================
-    -- 17. TAB FUNCTIONS
+    -- 16. TAB FUNCTIONS (CK)
     -- ============================================
     function Window:AddFlag(name, obj)
         Window.Flags[name] = obj
@@ -1645,14 +1265,9 @@ function NoirUI:CreateWindow(settings)
         config.Name = config.Name or "Tab"
         config.Icon = config.Icon or "home"
         
-        local Tab = {
-            Name = config.Name,
-            Icon = config.Icon,
-            Elements = {},
-            Flags = {},
-        }
+        local Tab = {Name = config.Name, Icon = config.Icon, Elements = {}, Flags = {}}
         
-        -- Tab Button
+        -- Tab Button (CK)
         local TabButton = Instance.new("TextButton", TabScrolling)
         TabButton.Size = UDim2.new(1, -1, 0, 30)
         TabButton.BackgroundColor3 = NoirColors.BlockColor
@@ -1661,13 +1276,13 @@ function NoirUI:CreateWindow(settings)
         TabButton.ZIndex = 8
         Instance.new("UICorner", TabButton).CornerRadius = UDim.new(0, 6)
         TabButton.AutoButtonColor = false
+        CreateHoverEffect(TabButton)
         
         local TabIcon = Instance.new("ImageLabel", TabButton)
         TabIcon.Size = UDim2.new(0, 18, 0, 18)
         TabIcon.Position = UDim2.new(0, 8, 0.5, -9)
         TabIcon.BackgroundTransparency = 1
-        local iconImg = ResolveIcon(config.Icon) or ICONS.Home
-        TabIcon.Image = iconImg
+        TabIcon.Image = ResolveIcon(config.Icon) or "rbxassetid://10723407389"
         TabIcon.ImageColor3 = NoirColors.SwitchColor
         TabIcon.ImageTransparency = 0.5
         TabIcon.ZIndex = 9
@@ -1694,7 +1309,7 @@ function NoirUI:CreateWindow(settings)
         Highlight.ZIndex = 10
         Instance.new("UICorner", Highlight).CornerRadius = UDim.new(0, 2)
         
-        -- Tab Content
+        -- Tab Content (CK)
         local TabContent = Instance.new("ScrollingFrame", TabContainer)
         TabContent.Size = UDim2.new(1, 0, 1, 0)
         TabContent.BackgroundTransparency = 1
@@ -1709,16 +1324,13 @@ function NoirUI:CreateWindow(settings)
         ContentLayout.Padding = UDim.new(0, 8)
         ContentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
         ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        
         ContentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
             TabContent.CanvasSize = UDim2.fromOffset(0, ContentLayout.AbsoluteContentSize.Y + 55)
         end)
         
         local function selectTab()
             for _, child in pairs(TabContainer:GetChildren()) do
-                if child:IsA("ScrollingFrame") then
-                    child.Visible = false
-                end
+                if child:IsA("ScrollingFrame") then child.Visible = false end
             end
             TabContent.Visible = true
             
@@ -1741,15 +1353,14 @@ function NoirUI:CreateWindow(settings)
         
         TabButton.MouseButton1Click:Connect(function()
             NoirUI:PlaySound("Tab")
+            CreateClickScaleEffect(TabButton)
             selectTab()
         end)
         
-        if #Window.Tabs == 0 then
-            selectTab()
-        end
+        if #Window.Tabs == 0 then selectTab() end
         
         -- ============================================
-        -- 18. COMPONENTS
+        -- 17. COMPONENTS (CK)
         -- ============================================
         
         -- LABEL
@@ -1765,10 +1376,11 @@ function NoirUI:CreateWindow(settings)
             label.ZIndex = 10
             label.Name = text
             table.insert(Window.Elements, label)
+            CreateSpringEffect(label, 0.05 * #Tab.Elements)
             return label
         end
         
-        -- SECTION
+        -- SECTION (CK)
         function Tab:CreateSection(config)
             config = config or {}
             config.Name = config.Name or "Section"
@@ -1811,7 +1423,6 @@ function NoirUI:CreateWindow(settings)
             SectionLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
             SectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
             SectionLayout.Padding = UDim.new(0, 5)
-            
             SectionLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                 if SectionLayout.AbsoluteContentSize.Y <= 1 then
                     Section.Size = UDim2.new(1, -5, 0, 0)
@@ -1823,17 +1434,19 @@ function NoirUI:CreateWindow(settings)
             return SectionHandler
         end
         
-        -- BUTTON
+        -- BUTTON (CK)
         function Tab:CreateButton(config)
             config = config or {}
+            local hasSubtitle = config.Subtitle and config.Subtitle ~= ""
             
             local container = Instance.new("Frame", TabContent)
-            container.Size = UDim2.new(0.95, 0, 0, 30)
+            container.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 45 or 30)
             container.BackgroundTransparency = 1
             container.ZIndex = 10
             container.Name = config.Name or "Button"
             table.insert(Tab.Elements, container)
             table.insert(Window.Elements, container)
+            CreateSpringEffect(container, 0.05 * #Tab.Elements)
             
             local btn = Instance.new("TextButton", container)
             btn.Size = UDim2.new(1, 0, 1, 0)
@@ -1861,418 +1474,77 @@ function NoirUI:CreateWindow(settings)
                 }):Play()
             end)
             
-            -- Info (Popup)
+            if hasSubtitle then
+                AddSubtitle(container, config.Subtitle, 30)
+            end
+            
+            -- Info (CK)
             if config.Info then
                 local infoBtn = Instance.new("ImageButton", container)
                 infoBtn.Size = UDim2.new(0, 14, 0, 14)
                 infoBtn.Position = UDim2.new(1, -22, 0.5, -7)
                 infoBtn.BackgroundTransparency = 1
-                local infoImg = ResolveIcon("info") or ICONS.Info
-                infoBtn.Image = infoImg
+                infoBtn.Image = ResolveIcon("info") or "rbxassetid://10723415903"
                 infoBtn.ImageColor3 = NoirColors.SwitchColor
                 infoBtn.ImageTransparency = 0.5
                 infoBtn.ZIndex = 12
                 infoBtn.Name = "InfoBtn"
                 
                 infoBtn.MouseEnter:Connect(function()
-                    TweenService:Create(infoBtn, TweenInfo.new(0.15), {
-                        ImageTransparency = 0.1
-                    }):Play()
+                    TweenService:Create(infoBtn, TweenInfo.new(0.15), {ImageTransparency = 0.1}):Play()
                 end)
                 infoBtn.MouseLeave:Connect(function()
-                    TweenService:Create(infoBtn, TweenInfo.new(0.15), {
-                        ImageTransparency = 0.5
-                    }):Play()
+                    TweenService:Create(infoBtn, TweenInfo.new(0.15), {ImageTransparency = 0.5}):Play()
                 end)
                 
-                CreateInfoPopup(infoBtn, config.Info, ScreenGui)
-            end
-            
-            -- Keybind
-            local keybindFrame = Instance.new("Frame", container)
-            keybindFrame.Size = UDim2.new(0, 40, 0, 16)
-            keybindFrame.Position = UDim2.new(1, (config.Info and -68 or -42), 0.5, -8)
-            keybindFrame.BackgroundColor3 = NoirColors.DropColor
-            keybindFrame.BackgroundTransparency = 0.8
-            keybindFrame.ZIndex = 11
-            Instance.new("UICorner", keybindFrame).CornerRadius = UDim.new(0, 3)
-            
-            local keyLabel = Instance.new("TextLabel", keybindFrame)
-            keyLabel.Size = UDim2.new(1, -2, 1, 0)
-            keyLabel.Position = UDim2.new(0, 2, 0, 0)
-            keyLabel.BackgroundTransparency = 1
-            keyLabel.Text = config.KeybindDefault or "None"
-            keyLabel.TextColor3 = NoirColors.SwitchColor
-            keyLabel.TextSize = 9
-            keyLabel.TextTransparency = 0.5
-            keyLabel.Font = Enum.Font.GothamMedium
-            keyLabel.TextXAlignment = Enum.TextXAlignment.Center
-            keyLabel.TextYAlignment = Enum.TextYAlignment.Center
-            keyLabel.ZIndex = 12
-            
-            local isBinding = false
-            keybindFrame.MouseButton1Click:Connect(function()
-                if isBinding then return end
-                isBinding = true
-                keyLabel.Text = "..."
-                keyLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
-                
-                local selected = nil
-                while not selected do
-                    local input = UIS.InputBegan:Wait()
-                    if input.KeyCode ~= Enum.KeyCode.Unknown then
-                        selected = input.KeyCode.Name
-                    elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
-                        selected = "MouseLeft"
-                    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-                        selected = "MouseRight"
-                    end
+                -- Info Popup (CK)
+                local function showInfo()
+                    local popup = Instance.new("Frame", ScreenGui)
+                    popup.Size = UDim2.new(0, 150, 0, 30)
+                    popup.Position = UDim2.new(0, infoBtn.AbsolutePosition.X + 20, 0, infoBtn.AbsolutePosition.Y)
+                    popup.BackgroundColor3 = NoirColors.BGDBColor
+                    popup.BackgroundTransparency = 0.035
+                    popup.ZIndex = 100
+                    Instance.new("UICorner", popup).CornerRadius = UDim.new(0, 6)
+                    
+                    local text = Instance.new("TextLabel", popup)
+                    text.Size = UDim2.new(1, -10, 1, 0)
+                    text.Position = UDim2.new(0, 5, 0, 0)
+                    text.BackgroundTransparency = 1
+                    text.Text = config.Info
+                    text.TextColor3 = NoirColors.SwitchColor
+                    text.TextSize = 11
+                    text.TextTransparency = 0.3
+                    text.Font = Enum.Font.GothamMedium
+                    text.TextWrapped = true
+                    text.ZIndex = 101
+                    
+                    local size = TextService:GetTextSize(text.Text, text.TextSize, text.Font, Vector2.new(140, math.huge))
+                    popup.Size = UDim2.new(0, math.min(size.X + 20, 200), 0, math.max(size.Y + 15, 30))
+                    
+                    UIS.InputBegan:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            local pos = input.Position
+                            local absPos = popup.AbsolutePosition
+                            local absSize = popup.AbsoluteSize
+                            if pos.X < absPos.X or pos.X > absPos.X + absSize.X or 
+                               pos.Y < absPos.Y or pos.Y > absPos.Y + absSize.Y then
+                                TweenService:Create(popup, TweenInfo.new(0.15), {BackgroundTransparency = 1}):Play()
+                                task.wait(0.15)
+                                popup:Destroy()
+                            end
+                        end
+                    end)
                 end
                 
-                keyLabel.Text = selected
-                keyLabel.TextColor3 = NoirColors.SwitchColor
-                keyLabel.TextTransparency = 0.5
-                isBinding = false
-                if config.OnKeybind then
-                    config.OnKeybind(selected)
-                end
-            end)
-            
-            -- Settings
-            local settingsBtn = Instance.new("ImageButton", container)
-            settingsBtn.Size = UDim2.new(0, 14, 0, 14)
-            settingsBtn.Position = UDim2.new(1, (config.Info and -42 or -22), 0.5, -7)
-            settingsBtn.BackgroundTransparency = 1
-            local settingsImg = ResolveIcon("settings") or ICONS.Settings
-            settingsBtn.Image = settingsImg
-            settingsBtn.ImageColor3 = NoirColors.SwitchColor
-            settingsBtn.ImageTransparency = 0.5
-            settingsBtn.ZIndex = 12
-            settingsBtn.Name = "SettingsBtn"
-            
-            settingsBtn.MouseEnter:Connect(function()
-                TweenService:Create(settingsBtn, TweenInfo.new(0.15), {
-                    ImageTransparency = 0.1
-                }):Play()
-            end)
-            settingsBtn.MouseLeave:Connect(function()
-                TweenService:Create(settingsBtn, TweenInfo.new(0.15), {
-                    ImageTransparency = 0.5
-                }):Play()
-            end)
-            
-            settingsBtn.MouseButton1Click:Connect(function()
-                NoirUI:PlaySound("Click")
-                if config.Settings then
-                    config.Settings()
-                else
-                    NoirUI:Notify("⚙️ Settings", "Mở settings cho " .. (config.Name or "Button"), "settings", "Notification")
-                end
-            end)
-            
-            btn.MouseButton1Click:Connect(function()
-                NoirUI:PlaySound("Click")
-                if config.Callback then config.Callback() end
-            end)
-            
-            if config.Flag then
-                Tab:AddFlag(config.Flag, {
-                    GetValue = function() return nil end,
-                    SetValue = function() end
-                })
+                infoBtn.MouseButton1Click:Connect(showInfo)
             end
             
-            return btn
-        end
-        
-        -- TOGGLE
-        function Tab:CreateToggle(config)
-            config = config or {}
-            local state = config.Default or false
-            
-            local container = Instance.new("Frame", TabContent)
-            container.Size = UDim2.new(0.95, 0, 0, 30)
-            container.BackgroundTransparency = 1
-            container.ZIndex = 10
-            container.Name = config.Name or "Toggle"
-            table.insert(Tab.Elements, container)
-            table.insert(Window.Elements, container)
-            
-            local btn = Instance.new("TextButton", container)
-            btn.Size = UDim2.new(1, 0, 1, 0)
-            btn.BackgroundTransparency = 1
-            btn.Text = "  " .. (config.Name or "Toggle")
-            btn.TextColor3 = state and NoirColors.SwitchColor or Color3.fromRGB(180, 180, 180)
-            btn.TextSize = 12
-            btn.Font = Enum.Font.GothamMedium
-            btn.TextXAlignment = Enum.TextXAlignment.Left
-            btn.AutoButtonColor = false
-            btn.ZIndex = 11
-            
-            local switch = Instance.new("Frame", btn)
-            switch.Size = UDim2.new(0, 28, 0, 15)
-            switch.Position = UDim2.new(1, -36, 0.5, -7.5)
-            switch.BackgroundColor3 = state and ACCENT or NoirColors.DropColor
-            switch.ZIndex = 12
-            Instance.new("UICorner", switch).CornerRadius = UDim.new(1, 0)
-            
-            local switchInner = Instance.new("Frame", switch)
-            switchInner.Size = UDim2.new(0, 11, 0, 11)
-            switchInner.Position = state and UDim2.new(1, -13, 0.5, -5.5) or UDim2.new(0, 2, 0.5, -5.5)
-            switchInner.BackgroundColor3 = NoirColors.SwitchColor
-            switchInner.ZIndex = 13
-            Instance.new("UICorner", switchInner).CornerRadius = UDim.new(1, 0)
-            
-            -- Info (Popup)
-            if config.Info then
-                local infoBtn = Instance.new("ImageButton", container)
-                infoBtn.Size = UDim2.new(0, 14, 0, 14)
-                infoBtn.Position = UDim2.new(1, -58, 0.5, -7)
-                infoBtn.BackgroundTransparency = 1
-                local infoImg = ResolveIcon("info") or ICONS.Info
-                infoBtn.Image = infoImg
-                infoBtn.ImageColor3 = NoirColors.SwitchColor
-                infoBtn.ImageTransparency = 0.5
-                infoBtn.ZIndex = 12
-                infoBtn.Name = "InfoBtn"
-                
-                infoBtn.MouseEnter:Connect(function()
-                    TweenService:Create(infoBtn, TweenInfo.new(0.15), {
-                        ImageTransparency = 0.1
-                    }):Play()
-                end)
-                infoBtn.MouseLeave:Connect(function()
-                    TweenService:Create(infoBtn, TweenInfo.new(0.15), {
-                        ImageTransparency = 0.5
-                    }):Play()
-                end)
-                
-                CreateInfoPopup(infoBtn, config.Info, ScreenGui)
-            end
-            
-            -- Keybind
-            local keybindFrame = Instance.new("Frame", container)
-            keybindFrame.Size = UDim2.new(0, 40, 0, 16)
-            keybindFrame.Position = UDim2.new(1, (config.Info and -104 or -78), 0.5, -8)
-            keybindFrame.BackgroundColor3 = NoirColors.DropColor
-            keybindFrame.BackgroundTransparency = 0.8
-            keybindFrame.ZIndex = 11
-            Instance.new("UICorner", keybindFrame).CornerRadius = UDim.new(0, 3)
-            
-            local keyLabel = Instance.new("TextLabel", keybindFrame)
-            keyLabel.Size = UDim2.new(1, -2, 1, 0)
-            keyLabel.Position = UDim2.new(0, 2, 0, 0)
-            keyLabel.BackgroundTransparency = 1
-            keyLabel.Text = config.KeybindDefault or "None"
-            keyLabel.TextColor3 = NoirColors.SwitchColor
-            keyLabel.TextSize = 9
-            keyLabel.TextTransparency = 0.5
-            keyLabel.Font = Enum.Font.GothamMedium
-            keyLabel.TextXAlignment = Enum.TextXAlignment.Center
-            keyLabel.TextYAlignment = Enum.TextYAlignment.Center
-            keyLabel.ZIndex = 12
-            
-            local isBinding = false
-            keybindFrame.MouseButton1Click:Connect(function()
-                if isBinding then return end
-                isBinding = true
-                keyLabel.Text = "..."
-                keyLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
-                
-                local selected = nil
-                while not selected do
-                    local input = UIS.InputBegan:Wait()
-                    if input.KeyCode ~= Enum.KeyCode.Unknown then
-                        selected = input.KeyCode.Name
-                    elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
-                        selected = "MouseLeft"
-                    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-                        selected = "MouseRight"
-                    end
-                end
-                
-                keyLabel.Text = selected
-                keyLabel.TextColor3 = NoirColors.SwitchColor
-                keyLabel.TextTransparency = 0.5
-                isBinding = false
-                if config.OnKeybind then
-                    config.OnKeybind(selected)
-                end
-            end)
-            
-            -- Settings
-            local settingsBtn = Instance.new("ImageButton", container)
-            settingsBtn.Size = UDim2.new(0, 14, 0, 14)
-            settingsBtn.Position = UDim2.new(1, (config.Info and -78 or -58), 0.5, -7)
-            settingsBtn.BackgroundTransparency = 1
-            local settingsImg = ResolveIcon("settings") or ICONS.Settings
-            settingsBtn.Image = settingsImg
-            settingsBtn.ImageColor3 = NoirColors.SwitchColor
-            settingsBtn.ImageTransparency = 0.5
-            settingsBtn.ZIndex = 12
-            settingsBtn.Name = "SettingsBtn"
-            
-            settingsBtn.MouseEnter:Connect(function()
-                TweenService:Create(settingsBtn, TweenInfo.new(0.15), {
-                    ImageTransparency = 0.1
-                }):Play()
-            end)
-            settingsBtn.MouseLeave:Connect(function()
-                TweenService:Create(settingsBtn, TweenInfo.new(0.15), {
-                    ImageTransparency = 0.5
-                }):Play()
-            end)
-            
-            settingsBtn.MouseButton1Click:Connect(function()
-                NoirUI:PlaySound("Click")
-                if config.Settings then
-                    config.Settings()
-                else
-                    NoirUI:Notify("⚙️ Settings", "Mở settings cho " .. (config.Name or "Toggle"), "settings", "Notification")
-                end
-            end)
-            
-            btn.MouseButton1Click:Connect(function()
-                NoirUI:PlaySound("Click")
-                state = not state
-                btn.TextColor3 = state and NoirColors.SwitchColor or Color3.fromRGB(180, 180, 180)
-                TweenService:Create(switch, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
-                    BackgroundColor3 = state and ACCENT or NoirColors.DropColor
-                }):Play()
-                TweenService:Create(switchInner, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
-                    Position = state and UDim2.new(1, -13, 0.5, -5.5) or UDim2.new(0, 2, 0.5, -5.5)
-                }):Play()
-                if config.Callback then config.Callback(state) end
-            end)
-            
-            if config.Flag then
-                Tab:AddFlag(config.Flag, {
-                    GetValue = function() return state end,
-                    SetValue = function(v) 
-                        state = v
-                        btn.TextColor3 = state and NoirColors.SwitchColor or Color3.fromRGB(180, 180, 180)
-                        TweenService:Create(switch, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
-                            BackgroundColor3 = state and ACCENT or NoirColors.DropColor
-                        }):Play()
-                        TweenService:Create(switchInner, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
-                            Position = state and UDim2.new(1, -13, 0.5, -5.5) or UDim2.new(0, 2, 0.5, -5.5)
-                        }):Play()
-                        if config.Callback then config.Callback(state) end
-                    end
-                })
-            end
-            
-            return btn
-        end
-        
-        -- SLIDER
-        function Tab:CreateSlider(config)
-            config = config or {}
-            
-            local min, max
-            if config.range then
-                min = config.range[1] or 0
-                max = config.range[2] or 100
-            else
-                min = config.Min or 0
-                max = config.Max or 100
-            end
-            
-            local increment = config.increment or config.Increment or 1
-            local defaultValue = config.Default or min
-            defaultValue = math.floor((defaultValue - min) / increment) * increment + min
-            defaultValue = math.clamp(defaultValue, min, max)
-            
-            local container = Instance.new("Frame", TabContent)
-            container.Size = UDim2.new(0.95, 0, 0, 35)
-            container.BackgroundTransparency = 1
-            container.ZIndex = 10
-            container.Name = config.Name or "Slider"
-            table.insert(Tab.Elements, container)
-            table.insert(Window.Elements, container)
-            
-            local topFrame = Instance.new("Frame", container)
-            topFrame.Size = UDim2.new(1, 0, 0, 20)
-            topFrame.BackgroundTransparency = 1
-            topFrame.ZIndex = 11
-            
-            local label = Instance.new("TextLabel", topFrame)
-            label.Size = UDim2.new(0.7, 0, 1, 0)
-            label.Position = UDim2.new(0, 0, 0, 0)
-            label.BackgroundTransparency = 1
-            label.Text = config.Name or "Slider"
-            label.TextColor3 = NoirColors.SwitchColor
-            label.TextTransparency = 0.3
-            label.TextSize = 12
-            label.Font = Enum.Font.GothamMedium
-            label.TextXAlignment = Enum.TextXAlignment.Left
-            label.ZIndex = 12
-            
-            local valueLabel = Instance.new("TextLabel", topFrame)
-            valueLabel.Size = UDim2.new(0.3, 0, 1, 0)
-            valueLabel.Position = UDim2.new(0.7, 0, 0, 0)
-            valueLabel.BackgroundTransparency = 1
-            valueLabel.Text = tostring(defaultValue) .. (config.Suffix or "")
-            valueLabel.TextColor3 = NoirColors.SwitchColor
-            valueLabel.TextTransparency = 0.5
-            valueLabel.TextSize = 12
-            valueLabel.Font = Enum.Font.GothamMedium
-            valueLabel.TextXAlignment = Enum.TextXAlignment.Right
-            valueLabel.ZIndex = 12
-            
-            local sliderBg = Instance.new("Frame", container)
-            sliderBg.Size = UDim2.new(1, 0, 0, 6)
-            sliderBg.Position = UDim2.new(0, 0, 0, 22)
-            sliderBg.BackgroundColor3 = NoirColors.DropColor
-            sliderBg.ZIndex = 11
-            Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
-            
-            local fill = Instance.new("Frame", sliderBg)
-            local percent = (defaultValue - min) / (max - min)
-            fill.Size = UDim2.new(percent, 0, 1, 0)
-            fill.BackgroundColor3 = ACCENT
-            fill.ZIndex = 12
-            Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
-            
-            local handle = Instance.new("Frame", sliderBg)
-            handle.Size = UDim2.new(0, 12, 0, 12)
-            handle.Position = UDim2.new(percent, -6, 0.5, -6)
-            handle.BackgroundColor3 = NoirColors.SwitchColor
-            handle.ZIndex = 13
-            Instance.new("UICorner", handle).CornerRadius = UDim.new(1, 0)
-            
-            -- Info (Popup)
-            if config.Info then
-                local infoBtn = Instance.new("ImageButton", container)
-                infoBtn.Size = UDim2.new(0, 14, 0, 14)
-                infoBtn.Position = UDim2.new(1, -18, 0, 0)
-                infoBtn.BackgroundTransparency = 1
-                local infoImg = ResolveIcon("info") or ICONS.Info
-                infoBtn.Image = infoImg
-                infoBtn.ImageColor3 = NoirColors.SwitchColor
-                infoBtn.ImageTransparency = 0.5
-                infoBtn.ZIndex = 12
-                infoBtn.Name = "InfoBtn"
-                
-                infoBtn.MouseEnter:Connect(function()
-                    TweenService:Create(infoBtn, TweenInfo.new(0.15), {
-                        ImageTransparency = 0.1
-                    }):Play()
-                end)
-                infoBtn.MouseLeave:Connect(function()
-                    TweenService:Create(infoBtn, TweenInfo.new(0.15), {
-                        ImageTransparency = 0.5
-                    }):Play()
-                end)
-                
-                CreateInfoPopup(infoBtn, config.Info, ScreenGui)
-            end
-            
-            -- Keybind
+            -- Keybind (CK)
             if config.KeybindDefault then
                 local keybindFrame = Instance.new("Frame", container)
                 keybindFrame.Size = UDim2.new(0, 40, 0, 16)
-                keybindFrame.Position = UDim2.new(1, (config.Info and -64 or -42), 0, 0)
+                keybindFrame.Position = UDim2.new(1, (config.Info and -68 or -42), 0.5, -8)
                 keybindFrame.BackgroundColor3 = NoirColors.DropColor
                 keybindFrame.BackgroundTransparency = 0.8
                 keybindFrame.ZIndex = 11
@@ -2314,41 +1586,395 @@ function NoirUI:CreateWindow(settings)
                     keyLabel.TextColor3 = NoirColors.SwitchColor
                     keyLabel.TextTransparency = 0.5
                     isBinding = false
-                    if config.OnKeybind then
-                        config.OnKeybind(selected)
-                    end
+                    if config.OnKeybind then config.OnKeybind(selected) end
                 end)
             end
             
-            -- Settings
+            -- Settings (CK)
             local settingsBtn = Instance.new("ImageButton", container)
             settingsBtn.Size = UDim2.new(0, 14, 0, 14)
-            settingsBtn.Position = UDim2.new(1, (config.Info and -38 or -18), 0, 0)
+            settingsBtn.Position = UDim2.new(1, (config.Info and -42 or -22), 0.5, -7)
             settingsBtn.BackgroundTransparency = 1
-            local settingsImg = ResolveIcon("settings") or ICONS.Settings
-            settingsBtn.Image = settingsImg
+            settingsBtn.Image = ResolveIcon("settings") or "rbxassetid://14007344336"
             settingsBtn.ImageColor3 = NoirColors.SwitchColor
             settingsBtn.ImageTransparency = 0.5
             settingsBtn.ZIndex = 12
             settingsBtn.Name = "SettingsBtn"
             
             settingsBtn.MouseEnter:Connect(function()
-                TweenService:Create(settingsBtn, TweenInfo.new(0.15), {
-                    ImageTransparency = 0.1
-                }):Play()
+                TweenService:Create(settingsBtn, TweenInfo.new(0.15), {ImageTransparency = 0.1}):Play()
             end)
             settingsBtn.MouseLeave:Connect(function()
-                TweenService:Create(settingsBtn, TweenInfo.new(0.15), {
-                    ImageTransparency = 0.5
-                }):Play()
+                TweenService:Create(settingsBtn, TweenInfo.new(0.15), {ImageTransparency = 0.5}):Play()
             end)
             
             settingsBtn.MouseButton1Click:Connect(function()
                 NoirUI:PlaySound("Click")
-                if config.Settings then
-                    config.Settings()
-                else
-                    NoirUI:Notify("⚙️ Settings", "Mở settings cho " .. (config.Name or "Slider"), "settings", "Notification")
+                if config.Settings then config.Settings()
+                else NoirUI:Notify("⚙️ Settings", "Mở settings cho " .. (config.Name or "Button"), "settings", "Notification")
+                end
+            end)
+            
+            btn.MouseButton1Click:Connect(function()
+                NoirUI:PlaySound("Click")
+                CreateClickScaleEffect(btn)
+                if config.Callback then config.Callback() end
+            end)
+            
+            if config.Flag then
+                Tab:AddFlag(config.Flag, {GetValue = function() return nil end, SetValue = function() end})
+            end
+            
+            return btn
+        end
+        
+        -- TOGGLE (CK)
+        function Tab:CreateToggle(config)
+            config = config or {}
+            local state = config.Default or false
+            local hasSubtitle = config.Subtitle and config.Subtitle ~= ""
+            
+            local container = Instance.new("Frame", TabContent)
+            container.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 45 or 30)
+            container.BackgroundTransparency = 1
+            container.ZIndex = 10
+            container.Name = config.Name or "Toggle"
+            table.insert(Tab.Elements, container)
+            table.insert(Window.Elements, container)
+            CreateSpringEffect(container, 0.05 * #Tab.Elements)
+            
+            local btn = Instance.new("TextButton", container)
+            btn.Size = UDim2.new(1, 0, 1, 0)
+            btn.BackgroundTransparency = 1
+            btn.Text = "  " .. (config.Name or "Toggle")
+            btn.TextColor3 = state and NoirColors.SwitchColor or Color3.fromRGB(180, 180, 180)
+            btn.TextSize = 12
+            btn.Font = Enum.Font.GothamMedium
+            btn.TextXAlignment = Enum.TextXAlignment.Left
+            btn.AutoButtonColor = false
+            btn.ZIndex = 11
+            
+            -- Switch (CK)
+            local switch = Instance.new("Frame", btn)
+            switch.Size = UDim2.new(0, 28, 0, 15)
+            switch.Position = UDim2.new(1, -36, 0.5, -7.5)
+            switch.BackgroundColor3 = state and ACCENT or NoirColors.DropColor
+            switch.ZIndex = 12
+            Instance.new("UICorner", switch).CornerRadius = UDim.new(1, 0)
+            
+            local switchInner = Instance.new("Frame", switch)
+            switchInner.Size = UDim2.new(0, 11, 0, 11)
+            switchInner.Position = state and UDim2.new(1, -13, 0.5, -5.5) or UDim2.new(0, 2, 0.5, -5.5)
+            switchInner.BackgroundColor3 = NoirColors.SwitchColor
+            switchInner.ZIndex = 13
+            Instance.new("UICorner", switchInner).CornerRadius = UDim.new(1, 0)
+            
+            if hasSubtitle then
+                AddSubtitle(container, config.Subtitle, 30)
+            end
+            
+            -- Info
+            if config.Info then
+                local infoBtn = Instance.new("ImageButton", container)
+                infoBtn.Size = UDim2.new(0, 14, 0, 14)
+                infoBtn.Position = UDim2.new(1, -58, 0.5, -7)
+                infoBtn.BackgroundTransparency = 1
+                infoBtn.Image = ResolveIcon("info") or "rbxassetid://10723415903"
+                infoBtn.ImageColor3 = NoirColors.SwitchColor
+                infoBtn.ImageTransparency = 0.5
+                infoBtn.ZIndex = 12
+                infoBtn.Name = "InfoBtn"
+                
+                infoBtn.MouseEnter:Connect(function()
+                    TweenService:Create(infoBtn, TweenInfo.new(0.15), {ImageTransparency = 0.1}):Play()
+                end)
+                infoBtn.MouseLeave:Connect(function()
+                    TweenService:Create(infoBtn, TweenInfo.new(0.15), {ImageTransparency = 0.5}):Play()
+                end)
+            end
+            
+            -- Keybind
+            if config.KeybindDefault then
+                local keybindFrame = Instance.new("Frame", container)
+                keybindFrame.Size = UDim2.new(0, 40, 0, 16)
+                keybindFrame.Position = UDim2.new(1, (config.Info and -104 or -78), 0.5, -8)
+                keybindFrame.BackgroundColor3 = NoirColors.DropColor
+                keybindFrame.BackgroundTransparency = 0.8
+                keybindFrame.ZIndex = 11
+                Instance.new("UICorner", keybindFrame).CornerRadius = UDim.new(0, 3)
+                
+                local keyLabel = Instance.new("TextLabel", keybindFrame)
+                keyLabel.Size = UDim2.new(1, -2, 1, 0)
+                keyLabel.Position = UDim2.new(0, 2, 0, 0)
+                keyLabel.BackgroundTransparency = 1
+                keyLabel.Text = config.KeybindDefault or "None"
+                keyLabel.TextColor3 = NoirColors.SwitchColor
+                keyLabel.TextSize = 9
+                keyLabel.TextTransparency = 0.5
+                keyLabel.Font = Enum.Font.GothamMedium
+                keyLabel.TextXAlignment = Enum.TextXAlignment.Center
+                keyLabel.TextYAlignment = Enum.TextYAlignment.Center
+                keyLabel.ZIndex = 12
+                
+                local isBinding = false
+                keybindFrame.MouseButton1Click:Connect(function()
+                    if isBinding then return end
+                    isBinding = true
+                    keyLabel.Text = "..."
+                    keyLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
+                    
+                    local selected = nil
+                    while not selected do
+                        local input = UIS.InputBegan:Wait()
+                        if input.KeyCode ~= Enum.KeyCode.Unknown then
+                            selected = input.KeyCode.Name
+                        elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            selected = "MouseLeft"
+                        elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+                            selected = "MouseRight"
+                        end
+                    end
+                    
+                    keyLabel.Text = selected
+                    keyLabel.TextColor3 = NoirColors.SwitchColor
+                    keyLabel.TextTransparency = 0.5
+                    isBinding = false
+                    if config.OnKeybind then config.OnKeybind(selected) end
+                end)
+            end
+            
+            -- Settings
+            local settingsBtn = Instance.new("ImageButton", container)
+            settingsBtn.Size = UDim2.new(0, 14, 0, 14)
+            settingsBtn.Position = UDim2.new(1, (config.Info and -78 or -58), 0.5, -7)
+            settingsBtn.BackgroundTransparency = 1
+            settingsBtn.Image = ResolveIcon("settings") or "rbxassetid://14007344336"
+            settingsBtn.ImageColor3 = NoirColors.SwitchColor
+            settingsBtn.ImageTransparency = 0.5
+            settingsBtn.ZIndex = 12
+            settingsBtn.Name = "SettingsBtn"
+            
+            settingsBtn.MouseEnter:Connect(function()
+                TweenService:Create(settingsBtn, TweenInfo.new(0.15), {ImageTransparency = 0.1}):Play()
+            end)
+            settingsBtn.MouseLeave:Connect(function()
+                TweenService:Create(settingsBtn, TweenInfo.new(0.15), {ImageTransparency = 0.5}):Play()
+            end)
+            
+            settingsBtn.MouseButton1Click:Connect(function()
+                NoirUI:PlaySound("Click")
+                if config.Settings then config.Settings()
+                else NoirUI:Notify("⚙️ Settings", "Mở settings cho " .. (config.Name or "Toggle"), "settings", "Notification")
+                end
+            end)
+            
+            btn.MouseButton1Click:Connect(function()
+                NoirUI:PlaySound("Click")
+                CreateClickScaleEffect(btn)
+                state = not state
+                btn.TextColor3 = state and NoirColors.SwitchColor or Color3.fromRGB(180, 180, 180)
+                TweenService:Create(switch, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
+                    BackgroundColor3 = state and ACCENT or NoirColors.DropColor
+                }):Play()
+                TweenService:Create(switchInner, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
+                    Position = state and UDim2.new(1, -13, 0.5, -5.5) or UDim2.new(0, 2, 0.5, -5.5)
+                }):Play()
+                if config.Callback then config.Callback(state) end
+            end)
+            
+            if config.Flag then
+                Tab:AddFlag(config.Flag, {
+                    GetValue = function() return state end,
+                    SetValue = function(v)
+                        state = v
+                        btn.TextColor3 = state and NoirColors.SwitchColor or Color3.fromRGB(180, 180, 180)
+                        TweenService:Create(switch, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
+                            BackgroundColor3 = state and ACCENT or NoirColors.DropColor
+                        }):Play()
+                        TweenService:Create(switchInner, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
+                            Position = state and UDim2.new(1, -13, 0.5, -5.5) or UDim2.new(0, 2, 0.5, -5.5)
+                        }):Play()
+                        if config.Callback then config.Callback(state) end
+                    end
+                })
+            end
+            
+            return btn
+        end
+        
+        -- SLIDER (CK)
+        function Tab:CreateSlider(config)
+            config = config or {}
+            local min, max
+            if config.range then
+                min = config.range[1] or 0
+                max = config.range[2] or 100
+            else
+                min = config.Min or 0
+                max = config.Max or 100
+            end
+            
+            local increment = config.increment or config.Increment or 1
+            local defaultValue = config.Default or min
+            defaultValue = math.floor((defaultValue - min) / increment) * increment + min
+            defaultValue = math.clamp(defaultValue, min, max)
+            local hasSubtitle = config.Subtitle and config.Subtitle ~= ""
+            
+            local container = Instance.new("Frame", TabContent)
+            container.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 50 or 38)
+            container.BackgroundTransparency = 1
+            container.ZIndex = 10
+            container.Name = config.Name or "Slider"
+            table.insert(Tab.Elements, container)
+            table.insert(Window.Elements, container)
+            CreateSpringEffect(container, 0.05 * #Tab.Elements)
+            
+            local topFrame = Instance.new("Frame", container)
+            topFrame.Size = UDim2.new(1, 0, 0, 20)
+            topFrame.BackgroundTransparency = 1
+            topFrame.ZIndex = 11
+            
+            local label = Instance.new("TextLabel", topFrame)
+            label.Size = UDim2.new(0.65, 0, 1, 0)
+            label.Position = UDim2.new(0, 0, 0, 0)
+            label.BackgroundTransparency = 1
+            label.Text = config.Name or "Slider"
+            label.TextColor3 = NoirColors.SwitchColor
+            label.TextTransparency = 0.3
+            label.TextSize = 12
+            label.Font = Enum.Font.GothamMedium
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.ZIndex = 12
+            
+            local valueLabel = Instance.new("TextLabel", topFrame)
+            valueLabel.Size = UDim2.new(0.35, 0, 1, 0)
+            valueLabel.Position = UDim2.new(0.65, 0, 0, 0)
+            valueLabel.BackgroundTransparency = 1
+            valueLabel.Text = tostring(defaultValue) .. (config.Suffix or "")
+            valueLabel.TextColor3 = NoirColors.SwitchColor
+            valueLabel.TextTransparency = 0.5
+            valueLabel.TextSize = 12
+            valueLabel.Font = Enum.Font.GothamMedium
+            valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+            valueLabel.ZIndex = 12
+            
+            local sliderBg = Instance.new("Frame", container)
+            sliderBg.Size = UDim2.new(1, 0, 0, 6)
+            sliderBg.Position = UDim2.new(0, 0, 0, hasSubtitle and 25 or 22)
+            sliderBg.BackgroundColor3 = NoirColors.DropColor
+            sliderBg.ZIndex = 11
+            Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
+            
+            local fill = Instance.new("Frame", sliderBg)
+            local percent = (defaultValue - min) / (max - min)
+            fill.Size = UDim2.new(percent, 0, 1, 0)
+            fill.BackgroundColor3 = ACCENT
+            fill.ZIndex = 12
+            Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+            
+            local handle = Instance.new("Frame", sliderBg)
+            handle.Size = UDim2.new(0, 12, 0, 12)
+            handle.Position = UDim2.new(percent, -6, 0.5, -6)
+            handle.BackgroundColor3 = NoirColors.SwitchColor
+            handle.ZIndex = 13
+            Instance.new("UICorner", handle).CornerRadius = UDim.new(1, 0)
+            
+            if hasSubtitle then
+                AddSubtitle(container, config.Subtitle, 30)
+            end
+            
+            -- Info
+            if config.Info then
+                local infoBtn = Instance.new("ImageButton", container)
+                infoBtn.Size = UDim2.new(0, 14, 0, 14)
+                infoBtn.Position = UDim2.new(1, -18, 0, hasSubtitle and 2 or 0)
+                infoBtn.BackgroundTransparency = 1
+                infoBtn.Image = ResolveIcon("info") or "rbxassetid://10723415903"
+                infoBtn.ImageColor3 = NoirColors.SwitchColor
+                infoBtn.ImageTransparency = 0.5
+                infoBtn.ZIndex = 12
+                infoBtn.Name = "InfoBtn"
+                
+                infoBtn.MouseEnter:Connect(function()
+                    TweenService:Create(infoBtn, TweenInfo.new(0.15), {ImageTransparency = 0.1}):Play()
+                end)
+                infoBtn.MouseLeave:Connect(function()
+                    TweenService:Create(infoBtn, TweenInfo.new(0.15), {ImageTransparency = 0.5}):Play()
+                end)
+            end
+            
+            -- Keybind
+            if config.KeybindDefault then
+                local keybindFrame = Instance.new("Frame", container)
+                keybindFrame.Size = UDim2.new(0, 40, 0, 16)
+                keybindFrame.Position = UDim2.new(1, (config.Info and -64 or -42), 0, hasSubtitle and 2 or 0)
+                keybindFrame.BackgroundColor3 = NoirColors.DropColor
+                keybindFrame.BackgroundTransparency = 0.8
+                keybindFrame.ZIndex = 11
+                Instance.new("UICorner", keybindFrame).CornerRadius = UDim.new(0, 3)
+                
+                local keyLabel = Instance.new("TextLabel", keybindFrame)
+                keyLabel.Size = UDim2.new(1, -2, 1, 0)
+                keyLabel.Position = UDim2.new(0, 2, 0, 0)
+                keyLabel.BackgroundTransparency = 1
+                keyLabel.Text = config.KeybindDefault or "None"
+                keyLabel.TextColor3 = NoirColors.SwitchColor
+                keyLabel.TextSize = 9
+                keyLabel.TextTransparency = 0.5
+                keyLabel.Font = Enum.Font.GothamMedium
+                keyLabel.TextXAlignment = Enum.TextXAlignment.Center
+                keyLabel.TextYAlignment = Enum.TextYAlignment.Center
+                keyLabel.ZIndex = 12
+                
+                local isBinding = false
+                keybindFrame.MouseButton1Click:Connect(function()
+                    if isBinding then return end
+                    isBinding = true
+                    keyLabel.Text = "..."
+                    keyLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
+                    
+                    local selected = nil
+                    while not selected do
+                        local input = UIS.InputBegan:Wait()
+                        if input.KeyCode ~= Enum.KeyCode.Unknown then
+                            selected = input.KeyCode.Name
+                        elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            selected = "MouseLeft"
+                        elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+                            selected = "MouseRight"
+                        end
+                    end
+                    
+                    keyLabel.Text = selected
+                    keyLabel.TextColor3 = NoirColors.SwitchColor
+                    keyLabel.TextTransparency = 0.5
+                    isBinding = false
+                    if config.OnKeybind then config.OnKeybind(selected) end
+                end)
+            end
+            
+            -- Settings
+            local settingsBtn = Instance.new("ImageButton", container)
+            settingsBtn.Size = UDim2.new(0, 14, 0, 14)
+            settingsBtn.Position = UDim2.new(1, (config.Info and -38 or -18), 0, hasSubtitle and 2 or 0)
+            settingsBtn.BackgroundTransparency = 1
+            settingsBtn.Image = ResolveIcon("settings") or "rbxassetid://14007344336"
+            settingsBtn.ImageColor3 = NoirColors.SwitchColor
+            settingsBtn.ImageTransparency = 0.5
+            settingsBtn.ZIndex = 12
+            settingsBtn.Name = "SettingsBtn"
+            
+            settingsBtn.MouseEnter:Connect(function()
+                TweenService:Create(settingsBtn, TweenInfo.new(0.15), {ImageTransparency = 0.1}):Play()
+            end)
+            settingsBtn.MouseLeave:Connect(function()
+                TweenService:Create(settingsBtn, TweenInfo.new(0.15), {ImageTransparency = 0.5}):Play()
+            end)
+            
+            settingsBtn.MouseButton1Click:Connect(function()
+                NoirUI:PlaySound("Click")
+                if config.Settings then config.Settings()
+                else NoirUI:Notify("⚙️ Settings", "Mở settings cho " .. (config.Name or "Slider"), "settings", "Notification")
                 end
             end)
             
@@ -2362,14 +1988,8 @@ function NoirUI:CreateWindow(settings)
                 local newPercent = (value - min) / (max - min)
                 
                 currentValue = value
-                
-                TweenService:Create(fill, TweenInfo.new(0.05), {
-                    Size = UDim2.new(newPercent, 0, 1, 0)
-                }):Play()
-                TweenService:Create(handle, TweenInfo.new(0.05), {
-                    Position = UDim2.new(newPercent, -6, 0.5, -6)
-                }):Play()
-                
+                TweenService:Create(fill, TweenInfo.new(0.05), {Size = UDim2.new(newPercent, 0, 1, 0)}):Play()
+                TweenService:Create(handle, TweenInfo.new(0.05), {Position = UDim2.new(newPercent, -6, 0.5, -6)}):Play()
                 valueLabel.Text = tostring(value) .. (config.Suffix or "")
                 if config.Callback then config.Callback(value) end
             end
@@ -2395,17 +2015,13 @@ function NoirUI:CreateWindow(settings)
             if config.Flag then
                 Tab:AddFlag(config.Flag, {
                     GetValue = function() return currentValue end,
-                    SetValue = function(v) 
+                    SetValue = function(v)
                         local newValue = math.floor((v - min) / increment) * increment + min
                         newValue = math.clamp(newValue, min, max)
                         currentValue = newValue
                         local newPercent = (currentValue - min) / (max - min)
-                        TweenService:Create(fill, TweenInfo.new(0.3), {
-                            Size = UDim2.new(newPercent, 0, 1, 0)
-                        }):Play()
-                        TweenService:Create(handle, TweenInfo.new(0.3), {
-                            Position = UDim2.new(newPercent, -6, 0.5, -6)
-                        }):Play()
+                        TweenService:Create(fill, TweenInfo.new(0.3), {Size = UDim2.new(newPercent, 0, 1, 0)}):Play()
+                        TweenService:Create(handle, TweenInfo.new(0.3), {Position = UDim2.new(newPercent, -6, 0.5, -6)}):Play()
                         valueLabel.Text = tostring(currentValue) .. (config.Suffix or "")
                         if config.Callback then config.Callback(currentValue) end
                     end
@@ -2415,19 +2031,21 @@ function NoirUI:CreateWindow(settings)
             return container
         end
         
-        -- COLOR PICKER
+        -- COLOR PICKER (CK)
         function Tab:CreateColorPicker(config)
             config = config or {}
             local color = config.Default or Color3.fromRGB(255, 255, 255)
             local transparency = config.Transparency or 0
+            local hasSubtitle = config.Subtitle and config.Subtitle ~= ""
             
             local container = Instance.new("Frame", TabContent)
-            container.Size = UDim2.new(0.95, 0, 0, 30)
+            container.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 45 or 30)
             container.BackgroundTransparency = 1
             container.ZIndex = 10
             container.Name = config.Name or "ColorPicker"
             table.insert(Tab.Elements, container)
             table.insert(Window.Elements, container)
+            CreateSpringEffect(container, 0.05 * #Tab.Elements)
             
             local label = Instance.new("TextLabel", container)
             label.Size = UDim2.new(0.7, 0, 0, 20)
@@ -2443,44 +2061,41 @@ function NoirUI:CreateWindow(settings)
             
             local preview = Instance.new("Frame", container)
             preview.Size = UDim2.new(0, 18, 0, 18)
-            preview.Position = UDim2.new(1, -22, 0, 1)
+            preview.Position = UDim2.new(1, -22, 0, hasSubtitle and 2 or 1)
             preview.BackgroundColor3 = color
             preview.BackgroundTransparency = transparency
             preview.ZIndex = 11
             Instance.new("UICorner", preview).CornerRadius = UDim.new(0, 4)
             
-            -- Info (Popup)
+            if hasSubtitle then
+                AddSubtitle(container, config.Subtitle, 30)
+            end
+            
+            -- Info
             if config.Info then
                 local infoBtn = Instance.new("ImageButton", container)
                 infoBtn.Size = UDim2.new(0, 14, 0, 14)
-                infoBtn.Position = UDim2.new(1, -44, 0, 0)
+                infoBtn.Position = UDim2.new(1, -44, 0, hasSubtitle and 2 or 0)
                 infoBtn.BackgroundTransparency = 1
-                local infoImg = ResolveIcon("info") or ICONS.Info
-                infoBtn.Image = infoImg
+                infoBtn.Image = ResolveIcon("info") or "rbxassetid://10723415903"
                 infoBtn.ImageColor3 = NoirColors.SwitchColor
                 infoBtn.ImageTransparency = 0.5
                 infoBtn.ZIndex = 12
                 infoBtn.Name = "InfoBtn"
                 
                 infoBtn.MouseEnter:Connect(function()
-                    TweenService:Create(infoBtn, TweenInfo.new(0.15), {
-                        ImageTransparency = 0.1
-                    }):Play()
+                    TweenService:Create(infoBtn, TweenInfo.new(0.15), {ImageTransparency = 0.1}):Play()
                 end)
                 infoBtn.MouseLeave:Connect(function()
-                    TweenService:Create(infoBtn, TweenInfo.new(0.15), {
-                        ImageTransparency = 0.5
-                    }):Play()
+                    TweenService:Create(infoBtn, TweenInfo.new(0.15), {ImageTransparency = 0.5}):Play()
                 end)
-                
-                CreateInfoPopup(infoBtn, config.Info, ScreenGui)
             end
             
             -- Keybind
             if config.KeybindDefault then
                 local keybindFrame = Instance.new("Frame", container)
                 keybindFrame.Size = UDim2.new(0, 40, 0, 16)
-                keybindFrame.Position = UDim2.new(1, (config.Info and -90 or -68), 0, 0)
+                keybindFrame.Position = UDim2.new(1, (config.Info and -90 or -68), 0, hasSubtitle and 2 or 0)
                 keybindFrame.BackgroundColor3 = NoirColors.DropColor
                 keybindFrame.BackgroundTransparency = 0.8
                 keybindFrame.ZIndex = 11
@@ -2522,48 +2137,38 @@ function NoirUI:CreateWindow(settings)
                     keyLabel.TextColor3 = NoirColors.SwitchColor
                     keyLabel.TextTransparency = 0.5
                     isBinding = false
-                    if config.OnKeybind then
-                        config.OnKeybind(selected)
-                    end
+                    if config.OnKeybind then config.OnKeybind(selected) end
                 end)
             end
             
             -- Settings
             local settingsBtn = Instance.new("ImageButton", container)
             settingsBtn.Size = UDim2.new(0, 14, 0, 14)
-            settingsBtn.Position = UDim2.new(1, (config.Info and -64 or -44), 0, 0)
+            settingsBtn.Position = UDim2.new(1, (config.Info and -64 or -44), 0, hasSubtitle and 2 or 0)
             settingsBtn.BackgroundTransparency = 1
-            local settingsImg = ResolveIcon("settings") or ICONS.Settings
-            settingsBtn.Image = settingsImg
+            settingsBtn.Image = ResolveIcon("settings") or "rbxassetid://14007344336"
             settingsBtn.ImageColor3 = NoirColors.SwitchColor
             settingsBtn.ImageTransparency = 0.5
             settingsBtn.ZIndex = 12
             settingsBtn.Name = "SettingsBtn"
             
             settingsBtn.MouseEnter:Connect(function()
-                TweenService:Create(settingsBtn, TweenInfo.new(0.15), {
-                    ImageTransparency = 0.1
-                }):Play()
+                TweenService:Create(settingsBtn, TweenInfo.new(0.15), {ImageTransparency = 0.1}):Play()
             end)
             settingsBtn.MouseLeave:Connect(function()
-                TweenService:Create(settingsBtn, TweenInfo.new(0.15), {
-                    ImageTransparency = 0.5
-                }):Play()
+                TweenService:Create(settingsBtn, TweenInfo.new(0.15), {ImageTransparency = 0.5}):Play()
             end)
             
             settingsBtn.MouseButton1Click:Connect(function()
                 NoirUI:PlaySound("Click")
-                if config.Settings then
-                    config.Settings()
-                else
-                    NoirUI:Notify("⚙️ Settings", "Mở settings cho " .. (config.Name or "ColorPicker"), "settings", "Notification")
+                if config.Settings then config.Settings()
+                else NoirUI:Notify("⚙️ Settings", "Mở settings cho " .. (config.Name or "ColorPicker"), "settings", "Notification")
                 end
             end)
             
-            -- Color Picker Popup
             preview.MouseButton1Click:Connect(function()
                 NoirUI:PlaySound("Click")
-                
+                -- Color picker popup đơn giản
                 local popup = Instance.new("Frame", ScreenGui)
                 popup.Size = UDim2.new(0, 200, 0, 215)
                 popup.Position = UDim2.new(0, preview.AbsolutePosition.X, 0, preview.AbsolutePosition.Y + 25)
@@ -2572,7 +2177,6 @@ function NoirUI:CreateWindow(settings)
                 popup.ZIndex = 100
                 Instance.new("UICorner", popup).CornerRadius = UDim.new(0, 10)
                 
-                -- Đóng popup khi click ra ngoài
                 UIS.InputBegan:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 then
                         local pos = input.Position
@@ -2580,9 +2184,7 @@ function NoirUI:CreateWindow(settings)
                         local absSize = popup.AbsoluteSize
                         if pos.X < absPos.X or pos.X > absPos.X + absSize.X or 
                            pos.Y < absPos.Y or pos.Y > absPos.Y + absSize.Y then
-                            TweenService:Create(popup, TweenInfo.new(0.15), {
-                                BackgroundTransparency = 1
-                            }):Play()
+                            TweenService:Create(popup, TweenInfo.new(0.15), {BackgroundTransparency = 1}):Play()
                             task.wait(0.15)
                             popup:Destroy()
                         end
@@ -2593,7 +2195,7 @@ function NoirUI:CreateWindow(settings)
             if config.Flag then
                 Tab:AddFlag(config.Flag, {
                     GetValue = function() return color end,
-                    SetValue = function(v) 
+                    SetValue = function(v)
                         color = v
                         preview.BackgroundColor3 = color
                         if config.Callback then config.Callback(color, transparency) end
@@ -2604,21 +2206,23 @@ function NoirUI:CreateWindow(settings)
             return container
         end
         
-        -- DROPDOWN
+        -- DROPDOWN (CK)
         function Tab:CreateDropdown(config)
             config = config or {}
             local options = config.Options or {}
             local default = config.Default or options[1] or ""
             local multi = config.Multi or false
             local selected = multi and {} or default
+            local hasSubtitle = config.Subtitle and config.Subtitle ~= ""
             
             local container = Instance.new("Frame", TabContent)
-            container.Size = UDim2.new(0.95, 0, 0, 30)
+            container.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 45 or 30)
             container.BackgroundTransparency = 1
             container.ZIndex = 10
             container.Name = config.Name or "Dropdown"
             table.insert(Tab.Elements, container)
             table.insert(Window.Elements, container)
+            CreateSpringEffect(container, 0.05 * #Tab.Elements)
             
             local label = Instance.new("TextLabel", container)
             label.Size = UDim2.new(0.6, 0, 0, 20)
@@ -2646,15 +2250,63 @@ function NoirUI:CreateWindow(settings)
             
             local arrow = Instance.new("ImageLabel", container)
             arrow.Size = UDim2.new(0, 12, 0, 12)
-            arrow.Position = UDim2.new(1, -16, 0, 1)
+            arrow.Position = UDim2.new(1, -16, 0, hasSubtitle and 2 or 1)
             arrow.BackgroundTransparency = 1
-            local arrowImg = ResolveIcon("chevron-down") or ICONS.ChevronDown
-            arrow.Image = arrowImg
+            arrow.Image = ResolveIcon("chevron-down") or "rbxassetid://109535175596957"
             arrow.ImageColor3 = NoirColors.SwitchColor
             arrow.ImageTransparency = 0.5
             arrow.ZIndex = 11
             
-            -- Dropdown Popup
+            if hasSubtitle then
+                AddSubtitle(container, config.Subtitle, 30)
+            end
+            
+            -- Info
+            if config.Info then
+                local infoBtn = Instance.new("ImageButton", container)
+                infoBtn.Size = UDim2.new(0, 14, 0, 14)
+                infoBtn.Position = UDim2.new(1, -38, 0, hasSubtitle and 2 or 0)
+                infoBtn.BackgroundTransparency = 1
+                infoBtn.Image = ResolveIcon("info") or "rbxassetid://10723415903"
+                infoBtn.ImageColor3 = NoirColors.SwitchColor
+                infoBtn.ImageTransparency = 0.5
+                infoBtn.ZIndex = 12
+                infoBtn.Name = "InfoBtn"
+                
+                infoBtn.MouseEnter:Connect(function()
+                    TweenService:Create(infoBtn, TweenInfo.new(0.15), {ImageTransparency = 0.1}):Play()
+                end)
+                infoBtn.MouseLeave:Connect(function()
+                    TweenService:Create(infoBtn, TweenInfo.new(0.15), {ImageTransparency = 0.5}):Play()
+                end)
+            end
+            
+            -- Settings
+            local settingsBtn = Instance.new("ImageButton", container)
+            settingsBtn.Size = UDim2.new(0, 14, 0, 14)
+            settingsBtn.Position = UDim2.new(1, (config.Info and -58 or -38), 0, hasSubtitle and 2 or 0)
+            settingsBtn.BackgroundTransparency = 1
+            settingsBtn.Image = ResolveIcon("settings") or "rbxassetid://14007344336"
+            settingsBtn.ImageColor3 = NoirColors.SwitchColor
+            settingsBtn.ImageTransparency = 0.5
+            settingsBtn.ZIndex = 12
+            settingsBtn.Name = "SettingsBtn"
+            
+            settingsBtn.MouseEnter:Connect(function()
+                TweenService:Create(settingsBtn, TweenInfo.new(0.15), {ImageTransparency = 0.1}):Play()
+            end)
+            settingsBtn.MouseLeave:Connect(function()
+                TweenService:Create(settingsBtn, TweenInfo.new(0.15), {ImageTransparency = 0.5}):Play()
+            end)
+            
+            settingsBtn.MouseButton1Click:Connect(function()
+                NoirUI:PlaySound("Click")
+                if config.Settings then config.Settings()
+                else NoirUI:Notify("⚙️ Settings", "Mở settings cho " .. (config.Name or "Dropdown"), "settings", "Notification")
+                end
+            end)
+            
+            -- Dropdown Popup (CK)
             local dropdownWindow = Instance.new("Frame", ScreenGui)
             dropdownWindow.Size = UDim2.new(0, 0, 0, 0)
             dropdownWindow.Position = UDim2.new(0, 0, 0, 0)
@@ -2663,7 +2315,6 @@ function NoirUI:CreateWindow(settings)
             dropdownWindow.Visible = false
             dropdownWindow.ClipsDescendants = true
             dropdownWindow.ZIndex = 100
-            
             Instance.new("UICorner", dropdownWindow).CornerRadius = UDim.new(0, 10)
             
             local optionsScroll = Instance.new("ScrollingFrame", dropdownWindow)
@@ -2680,9 +2331,7 @@ function NoirUI:CreateWindow(settings)
             
             local function renderOptions()
                 for _, child in pairs(optionsScroll:GetChildren()) do
-                    if child:IsA("TextButton") then
-                        child:Destroy()
-                    end
+                    if child:IsA("TextButton") then child:Destroy()
                 end
                 
                 for _, option in ipairs(options) do
@@ -2709,9 +2358,7 @@ function NoirUI:CreateWindow(settings)
                     btn.ZIndex = 102
                     
                     btn.MouseEnter:Connect(function()
-                        TweenService:Create(btn, TweenInfo.new(0.1), {
-                            BackgroundTransparency = 0.7
-                        }):Play()
+                        TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundTransparency = 0.7}):Play()
                     end)
                     btn.MouseLeave:Connect(function()
                         TweenService:Create(btn, TweenInfo.new(0.1), {
@@ -2724,15 +2371,9 @@ function NoirUI:CreateWindow(settings)
                         if multi then
                             local found = false
                             for i, item in pairs(selected) do
-                                if item == option then
-                                    table.remove(selected, i)
-                                    found = true
-                                    break
-                                end
+                                if item == option then table.remove(selected, i); found = true; break end
                             end
-                            if not found then
-                                table.insert(selected, option)
-                            end
+                            if not found then table.insert(selected, option) end
                             valueText.Text = #selected .. " selected"
                             renderOptions()
                             if config.Callback then config.Callback(selected) end
@@ -2760,13 +2401,9 @@ function NoirUI:CreateWindow(settings)
                     local absPos = container.AbsolutePosition
                     dropdownWindow.Position = UDim2.new(0, absPos.X, 0, absPos.Y + container.AbsoluteSize.Y)
                     renderOptions()
-                    TweenService:Create(dropdownWindow, TweenInfo.new(0.15), {
-                        BackgroundTransparency = 0.035
-                    }):Play()
+                    TweenService:Create(dropdownWindow, TweenInfo.new(0.15), {BackgroundTransparency = 0.035}):Play()
                 else
-                    TweenService:Create(dropdownWindow, TweenInfo.new(0.15), {
-                        BackgroundTransparency = 1
-                    }):Play()
+                    TweenService:Create(dropdownWindow, TweenInfo.new(0.15), {BackgroundTransparency = 1}):Play()
                     task.wait(0.15)
                     dropdownWindow.Visible = false
                 end
@@ -2781,9 +2418,7 @@ function NoirUI:CreateWindow(settings)
                         if pos.X < absPos.X or pos.X > absPos.X + absSize.X or 
                            pos.Y < absPos.Y or pos.Y > absPos.Y + absSize.Y then
                             dropdownWindow.Visible = false
-                            TweenService:Create(dropdownWindow, TweenInfo.new(0.15), {
-                                BackgroundTransparency = 1
-                            }):Play()
+                            TweenService:Create(dropdownWindow, TweenInfo.new(0.15), {BackgroundTransparency = 1}):Play()
                             task.wait(0.15)
                             dropdownWindow.Visible = false
                         end
@@ -2794,20 +2429,49 @@ function NoirUI:CreateWindow(settings)
             return container
         end
         
-        -- ============================================
-        -- 19. RETURN TAB
-        -- ============================================
         table.insert(Window.Tabs, Tab)
         return Tab
     end
     
     -- ============================================
-    -- 20. RUN INTRO
+    -- 18. RUN INTRO
     -- ============================================
     CreateIntro()
     
     -- ============================================
-    -- 21. RETURN WINDOW
+    -- 19. FLOAT BUTTON TOGGLE
+    -- ============================================
+    TBtn.MouseButton1Click:Connect(function()
+        NoirUI:PlaySound("Click")
+        CreateClickScaleEffect(TBtn)
+        if Main.Visible then
+            NoirUI:PlaySound("Close")
+            TweenService:Create(Main, TweenInfo.new(0.3), {Size = UDim2.new(0, 0, 0, 0)}):Play()
+            TweenService:Create(Side, TweenInfo.new(0.3), {Size = UDim2.new(0, 0, 0, 0)}):Play()
+            task.wait(0.3)
+            Main.Visible = false
+            Side.Visible = false
+            Main.Size = UDim2.new(0, 465, 0, 300)
+            Side.Size = UDim2.new(0, 175, 0, 300)
+        else
+            NoirUI:PlaySound("Open")
+            Main.Visible = true
+            Side.Visible = true
+            Main.Size = UDim2.new(0, 0, 0, 0)
+            Side.Size = UDim2.new(0, 0, 0, 0)
+            Main.Position = mainDefaultPos
+            Side.Position = sideDefaultPos
+            TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Back), {
+                Size = UDim2.new(0, 465, 0, 300)
+            }):Play()
+            TweenService:Create(Side, TweenInfo.new(0.5, Enum.EasingStyle.Back), {
+                Size = UDim2.new(0, 175, 0, 300)
+            }):Play()
+        end
+    end)
+    
+    -- ============================================
+    -- 20. RETURN
     -- ============================================
     Window._frame = Main
     Window._side = Side
