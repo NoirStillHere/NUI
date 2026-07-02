@@ -1478,7 +1478,7 @@ function NoirUI:CreateWindow(settings)
     -- LOADER & WINDOW CONNECTION
     -- ============================================
     
-    local loaderConn = Events.LoaderFinished:Connect(function()
+    local loaderConn = Events.LoaderFinished.Event:Connect(function()
         OpenUI()
     end)
     table.insert(Connections, loaderConn)
@@ -2964,7 +2964,11 @@ function NoirUI:CreateWindow(settings)
     end
     
     function Window:GetEvents()
-        return Events
+        return {
+            LoaderFinished = Events.LoaderFinished.Event,
+            WindowOpened = Events.WindowOpened.Event,
+            WindowClosed = Events.WindowClosed.Event
+        }
     end
     
     function Window:GetState()
