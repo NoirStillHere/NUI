@@ -594,39 +594,48 @@ function NoirUI:CreateWindow(settings)
     end
     
     -- ============================================
-    -- FLOAT BUTTON
+    -- FLOAT BUTTON - SẼ BIẾN THÀNH HEADER CỦA SIDEBAR
     -- ============================================
     local floatSize = settings.FloatSize or 45
     local floatIconSize = settings.FloatIconSize or 24
     local floatCornerRadius = settings.FloatCornerRadius or 12
-    local TBtn = Instance.new("ImageButton", ScreenGui)
-    TBtn.Size = UDim2.new(0, floatSize, 0, floatSize)
-    TBtn.Position = floatDefaultPos
-    TBtn.BackgroundTransparency = 1
-    TBtn.Image = ""
-    TBtn.ZIndex = 10
-    TBtn.ClipsDescendants = true
-    TBtn.AutoButtonColor = false
-    TBtn.Visible = false
+    
+    -- Float button chính - cũng là header của sidebar
+    local Header = Instance.new("TextButton", ScreenGui)
+    Header.Size = UDim2.new(0, floatSize, 0, floatSize)
+    Header.Position = floatDefaultPos
+    Header.BackgroundColor3 = settings.SidebarBackgroundColor or Color3.fromRGB(12, 12, 12)
+    Header.BackgroundTransparency = settings.SidebarTransparency or 0.8
+    Header.Text = ""
+    Header.AutoButtonColor = false
+    Header.ZIndex = 10
+    Header.ClipsDescendants = true
+    Header.Visible = false
 
     if settings.UseGlow then
-        local floatGlow = CreateUIGlow(TBtn, ACCENT, 0.4, ScreenGui)
+        local floatGlow = CreateUIGlow(Header, ACCENT, 0.4, ScreenGui)
     end
 
-    local floatCorner = Instance.new("UICorner", TBtn)
-    floatCorner.CornerRadius = UDim.new(0, floatCornerRadius)
+    local headerCorner = Instance.new("UICorner", Header)
+    headerCorner.CornerRadius = UDim.new(0, floatCornerRadius)
+    local headerStroke = Instance.new("UIStroke", Header)
+    headerStroke.Color = ACCENT
+    headerStroke.Thickness = 2
+    AddGlowStroke(Header, ACCENT, 2, 5, 0.75)
 
-    local ClipGroup = Instance.new("Frame", TBtn)
+    -- ClipGroup cho header
+    local ClipGroup = Instance.new("Frame", Header)
     ClipGroup.Name = "ClipGroup"
     ClipGroup.Size = UDim2.new(1, 0, 1, 0)
     ClipGroup.Position = UDim2.new(0, 0, 0, 0)
     ClipGroup.BackgroundTransparency = 1
     ClipGroup.ClipsDescendants = true
-    ClipGroup.ZIndex = TBtn.ZIndex
+    ClipGroup.ZIndex = Header.ZIndex
 
     local clipCorner = Instance.new("UICorner", ClipGroup)
     clipCorner.CornerRadius = UDim.new(0, floatCornerRadius)
 
+    -- Background cho header
     if settings.FloatBackground and settings.FloatBackground.Image then
         local bgImage = Instance.new("ImageLabel", ClipGroup)
         bgImage.Name = "BackgroundImage"
@@ -661,71 +670,242 @@ function NoirUI:CreateWindow(settings)
         bgCorner.CornerRadius = UDim.new(0, floatCornerRadius)
     end
 
+    -- Icon chính của float button (sẽ nằm bên trái header khi mở rộng)
     local iconValue = settings.Icon
+    local MainIcon = nil
     if iconValue then
         local iconImage = ResolveIcon(iconValue)
         if iconImage then
-            local FI = Instance.new("ImageLabel", ClipGroup)
-            FI.Size = UDim2.new(0, floatIconSize, 0, floatIconSize)
-            FI.Position = UDim2.new(0.5, -floatIconSize/2, 0.5, -floatIconSize/2)
-            FI.BackgroundTransparency = 1
-            FI.Image = iconImage
-            FI.ImageColor3 = Color3.new(1, 1, 1)
-            FI.ScaleType = Enum.ScaleType.Crop
-            FI.ZIndex = 3
-            local iconCorner = Instance.new("UICorner", FI)
+            MainIcon = Instance.new("ImageLabel", ClipGroup)
+            MainIcon.Size = UDim2.new(0, floatIconSize, 0, floatIconSize)
+            MainIcon.Position = UDim2.new(0.5, -floatIconSize/2, 0.5, -floatIconSize/2)
+            MainIcon.BackgroundTransparency = 1
+            MainIcon.Image = iconImage
+            MainIcon.ImageColor3 = Color3.new(1, 1, 1)
+            MainIcon.ScaleType = Enum.ScaleType.Crop
+            MainIcon.ZIndex = 3
+            local iconCorner = Instance.new("UICorner", MainIcon)
             iconCorner.CornerRadius = UDim.new(0, floatCornerRadius)
         elseif type(iconValue) == "string" then
-            local textIcon = Instance.new("TextLabel", ClipGroup)
-            textIcon.Size = UDim2.new(1, 0, 1, 0)
-            textIcon.Position = UDim2.new(0, 0, 0, 0)
-            textIcon.BackgroundTransparency = 1
-            textIcon.Text = iconValue
-            textIcon.TextColor3 = Color3.new(1, 1, 1)
-            textIcon.TextTransparency = 0
-            textIcon.TextSize = 28
-            textIcon.Font = Enum.Font.GothamBold
-            textIcon.TextScaled = true
-            textIcon.ZIndex = 3
-            local textCorner = Instance.new("UICorner", textIcon)
+            MainIcon = Instance.new("TextLabel", ClipGroup)
+            MainIcon.Size = UDim2.new(1, 0, 1, 0)
+            MainIcon.Position = UDim2.new(0, 0, 0, 0)
+            MainIcon.BackgroundTransparency = 1
+            MainIcon.Text = iconValue
+            MainIcon.TextColor3 = Color3.new(1, 1, 1)
+            MainIcon.TextTransparency = 0
+            MainIcon.TextSize = 28
+            MainIcon.Font = Enum.Font.GothamBold
+            MainIcon.TextScaled = true
+            MainIcon.ZIndex = 3
+            local textCorner = Instance.new("UICorner", MainIcon)
             textCorner.CornerRadius = UDim.new(0, floatCornerRadius)
         end
     end
 
-    local TS = Instance.new("UIStroke", TBtn)
-    TS.Color = ACCENT
-    TS.Thickness = 2
-    AddGlowStroke(TBtn, ACCENT, 2, 5, 0.75)
+    -- LOGO (bên trái header khi mở rộng)
+    local LogoImage = Instance.new("ImageLabel", ClipGroup)
+    LogoImage.Size = UDim2.new(0, floatIconSize, 0, floatIconSize)
+    LogoImage.Position = UDim2.new(0.5, -floatIconSize/2, 0.5, -floatIconSize/2)
+    LogoImage.AnchorPoint = Vector2.new(0.5, 0.5)
+    LogoImage.BackgroundTransparency = 1
+    LogoImage.Image = "rbxthumb://type=Asset&id=94916110511437&w=420&h=420"
+    LogoImage.ScaleType = Enum.ScaleType.Fit
+    LogoImage.ZIndex = 3
+    LogoImage.Visible = false -- Ẩn khi chưa mở rộng
+    local logoCorner = Instance.new("UICorner", LogoImage)
+    logoCorner.CornerRadius = UDim.new(1, 0)
 
-    -- Drag cho float button
-    local floatDragging = false
-    local floatDragStart, floatStartPos, floatDragInput
-    TBtn.InputBegan:Connect(function(input)
+    if settings.LogoID then
+        local logoResolved = ResolveIcon(settings.LogoID)
+        if logoResolved then
+            LogoImage.Image = logoResolved
+        end
+    end
+
+    -- Mũi tên mở sidebar (bên phải header khi mở rộng)
+    local ExpandArrow = Instance.new("TextButton", ClipGroup)
+    ExpandArrow.Size = UDim2.new(0, 30, 1, 0)
+    ExpandArrow.Position = UDim2.new(1, -30, 0, 0)
+    ExpandArrow.BackgroundTransparency = 1
+    ExpandArrow.Text = "▼"
+    ExpandArrow.TextColor3 = ACCENT
+    ExpandArrow.TextTransparency = 0
+    ExpandArrow.Font = "GothamBold"
+    ExpandArrow.TextSize = 14
+    ExpandArrow.ZIndex = 10
+    ExpandArrow.AutoButtonColor = false
+    ExpandArrow.Visible = false -- Ẩn khi chưa mở rộng
+    CreateHoverEffect(ExpandArrow)
+
+    -- Drag cho header
+    local headerDragging = false
+    local headerDragStart, headerStartPos, headerDragInput
+    Header.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            floatDragging = true
-            floatDragStart = input.Position
-            floatStartPos = TBtn.Position
+            headerDragging = true
+            headerDragStart = input.Position
+            headerStartPos = Header.Position
         end
     end)
-    TBtn.InputChanged:Connect(function(input)
+    Header.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            floatDragInput = input
+            headerDragInput = input
         end
     end)
     UIS.InputChanged:Connect(function(input)
-        if input == floatDragInput and floatDragging then
-            local delta = input.Position - floatDragStart
-            TBtn.Position = UDim2.new(floatStartPos.X.Scale, floatStartPos.X.Offset + delta.X, floatStartPos.Y.Scale, floatStartPos.Y.Offset + delta.Y)
+        if input == headerDragInput and headerDragging then
+            local delta = input.Position - headerDragStart
+            Header.Position = UDim2.new(headerStartPos.X.Scale, headerStartPos.X.Offset + delta.X, headerStartPos.Y.Scale, headerStartPos.Y.Offset + delta.Y)
         end
     end)
     UIS.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            floatDragging = false
+            headerDragging = false
         end
     end)
 
     -- ============================================
-    -- LOADING FRAME
+    -- SIDEBAR CONTAINER (THẢ XUỐNG TỪ HEADER)
+    -- ============================================
+    local SideContainer = Instance.new("Frame", ScreenGui)
+    SideContainer.Size = UDim2.new(0, 0, 0, 0)
+    SideContainer.Position = Header.Position + UDim2.new(0, 0, 0, floatSize)
+    SideContainer.BackgroundTransparency = 1
+    SideContainer.ClipsDescendants = true
+    SideContainer.ZIndex = 9
+    SideContainer.Visible = false
+
+    local TScroll = Instance.new("ScrollingFrame", SideContainer)
+    TScroll.Size = UDim2.new(1, 0, 0, 0)
+    TScroll.BackgroundTransparency = 1
+    TScroll.ScrollBarThickness = 3
+    TScroll.ScrollBarImageColor3 = ACCENT
+    TScroll.ScrollBarImageTransparency = 0.5
+    TScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    TScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+    local TLayout = Instance.new("UIListLayout", TScroll)
+    TLayout.Padding = UDim.new(0, 3)
+    TLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    TLayout.FillDirection = Enum.FillDirection.Horizontal
+
+    local function updateSidebarSize()
+        task.wait()
+        local contentHeight = TLayout.AbsoluteContentSize.Y + 10
+        local contentWidth = TLayout.AbsoluteContentSize.X + 20
+        
+        SideContainer.Size = UDim2.new(0, math.max(150, contentWidth), 0, contentHeight)
+        TScroll.Size = UDim2.new(1, 0, 0, contentHeight)
+        
+        -- Cập nhật vị trí SideContainer theo Header
+        SideContainer.Position = Header.Position + UDim2.new(0, 0, 0, floatSize)
+    end
+
+    -- ============================================
+    -- XỬ LÝ BẤM HEADER - KÉO DÃN THÀNH THANH NGANG
+    -- ============================================
+    local isHeaderExpanded = false
+    local isSidebarOpen = false
+
+    Header.MouseButton1Click:Connect(function()
+        PlaySound("Click")
+        CreateClickScaleEffect(Header)
+        
+        isHeaderExpanded = not isHeaderExpanded
+        
+        if isHeaderExpanded then
+            -- Mở rộng header thành thanh ngang
+            local endWidth = 200 -- Đủ rộng cho icon + logo + mũi tên
+            
+            -- Hiện logo và mũi tên
+            LogoImage.Visible = true
+            ExpandArrow.Visible = true
+            
+            -- Di chuyển icon chính sang trái
+            if MainIcon then
+                MainIcon.Position = UDim2.new(0, 10, 0.5, -floatIconSize/2)
+            end
+            
+            -- Di chuyển logo sang giữa
+            LogoImage.Position = UDim2.new(0.5, -floatIconSize/2, 0.5, -floatIconSize/2)
+            
+            -- Mũi tên bên phải
+            ExpandArrow.Position = UDim2.new(1, -30, 0, 0)
+            
+            -- Kéo dãn header
+            TweenService:Create(Header, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, endWidth, 0, floatSize)
+            }):Play()
+            
+            -- Hiện SideContainer nhưng chưa mở (size = 0)
+            SideContainer.Visible = true
+            SideContainer.Size = UDim2.new(0, 0, 0, 0)
+            TScroll.Size = UDim2.new(1, 0, 0, 0)
+            SideContainer.Position = Header.Position + UDim2.new(0, 0, 0, floatSize)
+        else
+            -- Thu gọn về float button
+            LogoImage.Visible = false
+            ExpandArrow.Visible = false
+            
+            -- Đưa icon về giữa
+            if MainIcon then
+                MainIcon.Position = UDim2.new(0.5, -floatIconSize/2, 0.5, -floatIconSize/2)
+            end
+            
+            -- Đóng sidebar nếu đang mở
+            if isSidebarOpen then
+                isSidebarOpen = false
+                ExpandArrow.Text = "▼"
+                SideContainer.Size = UDim2.new(0, 0, 0, 0)
+                TScroll.Size = UDim2.new(1, 0, 0, 0)
+            end
+            SideContainer.Visible = false
+            
+            -- Thu gọn header
+            TweenService:Create(Header, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, floatSize, 0, floatSize)
+            }):Play()
+        end
+    end)
+
+    -- ============================================
+    -- BẤM MŨI TÊN - MỞ SIDEBAR (THẢ XUỐNG)
+    -- ============================================
+    ExpandArrow.MouseButton1Click:Connect(function()
+        PlaySound("Element")
+        CreateClickScaleEffect(ExpandArrow)
+        
+        isSidebarOpen = not isSidebarOpen
+        ExpandArrow.Text = isSidebarOpen and "▲" or "▼"
+        
+        if isSidebarOpen then
+            -- Mở sidebar thả xuống
+            updateSidebarSize()
+            
+            -- Kéo dãn header thêm nếu cần
+            local totalWidth = math.max(200, TLayout.AbsoluteContentSize.X + 40)
+            TweenService:Create(Header, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, totalWidth, 0, floatSize)
+            }):Play()
+        else
+            -- Thu gọn sidebar
+            TweenService:Create(SideContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 0, 0, 0)
+            }):Play()
+            task.wait(0.3)
+            SideContainer.Size = UDim2.new(0, 0, 0, 0)
+            TScroll.Size = UDim2.new(1, 0, 0, 0)
+            
+            -- Thu gọn header về kích thước cơ bản
+            TweenService:Create(Header, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 200, 0, floatSize)
+            }):Play()
+        end
+    end)
+
+    -- ============================================
+    -- LOADING FRAME (giữ nguyên)
     -- ============================================
     local LoadingFrame = Instance.new("Frame", ScreenGui)
     LoadingFrame.Size = UDim2.new(0, 300, 0, 120)
@@ -805,7 +985,7 @@ function NoirUI:CreateWindow(settings)
     LoadingPercent.ZIndex = 201
     
     local function StartLoading()
-        TBtn.Visible = false
+        Header.Visible = false
         LoadingFrame.Visible = true
         if not hasLoadingBg then
             TweenService:Create(LoadingFrame, TweenInfo.new(0.5), {BackgroundTransparency = 0}):Play()
@@ -826,7 +1006,7 @@ function NoirUI:CreateWindow(settings)
                 TweenService:Create(LoadingStroke, TweenInfo.new(0.5), {Transparency = 1}):Play()
                 task.wait(0.5)
                 LoadingFrame:Destroy()
-                TBtn.Visible = true
+                Header.Visible = true
                 PlaySound("Open")
                 if settings.BackgroundMusic and settings.BackgroundMusic.AutoPlay then
                     NoirUI:StartMusic()
@@ -847,7 +1027,7 @@ function NoirUI:CreateWindow(settings)
             return false
         end
         LoadingFrame.Visible = false
-        TBtn.Visible = false
+        Header.Visible = false
         if KS.SaveKey and isfile and isfile(KeyPath) then
             local saved = readfile(KeyPath)
             if CheckKeys(saved) then
@@ -964,227 +1144,6 @@ function NoirUI:CreateWindow(settings)
     else
         StartLoading()
     end
-
-    -- ============================================
-    -- HORIZONTAL SIDEBAR (THANH NGANG)
-    -- ============================================
-    local HorizontalBar = Instance.new("Frame", ScreenGui)
-    HorizontalBar.Size = UDim2.new(0, 0, 0, floatSize)
-    HorizontalBar.Position = TBtn.Position - UDim2.new(0, 0, 0, (floatSize/2))
-    HorizontalBar.BackgroundColor3 = settings.SidebarBackgroundColor or Color3.fromRGB(12, 12, 12)
-    HorizontalBar.BackgroundTransparency = settings.SidebarTransparency or 0.8
-    HorizontalBar.ClipsDescendants = true
-    HorizontalBar.Visible = false
-    HorizontalBar.ZIndex = 9
-
-    local hBarCorner = Instance.new("UICorner", HorizontalBar)
-    hBarCorner.CornerRadius = UDim.new(0, 8)
-    local hBarStroke = Instance.new("UIStroke", HorizontalBar)
-    hBarStroke.Color = ACCENT
-    hBarStroke.Thickness = 1
-    hBarStroke.Transparency = 0.7
-    AddGlowStroke(HorizontalBar, ACCENT, 1, 1, 0.85)
-
-    -- LOGO TRÊN THANH NGANG (bên trái)
-    local LogoButton = Instance.new("TextButton", HorizontalBar)
-    LogoButton.Size = UDim2.new(0, floatSize, 1, 0)
-    LogoButton.Position = UDim2.new(0, 0, 0, 0)
-    LogoButton.BackgroundTransparency = 1
-    LogoButton.Text = ""
-    LogoButton.AutoButtonColor = false
-    LogoButton.ZIndex = 10
-
-    -- Logo image (mặc định rbxthumb)
-    local LogoImage = Instance.new("ImageLabel", LogoButton)
-    LogoImage.Size = UDim2.new(1, -8, 1, -8)
-    LogoImage.Position = UDim2.new(0.5, 0, 0.5, 0)
-    LogoImage.AnchorPoint = Vector2.new(0.5, 0.5)
-    LogoImage.BackgroundTransparency = 1
-    LogoImage.Image = "rbxthumb://type=Asset&id=94916110511437&w=420&h=420"
-    LogoImage.ScaleType = Enum.ScaleType.Fit
-    LogoImage.ZIndex = 10
-
-    if settings.LogoID then
-        local logoResolved = ResolveIcon(settings.LogoID)
-        if logoResolved then
-            LogoImage.Image = logoResolved
-        end
-    end
-
-    local logoCorner = Instance.new("UICorner", LogoImage)
-    logoCorner.CornerRadius = UDim.new(1, 0)
-
-    -- Mũi tên mở sidebar (bên phải thanh ngang)
-    local ExpandArrow = Instance.new("TextButton", HorizontalBar)
-    ExpandArrow.Size = UDim2.new(0, 30, 1, 0)
-    ExpandArrow.Position = UDim2.new(1, -30, 0, 0)
-    ExpandArrow.BackgroundTransparency = 1
-    ExpandArrow.Text = "▼"
-    ExpandArrow.TextColor3 = ACCENT
-    ExpandArrow.TextTransparency = 0
-    ExpandArrow.Font = "GothamBold"
-    ExpandArrow.TextSize = 14
-    ExpandArrow.ZIndex = 10
-    ExpandArrow.AutoButtonColor = false
-    CreateHoverEffect(ExpandArrow)
-
-    -- ============================================
-    -- SIDEBAR CONTAINER (THẢ XUỐNG)
-    -- ============================================
-    local SideContainer = Instance.new("Frame", HorizontalBar)
-    SideContainer.Size = UDim2.new(1, -40, 0, 0)
-    SideContainer.Position = UDim2.new(0, 0, 0, floatSize)
-    SideContainer.BackgroundTransparency = 1
-    SideContainer.ClipsDescendants = true
-    SideContainer.ZIndex = 9
-
-    local TScroll = Instance.new("ScrollingFrame", SideContainer)
-    TScroll.Size = UDim2.new(1, 0, 0, 0)
-    TScroll.BackgroundTransparency = 1
-    TScroll.ScrollBarThickness = 3
-    TScroll.ScrollBarImageColor3 = ACCENT
-    TScroll.ScrollBarImageTransparency = 0.5
-    TScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    TScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-
-    local TLayout = Instance.new("UIListLayout", TScroll)
-    TLayout.Padding = UDim.new(0, 3)
-    TLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    TLayout.FillDirection = Enum.FillDirection.Horizontal
-
-    local function updateSidebarSize()
-        task.wait()
-        local contentHeight = TLayout.AbsoluteContentSize.Y + 10
-        SideContainer.Size = UDim2.new(1, -40, 0, contentHeight)
-        TScroll.Size = UDim2.new(1, 0, 0, contentHeight)
-        
-        local totalHeight = floatSize + contentHeight
-        HorizontalBar.Size = UDim2.new(0, math.min(400, floatSize + #TScroll:GetChildren() * 38 + 20), 0, totalHeight)
-        HorizontalBar.Position = TBtn.Position - UDim2.new(0, (HorizontalBar.Size.X.Offset - floatSize)/2, 0, 0)
-    end
-
-    local isSidebarOpen = false
-
-    -- ============================================
-    -- XỬ LÝ BẤM FLOAT BUTTON - KÉO RA BÊN PHẢI
-    -- ============================================
-    TBtn.MouseButton1Click:Connect(function()
-        PlaySound("Click")
-        CreateClickScaleEffect(TBtn)
-        
-        if HorizontalBar.Visible then
-            -- Nếu đang mở thì thu gọn về float button
-            TweenService:Create(HorizontalBar, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, floatSize, 0, floatSize),
-                Position = TBtn.Position - UDim2.new(0, 0, 0, (floatSize/2))
-            }):Play()
-            task.wait(0.3)
-            HorizontalBar.Visible = false
-            
-            -- Ẩn tab container nếu đang mở
-            if Cont.Visible then
-                TweenService:Create(Cont, TweenInfo.new(0.3), {
-                    Position = UDim2.new(Cont.Position.X.Scale, Cont.Position.X.Offset - 50, Cont.Position.Y.Scale, Cont.Position.Y.Offset),
-                    BackgroundTransparency = 1
-                }):Play()
-                task.wait(0.3)
-                Cont.Visible = false
-            end
-            
-            isSidebarOpen = false
-            ExpandArrow.Text = "▼"
-        else
-            -- Mở thanh ngang (chỉ có logo + mũi tên, chưa có sidebar)
-            HorizontalBar.Visible = true
-            isSidebarOpen = false
-            ExpandArrow.Text = "▼" -- Mũi tên xuống
-            
-            -- Ẩn sidebar (chưa mở)
-            SideContainer.Size = UDim2.new(1, -40, 0, 0)
-            TScroll.Size = UDim2.new(1, 0, 0, 0)
-            HorizontalBar.Size = UDim2.new(0, floatSize, 0, floatSize)
-            
-            -- Bắt đầu từ vị trí bên phải float button
-            local startPos = TBtn.Position + UDim2.new(0, floatSize + 5, 0, -floatSize/2)
-            HorizontalBar.Position = startPos
-            HorizontalBar.Size = UDim2.new(0, 0, 0, floatSize)
-            
-            -- Kéo dãn ra bên phải (chỉ thanh ngang, chưa có sidebar)
-            local endWidth = 150 -- Độ rộng vừa đủ cho logo + mũi tên
-            local endPos = TBtn.Position + UDim2.new(0, floatSize + 5, 0, -floatSize/2)
-            
-            TweenService:Create(HorizontalBar, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, endWidth, 0, floatSize),
-                Position = endPos
-            }):Play()
-        end
-    end)
-
-    -- ============================================
-    -- BẤM MŨI TÊN - MỞ SIDEBAR (THẢ XUỐNG)
-    -- ============================================
-    ExpandArrow.MouseButton1Click:Connect(function()
-        PlaySound("Element")
-        CreateClickScaleEffect(ExpandArrow)
-        
-        isSidebarOpen = not isSidebarOpen
-        ExpandArrow.Text = isSidebarOpen and "▲" or "▼"
-        
-        if isSidebarOpen then
-            -- Mở sidebar thả xuống
-            updateSidebarSize()
-            -- Kéo dãn thanh ngang để chứa sidebar
-            local totalWidth = math.min(400, floatSize + #TScroll:GetChildren() * 38 + 20)
-            TweenService:Create(HorizontalBar, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, totalWidth, 0, HorizontalBar.Size.Y.Offset)
-            }):Play()
-        else
-            -- Thu gọn sidebar, chỉ còn thanh ngang
-            TweenService:Create(SideContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(1, -40, 0, 0)
-            }):Play()
-            TweenService:Create(HorizontalBar, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 150, 0, floatSize)
-            }):Play()
-            task.wait(0.3)
-            SideContainer.Size = UDim2.new(1, -40, 0, 0)
-            TScroll.Size = UDim2.new(1, 0, 0, 0)
-        end
-    end)
-
-    -- ============================================
-    -- BẤM LOGO - THU GỌN VỀ FLOAT BUTTON
-    -- ============================================
-    LogoButton.MouseButton1Click:Connect(function()
-        PlaySound("Click")
-        CreateClickScaleEffect(LogoButton)
-        
-        -- Đóng sidebar nếu đang mở
-        if isSidebarOpen then
-            isSidebarOpen = false
-            ExpandArrow.Text = "▼"
-            SideContainer.Size = UDim2.new(1, -40, 0, 0)
-            TScroll.Size = UDim2.new(1, 0, 0, 0)
-        end
-        
-        -- Thu gọn thanh ngang về float button
-        TweenService:Create(HorizontalBar, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, floatSize, 0, floatSize),
-            Position = TBtn.Position - UDim2.new(0, 0, 0, (floatSize/2))
-        }):Play()
-        task.wait(0.3)
-        HorizontalBar.Visible = false
-        
-        -- Ẩn tab container nếu đang mở
-        if Cont.Visible then
-            TweenService:Create(Cont, TweenInfo.new(0.3), {
-                Position = UDim2.new(Cont.Position.X.Scale, Cont.Position.X.Offset - 50, Cont.Position.Y.Scale, Cont.Position.Y.Offset),
-                BackgroundTransparency = 1
-            }):Play()
-            task.wait(0.3)
-            Cont.Visible = false
-        end
-    end)
 
     -- ============================================
     -- TAB CONTAINER (ĐÃ XÓA HEADER)
@@ -1334,14 +1293,14 @@ function NoirUI:CreateWindow(settings)
             
             TabContainer.Visible = true
             
-            local barPos = HorizontalBar.Position
-            Cont.Position = UDim2.new(barPos.X.Scale, barPos.X.Offset + HorizontalBar.Size.X.Offset + 10, barPos.Y.Scale, barPos.Y.Offset)
+            local headerPos = Header.Position
+            Cont.Position = UDim2.new(headerPos.X.Scale, headerPos.X.Offset + Header.Size.X.Offset + 10, headerPos.Y.Scale, headerPos.Y.Offset)
             
-            Cont.Position = UDim2.new(barPos.X.Scale, barPos.X.Offset - 50, barPos.Y.Scale, barPos.Y.Offset)
+            Cont.Position = UDim2.new(headerPos.X.Scale, headerPos.X.Offset - 50, headerPos.Y.Scale, headerPos.Y.Offset)
             Cont.Visible = true
             Cont.BackgroundTransparency = 1
             TweenService:Create(Cont, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Position = UDim2.new(barPos.X.Scale, barPos.X.Offset + HorizontalBar.Size.X.Offset + 10, barPos.Y.Scale, barPos.Y.Offset),
+                Position = UDim2.new(headerPos.X.Scale, headerPos.X.Offset + Header.Size.X.Offset + 10, headerPos.Y.Scale, headerPos.Y.Offset),
                 BackgroundTransparency = 0.95
             }):Play()
             
@@ -1371,7 +1330,7 @@ function NoirUI:CreateWindow(settings)
         local function GetO() Tab.Count = Tab.Count + 1; return Tab.Count end
 
         -- ============================================
-        -- ELEMENTS
+        -- ELEMENTS (giữ nguyên như cũ)
         -- ============================================
         function Tab:CreateLabel(text, updateFunction)
             local parent = Tab._currentSectionContent or ContentFrame
