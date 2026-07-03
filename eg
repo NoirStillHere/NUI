@@ -671,6 +671,7 @@ function NoirUI:CreateWindow(settings)
     end
 
     -- Icon chính của float button (sẽ nằm bên trái header khi mở rộng)
+    -- VÀ cũng là logo (không cần LogoID riêng)
     local iconValue = settings.Icon
     local MainIcon = nil
     if iconValue then
@@ -700,26 +701,6 @@ function NoirUI:CreateWindow(settings)
             MainIcon.ZIndex = 3
             local textCorner = Instance.new("UICorner", MainIcon)
             textCorner.CornerRadius = UDim.new(0, floatCornerRadius)
-        end
-    end
-
-    -- LOGO (bên trái header khi mở rộng)
-    local LogoImage = Instance.new("ImageLabel", ClipGroup)
-    LogoImage.Size = UDim2.new(0, floatIconSize, 0, floatIconSize)
-    LogoImage.Position = UDim2.new(0.5, -floatIconSize/2, 0.5, -floatIconSize/2)
-    LogoImage.AnchorPoint = Vector2.new(0.5, 0.5)
-    LogoImage.BackgroundTransparency = 1
-    LogoImage.Image = "rbxthumb://type=Asset&id=94916110511437&w=420&h=420"
-    LogoImage.ScaleType = Enum.ScaleType.Fit
-    LogoImage.ZIndex = 3
-    LogoImage.Visible = false -- Ẩn khi chưa mở rộng
-    local logoCorner = Instance.new("UICorner", LogoImage)
-    logoCorner.CornerRadius = UDim.new(1, 0)
-
-    if settings.LogoID then
-        local logoResolved = ResolveIcon(settings.LogoID)
-        if logoResolved then
-            LogoImage.Image = logoResolved
         end
     end
 
@@ -766,18 +747,28 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ============================================
-    -- SIDEBAR CONTAINER (THẢ XUỐNG TỪ HEADER)
+    -- SIDEBAR CONTAINER (THẢ XUỐNG TỪ HEADER) - CÓ NỀN
     -- ============================================
     local SideContainer = Instance.new("Frame", ScreenGui)
     SideContainer.Size = UDim2.new(0, 0, 0, 0)
     SideContainer.Position = Header.Position + UDim2.new(0, 0, 0, floatSize)
-    SideContainer.BackgroundTransparency = 1
+    SideContainer.BackgroundColor3 = settings.SidebarBackgroundColor or Color3.fromRGB(12, 12, 12)
+    SideContainer.BackgroundTransparency = settings.SidebarTransparency or 0.2
     SideContainer.ClipsDescendants = true
     SideContainer.ZIndex = 9
     SideContainer.Visible = false
 
+    local sideCorner = Instance.new("UICorner", SideContainer)
+    sideCorner.CornerRadius = UDim.new(0, 8)
+    local sideStroke = Instance.new("UIStroke", SideContainer)
+    sideStroke.Color = ACCENT
+    sideStroke.Thickness = 1
+    sideStroke.Transparency = 0.7
+    AddGlowStroke(SideContainer, ACCENT, 1, 1, 0.85)
+
     local TScroll = Instance.new("ScrollingFrame", SideContainer)
-    TScroll.Size = UDim2.new(1, 0, 0, 0)
+    TScroll.Size = UDim2.new(1, -10, 1, -10)
+    TScroll.Position = UDim2.new(0.05, 0, 0.05, 0)
     TScroll.BackgroundTransparency = 1
     TScroll.ScrollBarThickness = 3
     TScroll.ScrollBarImageColor3 = ACCENT
@@ -792,11 +783,11 @@ function NoirUI:CreateWindow(settings)
 
     local function updateSidebarSize()
         task.wait()
-        local contentHeight = TLayout.AbsoluteContentSize.Y + 10
         local contentWidth = TLayout.AbsoluteContentSize.X + 20
+        local contentHeight = TLayout.AbsoluteContentSize.Y + 20
         
         SideContainer.Size = UDim2.new(0, math.max(150, contentWidth), 0, contentHeight)
-        TScroll.Size = UDim2.new(1, 0, 0, contentHeight)
+        TScroll.Size = UDim2.new(1, -10, 1, -10)
         
         -- Cập nhật vị trí SideContainer theo Header
         SideContainer.Position = Header.Position + UDim2.new(0, 0, 0, floatSize)
@@ -816,19 +807,15 @@ function NoirUI:CreateWindow(settings)
         
         if isHeaderExpanded then
             -- Mở rộng header thành thanh ngang
-            local endWidth = 200 -- Đủ rộng cho icon + logo + mũi tên
+            local endWidth = 180 -- Đủ rộng cho icon + mũi tên
             
-            -- Hiện logo và mũi tên
-            LogoImage.Visible = true
+            -- Hiện mũi tên
             ExpandArrow.Visible = true
             
             -- Di chuyển icon chính sang trái
             if MainIcon then
                 MainIcon.Position = UDim2.new(0, 10, 0.5, -floatIconSize/2)
             end
-            
-            -- Di chuyển logo sang giữa
-            LogoImage.Position = UDim2.new(0.5, -floatIconSize/2, 0.5, -floatIconSize/2)
             
             -- Mũi tên bên phải
             ExpandArrow.Position = UDim2.new(1, -30, 0, 0)
@@ -841,11 +828,14 @@ function NoirUI:CreateWindow(settings)
             -- Hiện SideContainer nhưng chưa mở (size = 0)
             SideContainer.Visible = true
             SideContainer.Size = UDim2.new(0, 0, 0, 0)
-            TScroll.Size = UDim2.new(1, 0, 0, 0)
+            TScroll.Size = UDim2.new(1, -10, 1, -10)
             SideContainer.Position = Header.Position + UDim2.new(0, 0, 0, floatSize)
+            
+            -- Đặt lại ZIndex để SideContainer nằm dưới Header
+            SideContainer.ZIndex = 9
+            Header.ZIndex = 10
         else
-            -- Thu gọn về float button
-            LogoImage.Visible = false
+            -- Thu gọn về float button (đóng toàn bộ UI)
             ExpandArrow.Visible = false
             
             -- Đưa icon về giữa
@@ -858,14 +848,29 @@ function NoirUI:CreateWindow(settings)
                 isSidebarOpen = false
                 ExpandArrow.Text = "▼"
                 SideContainer.Size = UDim2.new(0, 0, 0, 0)
-                TScroll.Size = UDim2.new(1, 0, 0, 0)
+                TScroll.Size = UDim2.new(1, -10, 1, -10)
             end
             SideContainer.Visible = false
+            
+            -- Đóng tab container nếu đang mở
+            if Cont.Visible then
+                TweenService:Create(Cont, TweenInfo.new(0.3), {
+                    Position = UDim2.new(Cont.Position.X.Scale, Cont.Position.X.Offset - 50, Cont.Position.Y.Scale, Cont.Position.Y.Offset),
+                    BackgroundTransparency = 1
+                }):Play()
+                task.wait(0.3)
+                Cont.Visible = false
+            end
             
             -- Thu gọn header
             TweenService:Create(Header, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = UDim2.new(0, floatSize, 0, floatSize)
             }):Play()
+            
+            -- Đóng nhạc nền nếu đang chạy (tùy chọn)
+            if settings.BackgroundMusic and settings.BackgroundMusic.AutoPlay then
+                NoirUI:PauseMusic()
+            end
         end
     end)
 
@@ -884,7 +889,7 @@ function NoirUI:CreateWindow(settings)
             updateSidebarSize()
             
             -- Kéo dãn header thêm nếu cần
-            local totalWidth = math.max(200, TLayout.AbsoluteContentSize.X + 40)
+            local totalWidth = math.max(180, TLayout.AbsoluteContentSize.X + 40)
             TweenService:Create(Header, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = UDim2.new(0, totalWidth, 0, floatSize)
             }):Play()
@@ -895,11 +900,11 @@ function NoirUI:CreateWindow(settings)
             }):Play()
             task.wait(0.3)
             SideContainer.Size = UDim2.new(0, 0, 0, 0)
-            TScroll.Size = UDim2.new(1, 0, 0, 0)
+            TScroll.Size = UDim2.new(1, -10, 1, -10)
             
             -- Thu gọn header về kích thước cơ bản
             TweenService:Create(Header, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 200, 0, floatSize)
+                Size = UDim2.new(0, 180, 0, floatSize)
             }):Play()
         end
     end)
@@ -1146,13 +1151,13 @@ function NoirUI:CreateWindow(settings)
     end
 
     -- ============================================
-    -- TAB CONTAINER (ĐÃ XÓA HEADER)
+    -- TAB CONTAINER (CÓ NỀN - KHÔNG TRONG SUỐT)
     -- ============================================
     local Cont = Instance.new("Frame", ScreenGui)
     Cont.Size = UDim2.new(0, 420, 0, 400)
     Cont.Position = UDim2.new(0, 0, 0, 0)
     Cont.BackgroundColor3 = settings.MainBgColor or Color3.fromRGB(10, 10, 10)
-    Cont.BackgroundTransparency = 0.95
+    Cont.BackgroundTransparency = 0.1
     Cont.ClipsDescendants = true
     Cont.ZIndex = 8
     Cont.Visible = false
@@ -1301,7 +1306,7 @@ function NoirUI:CreateWindow(settings)
             Cont.BackgroundTransparency = 1
             TweenService:Create(Cont, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Position = UDim2.new(headerPos.X.Scale, headerPos.X.Offset + Header.Size.X.Offset + 10, headerPos.Y.Scale, headerPos.Y.Offset),
-                BackgroundTransparency = 0.95
+                BackgroundTransparency = 0.1
             }):Play()
             
             resetAllTabs()
