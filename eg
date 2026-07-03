@@ -21,7 +21,7 @@ local NoirUI = { Notifications = {}, ActiveConfirmFrame = nil, CustomCommands = 
 local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
 
 -- ============================================
--- HÀM HỖ TRỢ RESOLVE ICON (MỞ RỘNG)
+-- HÀM HỖ TRỢ RESOLVE ICON
 -- ============================================
 local function ResolveIcon(iconInput)
     if not iconInput then return nil end
@@ -29,10 +29,6 @@ local function ResolveIcon(iconInput)
         return "rbxassetid://" .. tostring(iconInput)
     end
     if type(iconInput) == "string" then
-        -- Hỗ trợ rbxthumb://
-        if iconInput:match("^rbxthumb://") then
-            return iconInput
-        end
         if iconInput:match("^rbxassetid://") or iconInput:match("^http") then
             return iconInput
         end
@@ -671,7 +667,6 @@ function NoirUI:CreateWindow(settings)
     end
 
     -- Icon chính của float button (sẽ nằm bên trái header khi mở rộng)
-    -- VÀ cũng là logo (không cần LogoID riêng)
     local iconValue = settings.Icon
     local MainIcon = nil
     if iconValue then
@@ -747,13 +742,13 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ============================================
-    -- SIDEBAR CONTAINER (THẢ XUỐNG TỪ HEADER) - CÓ NỀN
+    -- SIDEBAR CONTAINER (THẢ XUỐNG TỪ HEADER) - GIỐNG NOIRUI CŨ
     -- ============================================
     local SideContainer = Instance.new("Frame", ScreenGui)
     SideContainer.Size = UDim2.new(0, 0, 0, 0)
     SideContainer.Position = Header.Position + UDim2.new(0, 0, 0, floatSize)
     SideContainer.BackgroundColor3 = settings.SidebarBackgroundColor or Color3.fromRGB(12, 12, 12)
-    SideContainer.BackgroundTransparency = settings.SidebarTransparency or 0.2
+    SideContainer.BackgroundTransparency = settings.SidebarTransparency or 0.8
     SideContainer.ClipsDescendants = true
     SideContainer.ZIndex = 9
     SideContainer.Visible = false
@@ -766,9 +761,10 @@ function NoirUI:CreateWindow(settings)
     sideStroke.Transparency = 0.7
     AddGlowStroke(SideContainer, ACCENT, 1, 1, 0.85)
 
+    -- Scrolling frame chứa các tab (giống NoirUI cũ)
     local TScroll = Instance.new("ScrollingFrame", SideContainer)
     TScroll.Size = UDim2.new(1, -10, 1, -10)
-    TScroll.Position = UDim2.new(0.05, 0, 0.05, 0)
+    TScroll.Position = UDim2.new(0, 5, 0, 5)
     TScroll.BackgroundTransparency = 1
     TScroll.ScrollBarThickness = 3
     TScroll.ScrollBarImageColor3 = ACCENT
@@ -779,14 +775,14 @@ function NoirUI:CreateWindow(settings)
     local TLayout = Instance.new("UIListLayout", TScroll)
     TLayout.Padding = UDim.new(0, 3)
     TLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    TLayout.FillDirection = Enum.FillDirection.Horizontal
+    TLayout.FillDirection = Enum.FillDirection.Vertical -- Dọc như NoirUI cũ
 
     local function updateSidebarSize()
         task.wait()
-        local contentWidth = TLayout.AbsoluteContentSize.X + 20
         local contentHeight = TLayout.AbsoluteContentSize.Y + 20
+        local contentWidth = 150 -- Độ rộng sidebar cố định
         
-        SideContainer.Size = UDim2.new(0, math.max(150, contentWidth), 0, contentHeight)
+        SideContainer.Size = UDim2.new(0, contentWidth, 0, contentHeight)
         TScroll.Size = UDim2.new(1, -10, 1, -10)
         
         -- Cập nhật vị trí SideContainer theo Header
@@ -807,12 +803,12 @@ function NoirUI:CreateWindow(settings)
         
         if isHeaderExpanded then
             -- Mở rộng header thành thanh ngang
-            local endWidth = 180 -- Đủ rộng cho icon + mũi tên
+            local endWidth = 200 -- Đủ rộng cho icon + mũi tên
             
             -- Hiện mũi tên
             ExpandArrow.Visible = true
             
-            -- Di chuyển icon chính sang trái
+            -- Di chuyển icon sang trái
             if MainIcon then
                 MainIcon.Position = UDim2.new(0, 10, 0.5, -floatIconSize/2)
             end
@@ -830,12 +826,8 @@ function NoirUI:CreateWindow(settings)
             SideContainer.Size = UDim2.new(0, 0, 0, 0)
             TScroll.Size = UDim2.new(1, -10, 1, -10)
             SideContainer.Position = Header.Position + UDim2.new(0, 0, 0, floatSize)
-            
-            -- Đặt lại ZIndex để SideContainer nằm dưới Header
-            SideContainer.ZIndex = 9
-            Header.ZIndex = 10
         else
-            -- Thu gọn về float button (đóng toàn bộ UI)
+            -- Thu gọn về float button
             ExpandArrow.Visible = false
             
             -- Đưa icon về giữa
@@ -852,30 +844,15 @@ function NoirUI:CreateWindow(settings)
             end
             SideContainer.Visible = false
             
-            -- Đóng tab container nếu đang mở
-            if Cont.Visible then
-                TweenService:Create(Cont, TweenInfo.new(0.3), {
-                    Position = UDim2.new(Cont.Position.X.Scale, Cont.Position.X.Offset - 50, Cont.Position.Y.Scale, Cont.Position.Y.Offset),
-                    BackgroundTransparency = 1
-                }):Play()
-                task.wait(0.3)
-                Cont.Visible = false
-            end
-            
             -- Thu gọn header
             TweenService:Create(Header, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = UDim2.new(0, floatSize, 0, floatSize)
             }):Play()
-            
-            -- Đóng nhạc nền nếu đang chạy (tùy chọn)
-            if settings.BackgroundMusic and settings.BackgroundMusic.AutoPlay then
-                NoirUI:PauseMusic()
-            end
         end
     end)
 
     -- ============================================
-    -- BẤM MŨI TÊN - MỞ SIDEBAR (THẢ XUỐNG)
+    -- BẤM MŨI TÊN - MỞ SIDEBAR (GIỐNG NOIRUI CŨ)
     -- ============================================
     ExpandArrow.MouseButton1Click:Connect(function()
         PlaySound("Element")
@@ -885,13 +862,19 @@ function NoirUI:CreateWindow(settings)
         ExpandArrow.Text = isSidebarOpen and "▲" or "▼"
         
         if isSidebarOpen then
-            -- Mở sidebar thả xuống
+            -- Mở sidebar thả xuống (giống NoirUI cũ)
             updateSidebarSize()
             
-            -- Kéo dãn header thêm nếu cần
-            local totalWidth = math.max(180, TLayout.AbsoluteContentSize.X + 40)
+            -- Mở rộng header để chứa sidebar
+            local totalWidth = 180
             TweenService:Create(Header, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = UDim2.new(0, totalWidth, 0, floatSize)
+            }):Play()
+            
+            -- Hiệu ứng spring cho sidebar
+            SideContainer.Size = UDim2.new(0, 150, 0, 0)
+            TweenService:Create(SideContainer, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 150, 0, SideContainer.Size.Y.Offset)
             }):Play()
         else
             -- Thu gọn sidebar
@@ -904,13 +887,57 @@ function NoirUI:CreateWindow(settings)
             
             -- Thu gọn header về kích thước cơ bản
             TweenService:Create(Header, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 180, 0, floatSize)
+                Size = UDim2.new(0, 200, 0, floatSize)
             }):Play()
         end
     end)
 
     -- ============================================
-    -- LOADING FRAME (giữ nguyên)
+    -- BẤM VÀO ICON - THU GỌN VỀ FLOAT BUTTON
+    -- ============================================
+    if MainIcon then
+        MainIcon.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                PlaySound("Click")
+                CreateClickScaleEffect(MainIcon)
+                
+                -- Đóng sidebar nếu đang mở
+                if isSidebarOpen then
+                    isSidebarOpen = false
+                    ExpandArrow.Text = "▼"
+                    SideContainer.Size = UDim2.new(0, 0, 0, 0)
+                    TScroll.Size = UDim2.new(1, -10, 1, -10)
+                end
+                SideContainer.Visible = false
+                
+                -- Ẩn mũi tên
+                ExpandArrow.Visible = false
+                
+                -- Đưa icon về giữa
+                MainIcon.Position = UDim2.new(0.5, -floatIconSize/2, 0.5, -floatIconSize/2)
+                
+                -- Thu gọn header về float button
+                TweenService:Create(Header, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0, floatSize, 0, floatSize)
+                }):Play()
+                
+                -- Ẩn tab container nếu đang mở
+                if Cont.Visible then
+                    TweenService:Create(Cont, TweenInfo.new(0.3), {
+                        Position = UDim2.new(Cont.Position.X.Scale, Cont.Position.X.Offset - 50, Cont.Position.Y.Scale, Cont.Position.Y.Offset),
+                        BackgroundTransparency = 1
+                    }):Play()
+                    task.wait(0.3)
+                    Cont.Visible = false
+                end
+                
+                isHeaderExpanded = false
+            end
+        end)
+    end
+
+    -- ============================================
+    -- LOADING FRAME
     -- ============================================
     local LoadingFrame = Instance.new("Frame", ScreenGui)
     LoadingFrame.Size = UDim2.new(0, 300, 0, 120)
@@ -1151,13 +1178,13 @@ function NoirUI:CreateWindow(settings)
     end
 
     -- ============================================
-    -- TAB CONTAINER (CÓ NỀN - KHÔNG TRONG SUỐT)
+    -- TAB CONTAINER (ĐÃ XÓA HEADER - GIỮ NGUYÊN SEARCH)
     -- ============================================
     local Cont = Instance.new("Frame", ScreenGui)
     Cont.Size = UDim2.new(0, 420, 0, 400)
     Cont.Position = UDim2.new(0, 0, 0, 0)
     Cont.BackgroundColor3 = settings.MainBgColor or Color3.fromRGB(10, 10, 10)
-    Cont.BackgroundTransparency = 0.1
+    Cont.BackgroundTransparency = 0.95
     Cont.ClipsDescendants = true
     Cont.ZIndex = 8
     Cont.Visible = false
@@ -1177,12 +1204,17 @@ function NoirUI:CreateWindow(settings)
     local allTabButtons = {}
 
     -- ============================================
-    -- TẠO TAB
+    -- TẠO TAB (GIỐNG NOIRUI CŨ)
     -- ============================================
     function Window:CreateTab(name, icon)
+        -- Tab button trong sidebar
         local B = Instance.new("TextButton", TScroll)
-        B.Size = UDim2.new(0, 38, 0, 38)
-        B.BackgroundColor3 = settings.TabBackgroundColor or Color3.fromRGB(20, 20, 20)
+        B.Size = UDim2.new(1, 0, 0, 32)
+        if settings.TabBackgroundColor then
+            B.BackgroundColor3 = settings.TabBackgroundColor
+        else
+            B.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+        end
         B.BackgroundTransparency = 0.7
         B.Text = ""
         B.AutoButtonColor = false
@@ -1200,11 +1232,36 @@ function NoirUI:CreateWindow(settings)
             tabGlowStroke.Transparency = 1
         end
 
+        -- Tên tab
+        local BT = Instance.new("TextLabel", B)
+        BT.Size = UDim2.new(1, -10, 1, 0)
+        BT.Position = UDim2.new(0, icon and 35 or 8, 0, 0)
+        BT.BackgroundTransparency = 1
+        BT.Text = name
+        if useAutoContrast then
+            BT.TextColor3 = GetContrastColor(B.BackgroundColor3)
+        else
+            BT.TextColor3 = Color3.fromRGB(255, 255, 255)
+        end
+        BT.TextTransparency = 0
+        BT.Font = "GothamBold"
+        BT.TextSize = 13
+        BT.TextXAlignment = "Left"
+        BT.ZIndex = 2
+        BT.TextTruncate = Enum.TextTruncate.None
+        if settings.UseGlow then
+            CreateGlowTextSlide(BT, {
+                Color3.fromRGB(200, 200, 200),
+                Color3.fromRGB(255, 255, 255),
+                Color3.fromRGB(200, 200, 200)
+            }, 1)
+        end
+
         -- Icon
         if icon then
             local IC = Instance.new("ImageLabel", B)
-            IC.Size = UDim2.new(0, 20, 0, 20)
-            IC.Position = UDim2.new(0.5, -10, 0.5, -10)
+            IC.Size = UDim2.new(0, 18, 0, 18)
+            IC.Position = UDim2.new(0, 8, 0.5, -9)
             IC.BackgroundTransparency = 1
             IC.ClipsDescendants = true
             IC.ScaleType = Enum.ScaleType.Crop
@@ -1220,28 +1277,9 @@ function NoirUI:CreateWindow(settings)
             IC.ImageColor3 = Color3.new(1, 1, 1)
         end
 
-        -- Tên tab nhỏ bên dưới
-        local BT = Instance.new("TextLabel", B)
-        BT.Size = UDim2.new(1, 0, 0, 10)
-        BT.Position = UDim2.new(0, 0, 1, -10)
-        BT.BackgroundTransparency = 1
-        BT.Text = name
-        if useAutoContrast then
-            BT.TextColor3 = GetContrastColor(B.BackgroundColor3)
-        else
-            BT.TextColor3 = Color3.fromRGB(200, 200, 200)
-        end
-        BT.TextTransparency = 0
-        BT.Font = "Gotham"
-        BT.TextSize = 8
-        BT.TextXAlignment = "Center"
-        BT.ZIndex = 2
-        BT.TextTruncate = Enum.TextTruncate.AtEnd
-
-        -- Tab Container (không có search)
+        -- Tab Container (có search)
         local TabContainer = Instance.new("ScrollingFrame", Cont)
-        TabContainer.Size = UDim2.new(1, -20, 1, -20)
-        TabContainer.Position = UDim2.new(0, 10, 0, 10)
+        TabContainer.Size = UDim2.new(1, 0, 1, 0)
         TabContainer.BackgroundTransparency = 1
         TabContainer.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
         TabContainer.Visible = false
@@ -1253,9 +1291,52 @@ function NoirUI:CreateWindow(settings)
         TabContainer.BorderSizePixel = 0
         TabContainer.ClipsDescendants = true
 
+        -- Search (giữ nguyên)
+        local SearchFrame = Instance.new("Frame", TabContainer)
+        SearchFrame.Size = UDim2.new(1, -20, 0, 35)
+        SearchFrame.Position = UDim2.new(0, 10, 0, 0)
+        if settings.ElementBackgroundColor then
+            SearchFrame.BackgroundColor3 = settings.ElementBackgroundColor
+        else
+            SearchFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+        end
+        SearchFrame.BackgroundTransparency = 0.5
+        Instance.new("UICorner", SearchFrame).CornerRadius = UDim.new(0, 8)
+        local searchStroke = Instance.new("UIStroke", SearchFrame)
+        searchStroke.Color = ACCENT
+        searchStroke.Thickness = 1
+        searchStroke.Transparency = 0.7
+        searchStroke.ZIndex = 2
+        AddGlowStroke(SearchFrame, ACCENT, 1, 1, 0.85)
+
+        local SearchIcon = Instance.new("TextLabel", SearchFrame)
+        SearchIcon.Size = UDim2.new(0, 30, 1, 0)
+        SearchIcon.BackgroundTransparency = 1
+        SearchIcon.Text = "🔍"
+        if useAutoContrast then
+            SearchIcon.TextColor3 = GetContrastColor(SearchFrame.BackgroundColor3)
+        else
+            SearchIcon.TextColor3 = Color3.fromRGB(150, 150, 150)
+        end
+        SearchIcon.TextTransparency = 0
+        SearchIcon.Font = "GothamMedium"
+        SearchIcon.TextSize = 14
+
+        local SearchBox = Instance.new("TextBox", SearchFrame)
+        SearchBox.Size = UDim2.new(1, -35, 1, 0)
+        SearchBox.Position = UDim2.new(0, 35, 0, 0)
+        SearchBox.BackgroundTransparency = 1
+        SearchBox.PlaceholderText = "Tìm kiếm..."
+        SearchBox.Text = ""
+        SearchBox.TextColor3 = Color3.new(1, 1, 1)
+        SearchBox.TextTransparency = 0
+        SearchBox.Font = "Gotham"
+        SearchBox.TextSize = 12
+        SearchBox.ClearTextOnFocus = false
+
         local ContentFrame = Instance.new("Frame", TabContainer)
         ContentFrame.Size = UDim2.new(1, 0, 0, 0)
-        ContentFrame.Position = UDim2.new(0, 0, 0, 0)
+        ContentFrame.Position = UDim2.new(0, 0, 0, 45)
         ContentFrame.BackgroundTransparency = 1
         local ContentLayout = Instance.new("UIListLayout", ContentFrame)
         ContentLayout.Padding = UDim.new(0, 8)
@@ -1264,7 +1345,7 @@ function NoirUI:CreateWindow(settings)
 
         local function updateCanvas()
             task.wait()
-            TabContainer.CanvasSize = UDim2.new(0, 0, 0, ContentFrame.AbsoluteSize.Y + 10)
+            TabContainer.CanvasSize = UDim2.new(0, 0, 0, ContentFrame.AbsoluteSize.Y + 55)
         end
         ContentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas)
 
@@ -1306,7 +1387,7 @@ function NoirUI:CreateWindow(settings)
             Cont.BackgroundTransparency = 1
             TweenService:Create(Cont, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Position = UDim2.new(headerPos.X.Scale, headerPos.X.Offset + Header.Size.X.Offset + 10, headerPos.Y.Scale, headerPos.Y.Offset),
-                BackgroundTransparency = 0.1
+                BackgroundTransparency = 0.95
             }):Play()
             
             resetAllTabs()
@@ -1334,8 +1415,24 @@ function NoirUI:CreateWindow(settings)
         local Tab = { Count = 0, Elements = {}, Connections = {}, _currentSectionContent = nil, _sectionLayout = nil }
         local function GetO() Tab.Count = Tab.Count + 1; return Tab.Count end
 
+        -- Filter search
+        local function filterElements(searchText)
+            local search = searchText:lower()
+            for _, element in pairs(Tab.Elements) do
+                if search == "" or (element.Name and element.Name:lower():find(search)) then
+                    element.Visible = true
+                else
+                    element.Visible = false
+                end
+            end
+            updateCanvas()
+        end
+        SearchBox.Changed:Connect(function(prop)
+            if prop == "Text" then filterElements(SearchBox.Text) end
+        end)
+
         -- ============================================
-        -- ELEMENTS (giữ nguyên như cũ)
+        -- ELEMENTS (GIỮ NGUYÊN BẢN CŨ)
         -- ============================================
         function Tab:CreateLabel(text, updateFunction)
             local parent = Tab._currentSectionContent or ContentFrame
