@@ -594,11 +594,6 @@ function NoirUI:CreateWindow(settings)
     end
     
     -- ============================================
-    -- MAIN CONTAINER (KHÔNG CÒN SỬ DỤNG)
-    -- ============================================
-    -- Main đã được thay thế bằng Cont (Tab Container)
-    
-    -- ============================================
     -- FLOAT BUTTON
     -- ============================================
     local floatSize = settings.FloatSize or 45
@@ -832,7 +827,6 @@ function NoirUI:CreateWindow(settings)
                 task.wait(0.5)
                 LoadingFrame:Destroy()
                 TBtn.Visible = true
-                -- Không còn Main, chỉ hiện Float Button
                 PlaySound("Open")
                 if settings.BackgroundMusic and settings.BackgroundMusic.AutoPlay then
                     NoirUI:StartMusic()
@@ -1065,28 +1059,123 @@ function NoirUI:CreateWindow(settings)
         TScroll.Size = UDim2.new(1, 0, 0, contentHeight)
         
         local totalHeight = floatSize + contentHeight
-        HorizontalBar.Size = UDim2.new(0, math.min(400, floatSize + #TScroll:GetChildren() * 38), 0, totalHeight)
+        HorizontalBar.Size = UDim2.new(0, math.min(400, floatSize + #TScroll:GetChildren() * 38 + 20), 0, totalHeight)
         HorizontalBar.Position = TBtn.Position - UDim2.new(0, (HorizontalBar.Size.X.Offset - floatSize)/2, 0, 0)
     end
 
     local isSidebarOpen = false
 
-    -- Bấm LOGO để thu gọn về float button
+    -- ============================================
+    -- XỬ LÝ BẤM FLOAT BUTTON - KÉO RA BÊN PHẢI
+    -- ============================================
+    TBtn.MouseButton1Click:Connect(function()
+        PlaySound("Click")
+        CreateClickScaleEffect(TBtn)
+        
+        if HorizontalBar.Visible then
+            -- Nếu đang mở thì thu gọn về float button
+            TweenService:Create(HorizontalBar, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, floatSize, 0, floatSize),
+                Position = TBtn.Position - UDim2.new(0, 0, 0, (floatSize/2))
+            }):Play()
+            task.wait(0.3)
+            HorizontalBar.Visible = false
+            
+            -- Ẩn tab container nếu đang mở
+            if Cont.Visible then
+                TweenService:Create(Cont, TweenInfo.new(0.3), {
+                    Position = UDim2.new(Cont.Position.X.Scale, Cont.Position.X.Offset - 50, Cont.Position.Y.Scale, Cont.Position.Y.Offset),
+                    BackgroundTransparency = 1
+                }):Play()
+                task.wait(0.3)
+                Cont.Visible = false
+            end
+            
+            isSidebarOpen = false
+            ExpandArrow.Text = "▼"
+        else
+            -- Mở thanh ngang (chỉ có logo + mũi tên, chưa có sidebar)
+            HorizontalBar.Visible = true
+            isSidebarOpen = false
+            ExpandArrow.Text = "▼" -- Mũi tên xuống
+            
+            -- Ẩn sidebar (chưa mở)
+            SideContainer.Size = UDim2.new(1, -40, 0, 0)
+            TScroll.Size = UDim2.new(1, 0, 0, 0)
+            HorizontalBar.Size = UDim2.new(0, floatSize, 0, floatSize)
+            
+            -- Bắt đầu từ vị trí bên phải float button
+            local startPos = TBtn.Position + UDim2.new(0, floatSize + 5, 0, -floatSize/2)
+            HorizontalBar.Position = startPos
+            HorizontalBar.Size = UDim2.new(0, 0, 0, floatSize)
+            
+            -- Kéo dãn ra bên phải (chỉ thanh ngang, chưa có sidebar)
+            local endWidth = 150 -- Độ rộng vừa đủ cho logo + mũi tên
+            local endPos = TBtn.Position + UDim2.new(0, floatSize + 5, 0, -floatSize/2)
+            
+            TweenService:Create(HorizontalBar, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, endWidth, 0, floatSize),
+                Position = endPos
+            }):Play()
+        end
+    end)
+
+    -- ============================================
+    -- BẤM MŨI TÊN - MỞ SIDEBAR (THẢ XUỐNG)
+    -- ============================================
+    ExpandArrow.MouseButton1Click:Connect(function()
+        PlaySound("Element")
+        CreateClickScaleEffect(ExpandArrow)
+        
+        isSidebarOpen = not isSidebarOpen
+        ExpandArrow.Text = isSidebarOpen and "▲" or "▼"
+        
+        if isSidebarOpen then
+            -- Mở sidebar thả xuống
+            updateSidebarSize()
+            -- Kéo dãn thanh ngang để chứa sidebar
+            local totalWidth = math.min(400, floatSize + #TScroll:GetChildren() * 38 + 20)
+            TweenService:Create(HorizontalBar, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, totalWidth, 0, HorizontalBar.Size.Y.Offset)
+            }):Play()
+        else
+            -- Thu gọn sidebar, chỉ còn thanh ngang
+            TweenService:Create(SideContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(1, -40, 0, 0)
+            }):Play()
+            TweenService:Create(HorizontalBar, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 150, 0, floatSize)
+            }):Play()
+            task.wait(0.3)
+            SideContainer.Size = UDim2.new(1, -40, 0, 0)
+            TScroll.Size = UDim2.new(1, 0, 0, 0)
+        end
+    end)
+
+    -- ============================================
+    -- BẤM LOGO - THU GỌN VỀ FLOAT BUTTON
+    -- ============================================
     LogoButton.MouseButton1Click:Connect(function()
         PlaySound("Click")
         CreateClickScaleEffect(LogoButton)
         
+        -- Đóng sidebar nếu đang mở
         if isSidebarOpen then
             isSidebarOpen = false
             ExpandArrow.Text = "▼"
+            SideContainer.Size = UDim2.new(1, -40, 0, 0)
+            TScroll.Size = UDim2.new(1, 0, 0, 0)
         end
         
+        -- Thu gọn thanh ngang về float button
         TweenService:Create(HorizontalBar, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, floatSize, 0, floatSize)
+            Size = UDim2.new(0, floatSize, 0, floatSize),
+            Position = TBtn.Position - UDim2.new(0, 0, 0, (floatSize/2))
         }):Play()
         task.wait(0.3)
         HorizontalBar.Visible = false
         
+        -- Ẩn tab container nếu đang mở
         if Cont.Visible then
             TweenService:Create(Cont, TweenInfo.new(0.3), {
                 Position = UDim2.new(Cont.Position.X.Scale, Cont.Position.X.Offset - 50, Cont.Position.Y.Scale, Cont.Position.Y.Offset),
@@ -1094,28 +1183,6 @@ function NoirUI:CreateWindow(settings)
             }):Play()
             task.wait(0.3)
             Cont.Visible = false
-        end
-    end)
-
-    -- Bấm mũi tên để mở/đóng sidebar
-    ExpandArrow.MouseButton1Click:Connect(function()
-        PlaySound("Element")
-        CreateClickScaleEffect(ExpandArrow)
-        isSidebarOpen = not isSidebarOpen
-        ExpandArrow.Text = isSidebarOpen and "▲" or "▼"
-        
-        if isSidebarOpen then
-            updateSidebarSize()
-            HorizontalBar.Visible = true
-            TweenService:Create(HorizontalBar, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, HorizontalBar.Size.X.Offset, 0, HorizontalBar.Size.Y.Offset)
-            }):Play()
-        else
-            TweenService:Create(HorizontalBar, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, floatSize, 0, floatSize)
-            }):Play()
-            task.wait(0.3)
-            HorizontalBar.Visible = false
         end
     end)
 
