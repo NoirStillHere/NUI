@@ -742,27 +742,27 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ============================================
-    -- SIDEBAR CONTAINER (THẢ XUỐNG TỪ HEADER) - GIỐNG NOIRUI CŨ
+    -- SIDEBAR CONTAINER (THẢ XUỐNG TỪ HEADER) - GIỐNG DROPDOWN
     -- ============================================
-    local SideContainer = Instance.new("Frame", ScreenGui)
-    SideContainer.Size = UDim2.new(0, 0, 0, 0)
-    SideContainer.Position = Header.Position + UDim2.new(0, 0, 0, floatSize)
-    SideContainer.BackgroundColor3 = settings.SidebarBackgroundColor or Color3.fromRGB(12, 12, 12)
-    SideContainer.BackgroundTransparency = settings.SidebarTransparency or 0.8
-    SideContainer.ClipsDescendants = true
-    SideContainer.ZIndex = 9
-    SideContainer.Visible = false
+    local Sidebar = Instance.new("Frame", ScreenGui)
+    Sidebar.Size = UDim2.new(0, 0, 0, 0)
+    Sidebar.Position = Header.Position + UDim2.new(0, 0, 0, floatSize)
+    Sidebar.BackgroundColor3 = settings.SidebarBackgroundColor or Color3.fromRGB(12, 12, 12)
+    Sidebar.BackgroundTransparency = settings.SidebarTransparency or 0.8
+    Sidebar.ClipsDescendants = true
+    Sidebar.ZIndex = 9
+    Sidebar.Visible = false
 
-    local sideCorner = Instance.new("UICorner", SideContainer)
-    sideCorner.CornerRadius = UDim.new(0, 8)
-    local sideStroke = Instance.new("UIStroke", SideContainer)
-    sideStroke.Color = ACCENT
-    sideStroke.Thickness = 1
-    sideStroke.Transparency = 0.7
-    AddGlowStroke(SideContainer, ACCENT, 1, 1, 0.85)
+    local sidebarCorner = Instance.new("UICorner", Sidebar)
+    sidebarCorner.CornerRadius = UDim.new(0, 8)
+    local sidebarStroke = Instance.new("UIStroke", Sidebar)
+    sidebarStroke.Color = ACCENT
+    sidebarStroke.Thickness = 1
+    sidebarStroke.Transparency = 0.7
+    AddGlowStroke(Sidebar, ACCENT, 1, 1, 0.85)
 
-    -- Scrolling frame chứa các tab (giống NoirUI cũ)
-    local TScroll = Instance.new("ScrollingFrame", SideContainer)
+    -- Scrolling frame chứa các tab
+    local TScroll = Instance.new("ScrollingFrame", Sidebar)
     TScroll.Size = UDim2.new(1, -10, 1, -10)
     TScroll.Position = UDim2.new(0, 5, 0, 5)
     TScroll.BackgroundTransparency = 1
@@ -775,18 +775,17 @@ function NoirUI:CreateWindow(settings)
     local TLayout = Instance.new("UIListLayout", TScroll)
     TLayout.Padding = UDim.new(0, 3)
     TLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    TLayout.FillDirection = Enum.FillDirection.Vertical -- Dọc như NoirUI cũ
+    TLayout.FillDirection = Enum.FillDirection.Vertical
 
     local function updateSidebarSize()
         task.wait()
         local contentHeight = TLayout.AbsoluteContentSize.Y + 20
-        local contentWidth = 150 -- Độ rộng sidebar cố định
+        local contentWidth = 150
         
-        SideContainer.Size = UDim2.new(0, contentWidth, 0, contentHeight)
+        Sidebar.Size = UDim2.new(0, contentWidth, 0, contentHeight)
         TScroll.Size = UDim2.new(1, -10, 1, -10)
         
-        -- Cập nhật vị trí SideContainer theo Header
-        SideContainer.Position = Header.Position + UDim2.new(0, 0, 0, floatSize)
+        Sidebar.Position = Header.Position + UDim2.new(0, 0, 0, floatSize)
     end
 
     -- ============================================
@@ -803,7 +802,7 @@ function NoirUI:CreateWindow(settings)
         
         if isHeaderExpanded then
             -- Mở rộng header thành thanh ngang
-            local endWidth = 200 -- Đủ rộng cho icon + mũi tên
+            local endWidth = 200
             
             -- Hiện mũi tên
             ExpandArrow.Visible = true
@@ -821,11 +820,11 @@ function NoirUI:CreateWindow(settings)
                 Size = UDim2.new(0, endWidth, 0, floatSize)
             }):Play()
             
-            -- Hiện SideContainer nhưng chưa mở (size = 0)
-            SideContainer.Visible = true
-            SideContainer.Size = UDim2.new(0, 0, 0, 0)
+            -- Hiện Sidebar nhưng chưa mở (size = 0)
+            Sidebar.Visible = true
+            Sidebar.Size = UDim2.new(0, 0, 0, 0)
             TScroll.Size = UDim2.new(1, -10, 1, -10)
-            SideContainer.Position = Header.Position + UDim2.new(0, 0, 0, floatSize)
+            Sidebar.Position = Header.Position + UDim2.new(0, 0, 0, floatSize)
         else
             -- Thu gọn về float button
             ExpandArrow.Visible = false
@@ -839,10 +838,10 @@ function NoirUI:CreateWindow(settings)
             if isSidebarOpen then
                 isSidebarOpen = false
                 ExpandArrow.Text = "▼"
-                SideContainer.Size = UDim2.new(0, 0, 0, 0)
+                Sidebar.Size = UDim2.new(0, 0, 0, 0)
                 TScroll.Size = UDim2.new(1, -10, 1, -10)
             end
-            SideContainer.Visible = false
+            Sidebar.Visible = false
             
             -- Thu gọn header
             TweenService:Create(Header, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -852,7 +851,7 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ============================================
-    -- BẤM MŨI TÊN - MỞ SIDEBAR (GIỐNG NOIRUI CŨ)
+    -- BẤM MŨI TÊN - MỞ SIDEBAR (THẢ XUỐNG NHƯ DROPDOWN)
     -- ============================================
     ExpandArrow.MouseButton1Click:Connect(function()
         PlaySound("Element")
@@ -862,7 +861,7 @@ function NoirUI:CreateWindow(settings)
         ExpandArrow.Text = isSidebarOpen and "▲" or "▼"
         
         if isSidebarOpen then
-            -- Mở sidebar thả xuống (giống NoirUI cũ)
+            -- Mở sidebar thả xuống
             updateSidebarSize()
             
             -- Mở rộng header để chứa sidebar
@@ -871,18 +870,18 @@ function NoirUI:CreateWindow(settings)
                 Size = UDim2.new(0, totalWidth, 0, floatSize)
             }):Play()
             
-            -- Hiệu ứng spring cho sidebar
-            SideContainer.Size = UDim2.new(0, 150, 0, 0)
-            TweenService:Create(SideContainer, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 150, 0, SideContainer.Size.Y.Offset)
+            -- Hiệu ứng thả xuống (dropdown)
+            Sidebar.Size = UDim2.new(0, 150, 0, 0)
+            TweenService:Create(Sidebar, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 150, 0, Sidebar.Size.Y.Offset)
             }):Play()
         else
-            -- Thu gọn sidebar
-            TweenService:Create(SideContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            -- Thu gọn sidebar (cuộn lên như đóng dropdown)
+            TweenService:Create(Sidebar, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = UDim2.new(0, 0, 0, 0)
             }):Play()
             task.wait(0.3)
-            SideContainer.Size = UDim2.new(0, 0, 0, 0)
+            Sidebar.Size = UDim2.new(0, 0, 0, 0)
             TScroll.Size = UDim2.new(1, -10, 1, -10)
             
             -- Thu gọn header về kích thước cơ bản
@@ -905,10 +904,10 @@ function NoirUI:CreateWindow(settings)
                 if isSidebarOpen then
                     isSidebarOpen = false
                     ExpandArrow.Text = "▼"
-                    SideContainer.Size = UDim2.new(0, 0, 0, 0)
+                    Sidebar.Size = UDim2.new(0, 0, 0, 0)
                     TScroll.Size = UDim2.new(1, -10, 1, -10)
                 end
-                SideContainer.Visible = false
+                Sidebar.Visible = false
                 
                 -- Ẩn mũi tên
                 ExpandArrow.Visible = false
@@ -1178,7 +1177,7 @@ function NoirUI:CreateWindow(settings)
     end
 
     -- ============================================
-    -- TAB CONTAINER (ĐÃ XÓA HEADER - GIỮ NGUYÊN SEARCH)
+    -- TAB CONTAINER (ĐÃ XÓA HEADER - CÓ SEARCH)
     -- ============================================
     local Cont = Instance.new("Frame", ScreenGui)
     Cont.Size = UDim2.new(0, 420, 0, 400)
@@ -1204,10 +1203,9 @@ function NoirUI:CreateWindow(settings)
     local allTabButtons = {}
 
     -- ============================================
-    -- TẠO TAB (GIỐNG NOIRUI CŨ)
+    -- TẠO TAB
     -- ============================================
     function Window:CreateTab(name, icon)
-        -- Tab button trong sidebar
         local B = Instance.new("TextButton", TScroll)
         B.Size = UDim2.new(1, 0, 0, 32)
         if settings.TabBackgroundColor then
@@ -1232,7 +1230,6 @@ function NoirUI:CreateWindow(settings)
             tabGlowStroke.Transparency = 1
         end
 
-        -- Tên tab
         local BT = Instance.new("TextLabel", B)
         BT.Size = UDim2.new(1, -10, 1, 0)
         BT.Position = UDim2.new(0, icon and 35 or 8, 0, 0)
@@ -1257,7 +1254,6 @@ function NoirUI:CreateWindow(settings)
             }, 1)
         end
 
-        -- Icon
         if icon then
             local IC = Instance.new("ImageLabel", B)
             IC.Size = UDim2.new(0, 18, 0, 18)
@@ -1277,7 +1273,6 @@ function NoirUI:CreateWindow(settings)
             IC.ImageColor3 = Color3.new(1, 1, 1)
         end
 
-        -- Tab Container (có search)
         local TabContainer = Instance.new("ScrollingFrame", Cont)
         TabContainer.Size = UDim2.new(1, 0, 1, 0)
         TabContainer.BackgroundTransparency = 1
@@ -1349,7 +1344,6 @@ function NoirUI:CreateWindow(settings)
         end
         ContentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas)
 
-        -- Reset các tab khác
         local function resetAllTabs()
             for _, btn in pairs(allTabButtons) do
                 local t = btn:FindFirstChild("TextLabel")
@@ -1369,7 +1363,6 @@ function NoirUI:CreateWindow(settings)
             end
         end
 
-        -- Chọn tab
         local function selectThisTab()
             for _, v in pairs(Cont:GetChildren()) do
                 if v:IsA("ScrollingFrame") then
@@ -1411,11 +1404,9 @@ function NoirUI:CreateWindow(settings)
             selectThisTab()
         end
 
-        -- Tab Object
         local Tab = { Count = 0, Elements = {}, Connections = {}, _currentSectionContent = nil, _sectionLayout = nil }
         local function GetO() Tab.Count = Tab.Count + 1; return Tab.Count end
 
-        -- Filter search
         local function filterElements(searchText)
             local search = searchText:lower()
             for _, element in pairs(Tab.Elements) do
@@ -1432,7 +1423,7 @@ function NoirUI:CreateWindow(settings)
         end)
 
         -- ============================================
-        -- ELEMENTS (GIỮ NGUYÊN BẢN CŨ)
+        -- ELEMENTS (GIỮ NGUYÊN)
         -- ============================================
         function Tab:CreateLabel(text, updateFunction)
             local parent = Tab._currentSectionContent or ContentFrame
