@@ -742,8 +742,9 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ============================================
-    -- SIDEBAR CONTAINER (THẢ XUỐNG TỪ HEADER) - GIỐNG DROPDOWN
+    -- SIDEBAR (THẢ XUỐNG DƯỚI DẠNG DROPDOWN)
     -- ============================================
+    -- Sidebar sẽ thả xuống từ dưới header
     local Sidebar = Instance.new("Frame", ScreenGui)
     Sidebar.Size = UDim2.new(0, 0, 0, 0)
     Sidebar.Position = Header.Position + UDim2.new(0, 0, 0, floatSize)
@@ -775,8 +776,9 @@ function NoirUI:CreateWindow(settings)
     local TLayout = Instance.new("UIListLayout", TScroll)
     TLayout.Padding = UDim.new(0, 3)
     TLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    TLayout.FillDirection = Enum.FillDirection.Vertical
+    TLayout.FillDirection = Enum.FillDirection.Vertical -- Dọc
 
+    -- Hàm cập nhật kích thước sidebar
     local function updateSidebarSize()
         task.wait()
         local contentHeight = TLayout.AbsoluteContentSize.Y + 20
@@ -785,6 +787,7 @@ function NoirUI:CreateWindow(settings)
         Sidebar.Size = UDim2.new(0, contentWidth, 0, contentHeight)
         TScroll.Size = UDim2.new(1, -10, 1, -10)
         
+        -- Vị trí sidebar nằm ngay dưới header
         Sidebar.Position = Header.Position + UDim2.new(0, 0, 0, floatSize)
     end
 
@@ -851,7 +854,7 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ============================================
-    -- BẤM MŨI TÊN - MỞ SIDEBAR (THẢ XUỐNG NHƯ DROPDOWN)
+    -- BẤM MŨI TÊN - MỞ SIDEBAR (THẢ XUỐNG DROPDOWN)
     -- ============================================
     ExpandArrow.MouseButton1Click:Connect(function()
         PlaySound("Element")
@@ -876,7 +879,7 @@ function NoirUI:CreateWindow(settings)
                 Size = UDim2.new(0, 150, 0, Sidebar.Size.Y.Offset)
             }):Play()
         else
-            -- Thu gọn sidebar (cuộn lên như đóng dropdown)
+            -- Thu gọn sidebar (cuộn lên)
             TweenService:Create(Sidebar, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = UDim2.new(0, 0, 0, 0)
             }):Play()
@@ -1177,7 +1180,7 @@ function NoirUI:CreateWindow(settings)
     end
 
     -- ============================================
-    -- TAB CONTAINER (ĐÃ XÓA HEADER - CÓ SEARCH)
+    -- TAB CONTAINER (CÓ SEARCH, KHÔNG CÓ HEADER)
     -- ============================================
     local Cont = Instance.new("Frame", ScreenGui)
     Cont.Size = UDim2.new(0, 420, 0, 400)
@@ -1286,7 +1289,7 @@ function NoirUI:CreateWindow(settings)
         TabContainer.BorderSizePixel = 0
         TabContainer.ClipsDescendants = true
 
-        -- Search (giữ nguyên)
+        -- Search
         local SearchFrame = Instance.new("Frame", TabContainer)
         SearchFrame.Size = UDim2.new(1, -20, 0, 35)
         SearchFrame.Position = UDim2.new(0, 10, 0, 0)
@@ -1423,7 +1426,7 @@ function NoirUI:CreateWindow(settings)
         end)
 
         -- ============================================
-        -- ELEMENTS (GIỮ NGUYÊN)
+        -- ELEMENTS
         -- ============================================
         function Tab:CreateLabel(text, updateFunction)
             local parent = Tab._currentSectionContent or ContentFrame
