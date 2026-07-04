@@ -21,7 +21,7 @@ local NoirUI = { Notifications = {}, ActiveConfirmFrame = nil, CustomCommands = 
 local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
 
 -- ============================================
--- HÀM HỖ TRỢ RESOLVE ICON (MỞ RỘNG)
+-- HÀM HỖ TRỢ RESOLVE ICON
 -- ============================================
 local function ResolveIcon(iconInput)
     if not iconInput then return nil end
@@ -45,7 +45,7 @@ local function ResolveIcon(iconInput)
 end
 
 -- ============================================
--- AUTO CONTRAST TEXT FUNCTIONS
+-- AUTO CONTRAST TEXT
 -- ============================================
 local function GetColorBrightness(color)
     return (0.299 * color.R + 0.587 * color.G + 0.114 * color.B)
@@ -61,7 +61,7 @@ local function GetContrastColor(backgroundColor)
 end
 
 -- ============================================
--- GLOW STROKE (NEON)
+-- GLOW STROKE
 -- ============================================
 local function AddGlowStroke(parent, accentColor, baseThickness, glowThickness, glowTransparency)
     if not parent then return nil end
@@ -78,40 +78,7 @@ local function AddGlowStroke(parent, accentColor, baseThickness, glowThickness, 
 end
 
 -- ============================================
--- BLUR OVERLAY
--- ============================================
-local function AddBlurOverlay(parent, blurAmount)
-    if not parent or not blurAmount or blurAmount <= 0 then return nil end
-    local existing = parent:FindFirstChild("BlurWrapper")
-    if existing then existing:Destroy() end
-    
-    local wrapper = Instance.new("Frame", parent)
-    wrapper.Name = "BlurWrapper"
-    wrapper.Size = UDim2.new(1, 0, 1, 0)
-    wrapper.Position = UDim2.new(0, 0, 0, 0)
-    wrapper.BackgroundTransparency = 1
-    wrapper.ZIndex = 0
-    wrapper.ClipsDescendants = true
-    
-    local parentCorner = parent:FindFirstChild("UICorner")
-    if parentCorner then
-        local corner = Instance.new("UICorner", wrapper)
-        corner.CornerRadius = parentCorner.CornerRadius
-    end
-    
-    local blur = Instance.new("Frame", wrapper)
-    blur.Name = "BlurOverlay"
-    blur.Size = UDim2.new(1, 0, 1, 0)
-    blur.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    blur.BackgroundTransparency = 1 - math.clamp(blurAmount, 0, 1)
-    blur.ZIndex = 0
-    blur.BorderSizePixel = 0
-    
-    return wrapper
-end
-
--- ============================================
--- ANIMATION FUNCTIONS
+-- ANIMATION
 -- ============================================
 local function CreateClickScaleEffect(button)
     if not button then return end
@@ -185,17 +152,6 @@ local SoundSettings = {
     SuccessSoundId = nil,
 }
 
-local BackgroundMusic = {
-    CurrentSound = nil,
-    CurrentTrackId = nil,
-    IsPlaying = false,
-    Volume = 0.3,
-    Playlist = {},
-    CurrentIndex = 1,
-    LoopMode = "single",
-    UIHidden = false,
-}
-
 local function PlaySound(soundType)
     if not SoundSettings.Enabled then return end
     local soundId = nil
@@ -218,123 +174,6 @@ local function PlaySound(soundType)
     task.delay(3, function() if sound then sound:Destroy() end end)
 end
 
-local function PlayTrackById(trackId)
-    if not trackId or not BackgroundMusic.CurrentSound then return end
-    BackgroundMusic.CurrentSound:Stop()
-    BackgroundMusic.CurrentSound.SoundId = "rbxassetid://" .. tostring(trackId)
-    BackgroundMusic.CurrentSound:Play()
-    BackgroundMusic.CurrentTrackId = trackId
-    BackgroundMusic.IsPlaying = true
-end
-
-local function PlayNextTrack()
-    if BackgroundMusic.LoopMode == "single" and BackgroundMusic.CurrentTrackId then
-        PlayTrackById(BackgroundMusic.CurrentTrackId)
-    elseif BackgroundMusic.LoopMode == "playlist" and #BackgroundMusic.Playlist > 0 then
-        BackgroundMusic.CurrentIndex = BackgroundMusic.CurrentIndex % #BackgroundMusic.Playlist + 1
-        PlayTrackById(BackgroundMusic.Playlist[BackgroundMusic.CurrentIndex])
-    end
-end
-
-local function StopAndCleanupMusic()
-    if BackgroundMusic.CurrentSound then
-        BackgroundMusic.CurrentSound:Stop()
-    end
-    BackgroundMusic.IsPlaying = false
-end
-
-local function InitBackgroundMusic(settings)
-    if not settings or not settings.Enabled then return end
-    if settings.Playlist and #settings.Playlist > 0 then
-        BackgroundMusic.Playlist = settings.Playlist
-        BackgroundMusic.LoopMode = settings.LoopMode or "single"
-    elseif settings.SingleTrack then
-        BackgroundMusic.Playlist = {settings.SingleTrack}
-        BackgroundMusic.LoopMode = "single"
-    end
-    BackgroundMusic.Volume = settings.Volume or 0.3
-    if not BackgroundMusic.CurrentSound then
-        BackgroundMusic.CurrentSound = Instance.new("Sound")
-        BackgroundMusic.CurrentSound.Volume = BackgroundMusic.Volume
-        BackgroundMusic.CurrentSound.Looped = false
-        BackgroundMusic.CurrentSound.Parent = game:GetService("CoreGui")
-        BackgroundMusic.CurrentSound.Ended:Connect(function()
-            if BackgroundMusic.IsPlaying and not BackgroundMusic.UIHidden then
-                PlayNextTrack()
-            end
-        end)
-    end
-    if settings.AutoPlay and #BackgroundMusic.Playlist > 0 then
-        BackgroundMusic.CurrentIndex = 1
-        PlayTrackById(BackgroundMusic.Playlist[1])
-    end
-end
-
-function NoirUI:EnableBackgroundMusic(settings)
-    InitBackgroundMusic(settings)
-end
-
-function NoirUI:StartMusic()
-    if BackgroundMusic.CurrentSound and #BackgroundMusic.Playlist > 0 then
-        if BackgroundMusic.CurrentSound.Playing then
-            BackgroundMusic.CurrentSound:Resume()
-        else
-            PlayTrackById(BackgroundMusic.Playlist[BackgroundMusic.CurrentIndex])
-        end
-        BackgroundMusic.IsPlaying = true
-        BackgroundMusic.UIHidden = false
-        BackgroundMusic.CurrentSound.Volume = BackgroundMusic.Volume
-    end
-end
-
-function NoirUI:StopMusic()
-    StopAndCleanupMusic()
-end
-
-function NoirUI:PauseMusic()
-    if BackgroundMusic.CurrentSound and BackgroundMusic.IsPlaying then
-        BackgroundMusic.CurrentSound:Pause()
-        BackgroundMusic.IsPlaying = false
-    end
-end
-
-function NoirUI:ResumeMusic()
-    if BackgroundMusic.CurrentSound and not BackgroundMusic.IsPlaying and not BackgroundMusic.UIHidden then
-        BackgroundMusic.CurrentSound:Resume()
-        BackgroundMusic.IsPlaying = true
-    end
-end
-
-function NoirUI:SetMusicVolume(volume)
-    BackgroundMusic.Volume = math.clamp(volume, 0, 1)
-    if BackgroundMusic.CurrentSound then
-        BackgroundMusic.CurrentSound.Volume = BackgroundMusic.Volume
-    end
-end
-
-function NoirUI:AddMusicTrack(trackId)
-    table.insert(BackgroundMusic.Playlist, trackId)
-    NoirUI:Notify("🎵 Music", "Đã thêm bài hát vào playlist", "plus", "Success")
-end
-
-function NoirUI:RemoveMusicTrack(index)
-    table.remove(BackgroundMusic.Playlist, index)
-    if BackgroundMusic.CurrentIndex > #BackgroundMusic.Playlist then
-        BackgroundMusic.CurrentIndex = 1
-    end
-    NoirUI:Notify("🎵 Music", "Đã xóa bài hát khỏi playlist", "minus", "Success")
-end
-
-function NoirUI:SetMusicLoopMode(mode)
-    if mode == "single" or mode == "playlist" or mode == "off" then
-        BackgroundMusic.LoopMode = mode
-        if mode == "off" then
-            self:StopMusic()
-        end
-        NoirUI:Notify("🔄 Loop Mode", "Chế độ: " .. mode, "repeat", "Success")
-    end
-end
-
 function NoirUI:SetCustomSound(soundType, soundId)
     if soundType == "Click" then SoundSettings.ClickSoundId = soundId
     elseif soundType == "Tab" then SoundSettings.TabSoundId = soundId
@@ -349,7 +188,7 @@ end
 
 function NoirUI:ToggleSound(enabled)
     SoundSettings.Enabled = enabled
-    NoirUI:Notify("🔊 Sound", "Đã " .. (enabled and "bật" or "tắt") .. " âm thanh", enabled and "volume-2" or "volume-x")
+    NoirUI:Notify("🔊 Sound", "Đã " .. (enabled and "bật" or "tắt") .. " âm thanh", "volume-2")
 end
 
 function NoirUI:SetVolume(volume)
@@ -358,7 +197,6 @@ function NoirUI:SetVolume(volume)
 end
 
 function NoirUI:Destroy()
-    StopAndCleanupMusic()
     for _, connection in pairs(NoirUI.Connections) do
         pcall(function() connection:Disconnect() end)
     end
@@ -366,103 +204,14 @@ function NoirUI:Destroy()
         pcall(function() notif:Destroy() end)
     end
     local gui = game.CoreGui:FindFirstChild("NoirUI_V3_Ultimate")
-    if gui then
-        gui:Destroy()
-    end
+    if gui then gui:Destroy() end
     NoirUI.Notifications = {}
-    NoirUI.ActiveConfirmFrame = nil
     NoirUI.Connections = {}
     NoirUI.Glows = {}
 end
 
--- HÀM TẠO GLOW TEXT
-local function CreateGlowTextSlide(label, colors, speed)
-    if not label then return nil end
-    local gradient = Instance.new("UIGradient", label)
-    local colorKeypoints = {}
-    for i, color in ipairs(colors) do
-        local position = (i - 1) / (#colors - 1)
-        table.insert(colorKeypoints, ColorSequenceKeypoint.new(position, color))
-    end
-    gradient.Color = ColorSequence.new(colorKeypoints)
-    gradient.Transparency = NumberSequence.new(0)
-    gradient.Rotation = 30
-    speed = speed or 1.5
-    local connection
-    connection = RunService.RenderStepped:Connect(function(dt)
-        if not label or not label.Parent then
-            connection:Disconnect()
-            return
-        end
-        local offset = (tick() * speed) % 2 - 1
-        gradient.Offset = Vector2.new(offset, 0)
-    end)
-    table.insert(NoirUI.Connections, connection)
-    return gradient, connection
-end
-
--- HÀM TẠO GLOW AURA
-local function CreateUIGlow(frame, color, intensity, parent)
-    if not frame then return nil end
-    if not parent then parent = frame.Parent end
-    local oldGlow = frame:FindFirstChild("_UIGlow")
-    if oldGlow then oldGlow:Destroy() end
-    local glow = Instance.new("Frame", parent)
-    glow.Name = "_UIGlow"
-    glow.Size = frame.Size + UDim2.new(0, 30, 0, 30)
-    glow.Position = frame.Position - UDim2.new(0, 15, 0, 15)
-    glow.BackgroundTransparency = 1
-    glow.ZIndex = frame.ZIndex - 1
-    glow.Visible = frame.Visible
-    glow.ClipsDescendants = false
-    local glow1 = Instance.new("ImageLabel", glow)
-    glow1.Size = UDim2.new(1, 0, 1, 0)
-    glow1.Position = UDim2.new(0, 0, 0, 0)
-    glow1.BackgroundTransparency = 1
-    glow1.Image = "rbxassetid://1312311753"
-    glow1.ImageColor3 = color or Color3.fromRGB(170, 85, 255)
-    glow1.ImageTransparency = 0.3 - (intensity or 0.3)
-    glow1.ScaleType = Enum.ScaleType.Slice
-    glow1.SliceCenter = Rect.new(15, 15, 15, 15)
-    glow1.ZIndex = 0
-    local glow2 = Instance.new("ImageLabel", glow)
-    glow2.Size = UDim2.new(0.9, 0, 0.9, 0)
-    glow2.Position = UDim2.new(0.05, 0, 0.05, 0)
-    glow2.BackgroundTransparency = 1
-    glow2.Image = "rbxassetid://1312311753"
-    glow2.ImageColor3 = color or Color3.fromRGB(170, 85, 255)
-    glow2.ImageTransparency = 0.5 - (intensity or 0.3)
-    glow2.ScaleType = Enum.ScaleType.Slice
-    glow2.SliceCenter = Rect.new(12, 12, 12, 12)
-    glow2.ZIndex = 1
-    local glow3 = Instance.new("ImageLabel", glow)
-    glow3.Size = UDim2.new(0.8, 0, 0.8, 0)
-    glow3.Position = UDim2.new(0.1, 0, 0.1, 0)
-    glow3.BackgroundTransparency = 1
-    glow3.Image = "rbxassetid://1312311753"
-    glow3.ImageColor3 = color or Color3.fromRGB(170, 85, 255)
-    glow3.ImageTransparency = 0.7 - (intensity or 0.3)
-    glow3.ScaleType = Enum.ScaleType.Slice
-    glow3.SliceCenter = Rect.new(10, 10, 10, 10)
-    glow3.ZIndex = 2
-    local connection
-    connection = RunService.RenderStepped:Connect(function()
-        if not frame or not frame.Parent then
-            if connection then connection:Disconnect() end
-            return
-        end
-        glow.Size = frame.Size + UDim2.new(0, 30, 0, 30)
-        glow.Position = frame.Position - UDim2.new(0, 15, 0, 15)
-        glow.Visible = frame.Visible
-        glow.ZIndex = frame.ZIndex - 1
-    end)
-    table.insert(NoirUI.Connections, connection)
-    table.insert(NoirUI.Glows, glow)
-    return glow
-end
-
 -- ============================================
--- SUBTITLE - Inter Font
+-- SUBTITLE
 -- ============================================
 local function AddSubtitle(parent, subtitleText, yOffset)
     if not subtitleText or subtitleText == "" then return nil end
@@ -491,1665 +240,433 @@ local function AddSubtitle(parent, subtitleText, yOffset)
     return subtitle
 end
 
-local function MakeDraggable(frame)
-    local dragging, dragInput, dragStart, startPos
-    frame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
-    frame.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-    UIS.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-end
-
-local function SetupBackground(frame, bgSetting, bgColor, defaultTransparency)
-    local existingBg = frame:FindFirstChild("_BackgroundImage")
-    if existingBg then existingBg:Destroy() end
-    if bgSetting and bgSetting.Image then
-        local frameCorner = frame:FindFirstChild("UICorner")
-        local cornerRadius = frameCorner and frameCorner.CornerRadius or UDim.new(0, 12)
-        local bgImage = Instance.new("ImageLabel")
-        bgImage.Name = "_BackgroundImage"
-        bgImage.Size = UDim2.new(1, 0, 1, 0)
-        bgImage.Position = UDim2.new(0, 0, 0, 0)
-        bgImage.BackgroundTransparency = 1
-        bgImage.ImageTransparency = bgSetting.Transparency or 0
-        bgImage.ScaleType = Enum.ScaleType.Crop
-        bgImage.ZIndex = 0
-        bgImage.Parent = frame
-        local bgCorner = Instance.new("UICorner")
-        bgCorner.CornerRadius = cornerRadius
-        bgCorner.Parent = bgImage
-        local imgValue = bgSetting.Image
-        if type(imgValue) == "number" or (type(imgValue) == "string" and imgValue:match("^%d+$")) then
-            bgImage.Image = "rbxassetid://" .. tostring(imgValue)
-        elseif type(imgValue) == "string" then
-            bgImage.Image = imgValue
-        end
-        bgImage.ZIndex = 0
-        for _, child in pairs(frame:GetChildren()) do
-            if child ~= bgImage and child:IsA("GuiObject") then
-                child.ZIndex = math.max(child.ZIndex, 1)
-            end
-        end
-        frame.ClipsDescendants = true
-        frame.BackgroundTransparency = 1
-        return true
-    else
-        frame.BackgroundTransparency = defaultTransparency or 0
-        frame.BackgroundColor3 = bgColor or Color3.fromRGB(10, 10, 10)
-        frame.ClipsDescendants = false
-        return false
-    end
-end
-
-function NoirUI:RegisterCommand(prefix, callback)
-    NoirUI.CustomCommands[prefix:lower()] = callback
-end
-
 -- ============================================
--- HÀM TẠO CỬA SỔ CHÍNH (CREATE WINDOW)
+-- HÀM TẠO UI CHÍNH
 -- ============================================
 function NoirUI:CreateWindow(settings)
     local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
     ScreenGui.Name = "NoirUI_V3_Ultimate"
     ScreenGui.ResetOnSpawn = false
+    
     local ACCENT = settings.Accent or Color3.fromRGB(170, 85, 255)
     local useAutoContrast = settings.AutoContrast or false
+    local CORNER_RADIUS = 8 -- Giảm bo góc từ 12 xuống 8
     
-    settings.MainBlur = settings.MainBlur or 0
-    settings.KeyBlur = settings.KeyBlur or 0
-    settings.LoadingBlur = settings.LoadingBlur or 0
-    settings.NotificationBlur = settings.NotificationBlur or 0
-    settings.ConfirmBlur = settings.ConfirmBlur or 0
     settings.ElementBackgroundColor = settings.ElementBackgroundColor or nil
     settings.SidebarBackgroundColor = settings.SidebarBackgroundColor or nil
-    settings.SidebarTransparency = settings.SidebarTransparency or 0.8
+    settings.SidebarTransparency = settings.SidebarTransparency or 0.1
     settings.TabBackgroundColor = settings.TabBackgroundColor or nil
-    settings.ConfirmBackgroundColor = settings.ConfirmBackgroundColor or Color3.fromRGB(15, 15, 15)
-    settings.NotificationBackgroundColor = settings.NotificationBackgroundColor or Color3.fromRGB(15, 15, 15)
     
-    local floatDefaultPos = settings.FloatDefaultPosition or UDim2.new(0, 15, 0.5, -22)
-    
-    if settings.BackgroundMusic then
-        InitBackgroundMusic(settings.BackgroundMusic)
-    end
+    local floatDefaultPos = settings.FloatDefaultPosition or UDim2.new(0, 20, 0.5, -22)
     
     -- ============================================
-    -- FLOAT BUTTON = HEADER = SIDEBAR
+    -- FLOAT BUTTON -> HEADER SIDEBAR
     -- ============================================
     local floatSize = settings.FloatSize or 45
     local floatIconSize = settings.FloatIconSize or 24
-    local floatCornerRadius = settings.FloatCornerRadius or 12
     
-    -- Float button chính - cũng là header của sidebar
-    local Header = Instance.new("TextButton", ScreenGui)
-    Header.Size = UDim2.new(0, floatSize, 0, floatSize)
-    Header.Position = floatDefaultPos
-    Header.BackgroundColor3 = settings.SidebarBackgroundColor or Color3.fromRGB(12, 12, 12)
-    Header.BackgroundTransparency = settings.SidebarTransparency or 0.8
-    Header.Text = ""
-    Header.AutoButtonColor = false
-    Header.ZIndex = 10
-    Header.ClipsDescendants = true
-    Header.Visible = false
+    local HeaderFrame = Instance.new("Frame", ScreenGui)
+    HeaderFrame.Size = UDim2.new(0, floatSize, 0, floatSize)
+    HeaderFrame.Position = floatDefaultPos
+    HeaderFrame.BackgroundColor3 = settings.SidebarBackgroundColor or Color3.fromRGB(255, 255, 255)
+    HeaderFrame.BackgroundTransparency = settings.SidebarTransparency or 0.1
+    HeaderFrame.ClipsDescendants = true
+    HeaderFrame.ZIndex = 10
+    HeaderFrame.Visible = true
 
-    if settings.UseGlow then
-        local floatGlow = CreateUIGlow(Header, ACCENT, 0.4, ScreenGui)
-    end
-
-    local headerCorner = Instance.new("UICorner", Header)
-    headerCorner.CornerRadius = UDim.new(0, floatCornerRadius)
-    local headerStroke = Instance.new("UIStroke", Header)
+    local headerCorner = Instance.new("UICorner", HeaderFrame)
+    headerCorner.CornerRadius = UDim.new(1, 0) -- Hình tròn
+    local headerStroke = Instance.new("UIStroke", HeaderFrame)
     headerStroke.Color = ACCENT
-    headerStroke.Thickness = 2
-    AddGlowStroke(Header, ACCENT, 2, 5, 0.75)
+    headerStroke.Thickness = 1
+    headerStroke.Transparency = 0.7
+    AddGlowStroke(HeaderFrame, ACCENT, 1, 1, 0.85)
 
-    -- ClipGroup cho header
-    local ClipGroup = Instance.new("Frame", Header)
-    ClipGroup.Name = "ClipGroup"
-    ClipGroup.Size = UDim2.new(1, 0, 1, 0)
-    ClipGroup.Position = UDim2.new(0, 0, 0, 0)
-    ClipGroup.BackgroundTransparency = 1
-    ClipGroup.ClipsDescendants = true
-    ClipGroup.ZIndex = Header.ZIndex
+    -- Icon float button
+    local HeaderIcon = Instance.new("ImageLabel", HeaderFrame)
+    HeaderIcon.Size = UDim2.new(0, floatIconSize, 0, floatIconSize)
+    HeaderIcon.Position = UDim2.new(0.5, -floatIconSize/2, 0.5, -floatIconSize/2)
+    HeaderIcon.BackgroundTransparency = 1
+    HeaderIcon.Image = settings.Icon and ResolveIcon(settings.Icon) or "rbxassetid://6031094700"
+    HeaderIcon.ImageColor3 = ACCENT
+    HeaderIcon.ScaleType = Enum.ScaleType.Crop
+    HeaderIcon.ZIndex = 11
+    local iconCorner = Instance.new("UICorner", HeaderIcon)
+    iconCorner.CornerRadius = UDim.new(0, 4)
 
-    local clipCorner = Instance.new("UICorner", ClipGroup)
-    clipCorner.CornerRadius = UDim.new(0, floatCornerRadius)
+    -- Logo
+    local LogoButton = Instance.new("TextButton", HeaderFrame)
+    LogoButton.Size = UDim2.new(0, 40, 1, 0)
+    LogoButton.Position = UDim2.new(0, 10, 0, 0)
+    LogoButton.BackgroundTransparency = 1
+    LogoButton.Text = ""
+    LogoButton.AutoButtonColor = false
+    LogoButton.ZIndex = 12
+    LogoButton.Visible = false
 
-    -- Background cho header
-    if settings.FloatBackground and settings.FloatBackground.Image then
-        local bgImage = Instance.new("ImageLabel", ClipGroup)
-        bgImage.Name = "BackgroundImage"
-        bgImage.Size = UDim2.new(1, 0, 1, 0)
-        bgImage.Position = UDim2.new(0, 0, 0, 0)
-        bgImage.BackgroundTransparency = 1
-        bgImage.ImageTransparency = settings.FloatBackground.Transparency or 0
-        bgImage.ScaleType = Enum.ScaleType.Crop
-        bgImage.ZIndex = 1
-        local imgValue = settings.FloatBackground.Image
-        if type(imgValue) == "number" or (type(imgValue) == "string" and imgValue:match("^%d+$")) then
-            bgImage.Image = "rbxassetid://" .. tostring(imgValue)
-        elseif type(imgValue) == "string" then
-            bgImage.Image = imgValue
-        end
-        local bgCorner = Instance.new("UICorner", bgImage)
-        bgCorner.CornerRadius = UDim.new(0, floatCornerRadius)
-        local overlay = Instance.new("Frame", ClipGroup)
-        overlay.Size = UDim2.new(1, 0, 1, 0)
-        overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        overlay.BackgroundTransparency = 0.4
-        overlay.ZIndex = 2
-        local overlayCorner = Instance.new("UICorner", overlay)
-        overlayCorner.CornerRadius = UDim.new(0, floatCornerRadius)
-    else
-        local bgColor = Instance.new("Frame", ClipGroup)
-        bgColor.Size = UDim2.new(1, 0, 1, 0)
-        bgColor.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-        bgColor.BackgroundTransparency = 0
-        bgColor.ZIndex = 1
-        local bgCorner = Instance.new("UICorner", bgColor)
-        bgCorner.CornerRadius = UDim.new(0, floatCornerRadius)
-    end
+    local LogoImage = Instance.new("ImageLabel", LogoButton)
+    LogoImage.Size = UDim2.new(1, -10, 1, -10)
+    LogoImage.Position = UDim2.new(0.5, 0, 0.5, 0)
+    LogoImage.AnchorPoint = Vector2.new(0.5, 0.5)
+    LogoImage.BackgroundTransparency = 1
+    LogoImage.Image = settings.LogoID and ResolveIcon(settings.LogoID) or "rbxthumb://type=Asset&id=94916110511437&w=420&h=420"
+    LogoImage.ScaleType = Enum.ScaleType.Fit
+    LogoImage.ZIndex = 12
+    local logoCorner = Instance.new("UICorner", LogoImage)
+    logoCorner.CornerRadius = UDim.new(1, 0)
 
-    -- Icon chính của float button
-    local iconValue = settings.Icon
-    local MainIcon = nil
-    if iconValue then
-        local iconImage = ResolveIcon(iconValue)
-        if iconImage then
-            MainIcon = Instance.new("ImageLabel", ClipGroup)
-            MainIcon.Size = UDim2.new(0, floatIconSize, 0, floatIconSize)
-            MainIcon.Position = UDim2.new(0.5, -floatIconSize/2, 0.5, -floatIconSize/2)
-            MainIcon.BackgroundTransparency = 1
-            MainIcon.Image = iconImage
-            MainIcon.ImageColor3 = Color3.new(1, 1, 1)
-            MainIcon.ScaleType = Enum.ScaleType.Crop
-            MainIcon.ZIndex = 3
-            local iconCorner = Instance.new("UICorner", MainIcon)
-            iconCorner.CornerRadius = UDim.new(0, floatCornerRadius)
-        elseif type(iconValue) == "string" then
-            MainIcon = Instance.new("TextLabel", ClipGroup)
-            MainIcon.Size = UDim2.new(1, 0, 1, 0)
-            MainIcon.Position = UDim2.new(0, 0, 0, 0)
-            MainIcon.BackgroundTransparency = 1
-            MainIcon.Text = iconValue
-            MainIcon.TextColor3 = Color3.new(1, 1, 1)
-            MainIcon.TextTransparency = 0
-            MainIcon.TextSize = 28
-            MainIcon.Font = Enum.Font.GothamBold
-            MainIcon.TextScaled = true
-            MainIcon.ZIndex = 3
-            local textCorner = Instance.new("UICorner", MainIcon)
-            textCorner.CornerRadius = UDim.new(0, floatCornerRadius)
-        end
-    end
+    -- Tên logo
+    local LogoText = Instance.new("TextLabel", HeaderFrame)
+    LogoText.Size = UDim2.new(0, 0, 1, 0)
+    LogoText.Position = UDim2.new(0, 60, 0, 0)
+    LogoText.BackgroundTransparency = 1
+    LogoText.Text = settings.Name or "Nolito"
+    LogoText.TextColor3 = Color3.fromRGB(0, 0, 0)
+    LogoText.TextTransparency = 0
+    LogoText.Font = "GothamBold"
+    LogoText.TextSize = 16
+    LogoText.TextXAlignment = "Left"
+    LogoText.ZIndex = 12
+    LogoText.Visible = false
 
-    -- Drag cho header
-    local headerDragging = false
-    local headerDragStart, headerStartPos, headerDragInput
-    Header.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            headerDragging = true
-            headerDragStart = input.Position
-            headerStartPos = Header.Position
-        end
-    end)
-    Header.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            headerDragInput = input
-        end
-    end)
-    UIS.InputChanged:Connect(function(input)
-        if input == headerDragInput and headerDragging then
-            local delta = input.Position - headerDragStart
-            Header.Position = UDim2.new(headerStartPos.X.Scale, headerStartPos.X.Offset + delta.X, headerStartPos.Y.Scale, headerStartPos.Y.Offset + delta.Y)
-        end
-    end)
-    UIS.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            headerDragging = false
-        end
-    end)
+    -- Nút thu gọn
+    local CollapseButton = Instance.new("TextButton", HeaderFrame)
+    CollapseButton.Size = UDim2.new(0, 30, 1, 0)
+    CollapseButton.Position = UDim2.new(1, -35, 0, 0)
+    CollapseButton.BackgroundTransparency = 1
+    CollapseButton.Text = "◀"
+    CollapseButton.TextColor3 = Color3.fromRGB(100, 100, 100)
+    CollapseButton.TextTransparency = 0
+    CollapseButton.Font = "GothamMedium"
+    CollapseButton.TextSize = 12
+    CollapseButton.ZIndex = 12
+    CollapseButton.Visible = false
+    CreateHoverEffect(CollapseButton)
+
+    -- Search Box
+    local SearchFrame = Instance.new("Frame", HeaderFrame)
+    SearchFrame.Size = UDim2.new(0, 180, 0, 32)
+    SearchFrame.Position = UDim2.new(0, 120, 0.5, -16)
+    SearchFrame.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+    SearchFrame.BackgroundTransparency = 0.8
+    SearchFrame.Visible = false
+    Instance.new("UICorner", SearchFrame).CornerRadius = UDim.new(0, CORNER_RADIUS)
+    local searchStroke = Instance.new("UIStroke", SearchFrame)
+    searchStroke.Color = Color3.fromRGB(200, 200, 200)
+    searchStroke.Thickness = 1
+
+    local SearchBox = Instance.new("TextBox", SearchFrame)
+    SearchBox.Size = UDim2.new(1, -30, 1, 0)
+    SearchBox.Position = UDim2.new(0, 30, 0, 0)
+    SearchBox.BackgroundTransparency = 1
+    SearchBox.PlaceholderText = "Search..."
+    SearchBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+    SearchBox.Text = ""
+    SearchBox.TextColor3 = Color3.fromRGB(0, 0, 0)
+    SearchBox.Font = "Gotham"
+    SearchBox.TextSize = 12
+
+    local SearchIcon = Instance.new("ImageLabel", SearchFrame)
+    SearchIcon.Size = UDim2.new(0, 16, 0, 16)
+    SearchIcon.Position = UDim2.new(0, 8, 0.5, -8)
+    SearchIcon.BackgroundTransparency = 1
+    SearchIcon.Image = "rbxassetid://6031094667"
+    SearchIcon.ImageColor3 = Color3.fromRGB(150, 150, 150)
+    SearchIcon.ScaleType = Enum.ScaleType.Crop
+
+    -- Danh sách tab
+    local TabContainer = Instance.new("ScrollingFrame", HeaderFrame)
+    TabContainer.Size = UDim2.new(0, 200, 1, 0)
+    TabContainer.Position = UDim2.new(0, 0, 0, 0)
+    TabContainer.BackgroundTransparency = 1
+    TabContainer.ScrollBarThickness = 3
+    TabContainer.ScrollBarImageColor3 = ACCENT
+    TabContainer.ScrollBarImageTransparency = 0.5
+    TabContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    TabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+    TabContainer.Visible = false
+
+    local TabLayout = Instance.new("UIListLayout", TabContainer)
+    TabLayout.Padding = UDim.new(0, 4)
+    TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    TabLayout.FillDirection = Enum.FillDirection.Vertical
 
     -- ============================================
-    -- SIDEBAR CONTAINER (THẢ XUỐNG TỪ HEADER)
+    -- BIẾN HÌNH FLOAT <-> HEADER
     -- ============================================
-    local SideContainer = Instance.new("Frame", ScreenGui)
-    SideContainer.Size = UDim2.new(0, 0, 0, 0)
-    SideContainer.Position = Header.Position + UDim2.new(0, 0, 0, floatSize)
-    SideContainer.BackgroundTransparency = 1
-    SideContainer.ClipsDescendants = true
-    SideContainer.ZIndex = 9
-    SideContainer.Visible = false
+    local isExpanded = false
 
-    local TScroll = Instance.new("ScrollingFrame", SideContainer)
-    TScroll.Size = UDim2.new(1, 0, 0, 0)
-    TScroll.BackgroundTransparency = 1
-    TScroll.ScrollBarThickness = 3
-    TScroll.ScrollBarImageColor3 = ACCENT
-    TScroll.ScrollBarImageTransparency = 0.5
-    TScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    TScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-
-    local TLayout = Instance.new("UIListLayout", TScroll)
-    TLayout.Padding = UDim.new(0, 3)
-    TLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    TLayout.FillDirection = Enum.FillDirection.Horizontal
-
-    local function updateSidebarSize()
-        task.wait()
-        local contentHeight = TLayout.AbsoluteContentSize.Y + 10
-        local contentWidth = TLayout.AbsoluteContentSize.X + 20
+    local function ExpandToHeader()
+        isExpanded = true
+        HeaderIcon.Visible = false
+        LogoButton.Visible = true
+        LogoText.Visible = true
+        CollapseButton.Visible = true
+        SearchFrame.Visible = true
+        TabContainer.Visible = true
         
-        SideContainer.Size = UDim2.new(0, math.max(150, contentWidth), 0, contentHeight)
-        TScroll.Size = UDim2.new(1, 0, 0, contentHeight)
+        HeaderFrame.Size = UDim2.new(0, 280, 0, 600)
+        headerCorner.CornerRadius = UDim.new(0, CORNER_RADIUS)
+        HeaderFrame.Position = UDim2.new(0, 20, 0.5, -300)
         
-        -- Cập nhật vị trí SideContainer theo Header
-        SideContainer.Position = Header.Position + UDim2.new(0, 0, 0, floatSize)
+        LogoButton.Position = UDim2.new(0, 10, 0, 20)
+        LogoText.Position = UDim2.new(0, 60, 0, 22)
+        CollapseButton.Position = UDim2.new(1, -35, 0, 20)
+        SearchFrame.Position = UDim2.new(0, 10, 0, 70)
+        TabContainer.Position = UDim2.new(0, 10, 0, 120)
+        TabContainer.Size = UDim2.new(0, 200, 0, 450)
+        
+        PlaySound("Open")
     end
 
-    -- ============================================
-    -- XỬ LÝ BẤM HEADER - KÉO DÃN + MỞ SIDEBAR
-    -- ============================================
-    Header.MouseButton1Click:Connect(function()
+    local function CollapseToFloat()
+        isExpanded = false
+        LogoButton.Visible = false
+        LogoText.Visible = false
+        CollapseButton.Visible = false
+        SearchFrame.Visible = false
+        TabContainer.Visible = false
+        HeaderIcon.Visible = true
+        
+        HeaderFrame.Size = UDim2.new(0, floatSize, 0, floatSize)
+        headerCorner.CornerRadius = UDim.new(1, 0)
+        HeaderFrame.Position = floatDefaultPos
+        
+        PlaySound("Close")
+    end
+
+    HeaderIcon.MouseButton1Click:Connect(function()
         PlaySound("Click")
-        CreateClickScaleEffect(Header)
-        
-        if Header.Size.X.Offset > floatSize then
-            -- Đang mở -> thu gọn về float button
-            -- Đóng sidebar
-            SideContainer.Visible = false
-            SideContainer.Size = UDim2.new(0, 0, 0, 0)
-            TScroll.Size = UDim2.new(1, 0, 0, 0)
-            
-            -- Thu gọn header
-            TweenService:Create(Header, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, floatSize, 0, floatSize)
-            }):Play()
-            
-            -- Ẩn tab container nếu đang mở
-            if Cont.Visible then
-                TweenService:Create(Cont, TweenInfo.new(0.3), {
-                    Position = UDim2.new(Cont.Position.X.Scale, Cont.Position.X.Offset - 50, Cont.Position.Y.Scale, Cont.Position.Y.Offset),
-                    BackgroundTransparency = 1
-                }):Play()
-                task.wait(0.3)
-                Cont.Visible = false
-            end
-        else
-            -- Đang đóng -> mở rộng header + mở sidebar
-            
-            -- 1. Kéo dãn header thành thanh ngang
-            local endWidth = 200 -- Độ rộng header
-            TweenService:Create(Header, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, endWidth, 0, floatSize)
-            }):Play()
-            
-            -- 2. Sau khi header mở rộng, mở sidebar
-            task.wait(0.3)
-            
-            SideContainer.Visible = true
-            updateSidebarSize()
-            
-            -- Kéo dãn header thêm nếu sidebar rộng hơn
-            local totalWidth = math.max(endWidth, TLayout.AbsoluteContentSize.X + 40)
-            TweenService:Create(Header, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, totalWidth, 0, floatSize)
-            }):Play()
-        end
+        CreateClickScaleEffect(HeaderIcon)
+        ExpandToHeader()
+    end)
+
+    CollapseButton.MouseButton1Click:Connect(function()
+        PlaySound("Click")
+        CreateClickScaleEffect(CollapseButton)
+        CollapseToFloat()
+    end)
+
+    LogoButton.MouseButton1Click:Connect(function()
+        PlaySound("Click")
+        CreateClickScaleEffect(LogoButton)
+        CollapseToFloat()
     end)
 
     -- ============================================
-    -- LOADING FRAME (giữ nguyên)
+    -- NỘI DUNG TAB
     -- ============================================
-    local LoadingFrame = Instance.new("Frame", ScreenGui)
-    LoadingFrame.Size = UDim2.new(0, 300, 0, 120)
-    LoadingFrame.Position = UDim2.new(0.5, -150, 0.5, -60)
-    LoadingFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
-    LoadingFrame.ZIndex = 200
-    local loadingCorner = Instance.new("UICorner", LoadingFrame)
-    loadingCorner.CornerRadius = UDim.new(0, 12)
-    local LoadingStroke = Instance.new("UIStroke", LoadingFrame)
-    LoadingStroke.Color = ACCENT
-    LoadingStroke.Thickness = 2
-    AddGlowStroke(LoadingFrame, ACCENT, 2, 5, 0.75)
-    AddBlurOverlay(LoadingFrame, settings.LoadingBlur)
-    if settings.UseGlow then
-        local loadingGlow = CreateUIGlow(LoadingFrame, ACCENT, 0.3, ScreenGui)
-    end
-    local hasLoadingBg = SetupBackground(LoadingFrame, settings.LoadingBackground, Color3.fromRGB(12, 12, 12), 0.95)
-    LoadingStroke.Transparency = hasLoadingBg and 0 or 1
-    local LoadingTitle = Instance.new("TextLabel", LoadingFrame)
-    LoadingTitle.Size = UDim2.new(1, -40, 0, 30)
-    LoadingTitle.Position = UDim2.new(0, 20, 0, 15)
-    LoadingTitle.BackgroundTransparency = 1
-    LoadingTitle.Text = settings.Name or "NOIR HUB"
-    if useAutoContrast then
-        LoadingTitle.TextColor3 = GetContrastColor(Color3.fromRGB(12, 12, 12))
-    else
-        LoadingTitle.TextColor3 = ACCENT
-    end
-    LoadingTitle.TextTransparency = 0
-    LoadingTitle.Font = "GothamBold"
-    LoadingTitle.TextSize = 18
-    LoadingTitle.TextXAlignment = "Left"
-    LoadingTitle.ZIndex = 201
-    if settings.UseGlow then
-        CreateGlowTextSlide(LoadingTitle, {
-            Color3.fromRGB(200, 200, 200),
-            Color3.fromRGB(255, 255, 255),
-            Color3.fromRGB(200, 200, 200)
-        }, 1.5)
-    end
-    local LoadingSub = Instance.new("TextLabel", LoadingFrame)
-    LoadingSub.Size = UDim2.new(1, -40, 0, 20)
-    LoadingSub.Position = UDim2.new(0, 20, 0, 45)
-    LoadingSub.BackgroundTransparency = 1
-    LoadingSub.Text = "Đang khởi tạo..."
-    LoadingSub.TextColor3 = Color3.fromRGB(180, 180, 180)
-    LoadingSub.TextTransparency = 0
-    LoadingSub.Font = "Gotham"
-    LoadingSub.TextSize = 12
-    LoadingSub.TextXAlignment = "Left"
-    LoadingSub.ZIndex = 201
-    local LoadingBarBg = Instance.new("Frame", LoadingFrame)
-    LoadingBarBg.Size = UDim2.new(0.86, 0, 0, 6)
-    LoadingBarBg.Position = UDim2.new(0.07, 0, 0.7, 0)
-    LoadingBarBg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    LoadingBarBg.BackgroundTransparency = 0.5
-    Instance.new("UICorner", LoadingBarBg).CornerRadius = UDim.new(1, 0)
-    LoadingBarBg.ZIndex = 201
-    local LoadingBar = Instance.new("Frame", LoadingBarBg)
-    LoadingBar.Size = UDim2.new(0, 0, 1, 0)
-    LoadingBar.BackgroundColor3 = ACCENT
-    Instance.new("UICorner", LoadingBar).CornerRadius = UDim.new(1, 0)
-    LoadingBar.ZIndex = 201
-    local LoadingPercent = Instance.new("TextLabel", LoadingFrame)
-    LoadingPercent.Size = UDim2.new(1, 0, 0, 20)
-    LoadingPercent.Position = UDim2.new(0, 0, 0.85, 0)
-    LoadingPercent.BackgroundTransparency = 1
-    LoadingPercent.Text = "0%"
-    if useAutoContrast then
-        LoadingPercent.TextColor3 = GetContrastColor(Color3.fromRGB(12, 12, 12))
-    else
-        LoadingPercent.TextColor3 = ACCENT
-    end
-    LoadingPercent.TextTransparency = 0
-    LoadingPercent.Font = "GothamBold"
-    LoadingPercent.TextSize = 12
-    LoadingPercent.ZIndex = 201
-    
-    local function StartLoading()
-        Header.Visible = false
-        LoadingFrame.Visible = true
-        if not hasLoadingBg then
-            TweenService:Create(LoadingFrame, TweenInfo.new(0.5), {BackgroundTransparency = 0}):Play()
-            TweenService:Create(LoadingStroke, TweenInfo.new(0.5), {Transparency = 0}):Play()
-        end
-        task.wait(0.5)
-        local startTime = tick()
-        local loadingConnection
-        loadingConnection = RunService.RenderStepped:Connect(function()
-            local elapsed = tick() - startTime
-            local percent = math.min(1, elapsed / 1)
-            LoadingBar.Size = UDim2.new(percent, 0, 1, 0)
-            LoadingPercent.Text = math.floor(percent * 100) .. "%"
-            if percent >= 1 then
-                loadingConnection:Disconnect()
-                LoadingSub.Text = "Loaded!"
-                TweenService:Create(LoadingFrame, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
-                TweenService:Create(LoadingStroke, TweenInfo.new(0.5), {Transparency = 1}):Play()
-                task.wait(0.5)
-                LoadingFrame:Destroy()
-                Header.Visible = true
-                PlaySound("Open")
-                if settings.BackgroundMusic and settings.BackgroundMusic.AutoPlay then
-                    NoirUI:StartMusic()
-                end
-            end
-        end)
-        table.insert(NoirUI.Connections, loadingConnection)
-    end
-    
-    local KeySolved = false
-    local KUI = nil
-    if settings.KeySystem then
-        local KS = settings.KeySettings or {}
-        local KeyPath = (KS.FileName or "NoirKey") .. ".json"
-        local function CheckKeys(val)
-            local keys = type(KS.Key) == "table" and KS.Key or {KS.Key}
-            for _, k in pairs(keys) do if val == k then return true end end
-            return false
-        end
-        LoadingFrame.Visible = false
-        Header.Visible = false
-        if KS.SaveKey and isfile and isfile(KeyPath) then
-            local saved = readfile(KeyPath)
-            if CheckKeys(saved) then
-                KeySolved = true
-                StartLoading()
-            end
-        end
-        if not KeySolved then
-            KUI = Instance.new("Frame", ScreenGui)
-            KUI.Size = UDim2.new(0, 320, 0, 200)
-            KUI.Position = UDim2.new(0.5, -160, 0.5, -100)
-            KUI.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
-            local keyCorner = Instance.new("UICorner", KUI)
-            keyCorner.CornerRadius = UDim.new(0, 12)
-            local kstr = Instance.new("UIStroke", KUI)
-            kstr.Thickness = 2
-            kstr.Color = ACCENT
-            AddGlowStroke(KUI, ACCENT, 2, 8, 0.6)
-            AddBlurOverlay(KUI, settings.KeyBlur)
-            MakeDraggable(KUI)
-            if settings.UseGlow then
-                local keyGlow = CreateUIGlow(KUI, ACCENT, 0.3, ScreenGui)
-            end
-            SetupBackground(KUI, settings.KeyBackground, Color3.fromRGB(12, 12, 12), 0)
-            CreateSpringEffect(KUI)
-            local KT = Instance.new("TextLabel", KUI)
-            KT.Size = UDim2.new(1,0,0,35)
-            KT.Position = UDim2.new(0,0,0,10)
-            KT.Text = KS.Title or "KEY SYSTEM"
-            if useAutoContrast then
-                KT.TextColor3 = GetContrastColor(Color3.fromRGB(12, 12, 12))
-            else
-                KT.TextColor3 = ACCENT
-            end
-            KT.TextTransparency = 0
-            KT.Font = "GothamBold"
-            KT.TextSize = 16
-            KT.BackgroundTransparency = 1
-            KT.ZIndex = 2
-            if settings.UseGlow then
-                CreateGlowTextSlide(KT, {
-                    Color3.fromRGB(200, 200, 200),
-                    Color3.fromRGB(255, 255, 255),
-                    Color3.fromRGB(200, 200, 200)
-                }, 1.5)
-            end
-            local KSub = Instance.new("TextLabel", KUI)
-            KSub.Size = UDim2.new(1,0,0,20)
-            KSub.Position = UDim2.new(0,0,0,30)
-            KSub.Text = KS.Subtitle or "Vui lòng nhập key để tiếp tục"
-            KSub.TextColor3 = Color3.fromRGB(150,150,150)
-            KSub.TextTransparency = 0
-            KSub.Font = "Gotham"
-            KSub.TextSize = 12
-            KSub.BackgroundTransparency = 1
-            KSub.ZIndex = 2
-            local KI = Instance.new("TextBox", KUI)
-            KI.Size = UDim2.new(0.8, 0, 0, 35)
-            KI.Position = UDim2.new(0.1, 0, 0.35, 10)
-            KI.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-            KI.TextColor3 = Color3.new(1,1,1)
-            KI.TextTransparency = 0
-            KI.PlaceholderText = "Nhập Key..."
-            KI.Text = ""
-            KI.Font = "Gotham"
-            KI.TextSize = 12
-            Instance.new("UICorner", KI).CornerRadius = UDim.new(0, 6)
-            Instance.new("UIStroke", KI).Color = Color3.fromRGB(40,40,40)
-            KI.ZIndex = 2
-            local Note = Instance.new("TextLabel", KUI)
-            Note.Size = UDim2.new(0.8,0,0,30)
-            Note.Position = UDim2.new(0.1,0,0.55,10)
-            Note.Text = KS.Note or ""
-            Note.TextColor3 = Color3.fromRGB(120,120,120)
-            Note.TextTransparency = 0
-            Note.Font = "Gotham"
-            Note.TextSize = 10
-            Note.BackgroundTransparency = 1
-            Note.TextWrapped = true
-            Note.ZIndex = 2
-            local KB = Instance.new("TextButton", KUI)
-            KB.Size = UDim2.new(0.8, 0, 0, 35)
-            KB.Position = UDim2.new(0.1, 0, 0.75, 10)
-            KB.BackgroundColor3 = ACCENT
-            KB.Text = "XÁC NHẬN"
-            KB.Font = "GothamBold"
-            if useAutoContrast then
-                KB.TextColor3 = GetContrastColor(ACCENT)
-            else
-                KB.TextColor3 = Color3.new(1,1,1)
-            end
-            KB.TextTransparency = 0
-            Instance.new("UICorner", KB).CornerRadius = UDim.new(0, 6)
-            KB.ZIndex = 2
-            KB.AutoButtonColor = false
-            KB.MouseButton1Click:Connect(function()
-                CreateClickScaleEffect(KB)
-                if CheckKeys(KI.Text) then
-                    if KS.SaveKey and writefile then writefile(KeyPath, KI.Text) end
-                    TweenService:Create(KUI, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
-                    task.wait(0.3)
-                    KUI:Destroy()
-                    KeySolved = true
-                    StartLoading()
-                else
-                    PlaySound("Error")
-                    KI.Text = ""
-                    KI.PlaceholderText = "Key không chính xác!"
-                    task.wait(1)
-                    KI.PlaceholderText = "Nhập Key..."
-                end
-            end)
-        end
-    else
-        StartLoading()
-    end
-
-    -- ============================================
-    -- TAB CONTAINER (ĐÃ XÓA HEADER)
-    -- ============================================
+    local allTabButtons = {}
     local Cont = Instance.new("Frame", ScreenGui)
-    Cont.Size = UDim2.new(0, 420, 0, 400)
-    Cont.Position = UDim2.new(0, 0, 0, 0)
-    Cont.BackgroundColor3 = settings.MainBgColor or Color3.fromRGB(10, 10, 10)
-    Cont.BackgroundTransparency = 0.95
+    Cont.Size = UDim2.new(0, 700, 0, 600)
+    Cont.Position = UDim2.new(0, 320, 0.5, -300)
+    Cont.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Cont.BackgroundTransparency = 0.1
     Cont.ClipsDescendants = true
-    Cont.ZIndex = 8
+    Cont.ZIndex = 9
     Cont.Visible = false
-
-    local contCorner = Instance.new("UICorner", Cont)
-    contCorner.CornerRadius = UDim.new(0, 12)
+    Instance.new("UICorner", Cont).CornerRadius = UDim.new(0, CORNER_RADIUS)
     local ContStroke = Instance.new("UIStroke", Cont)
     ContStroke.Color = ACCENT
     ContStroke.Thickness = 1
     ContStroke.Transparency = 0.7
     AddGlowStroke(Cont, ACCENT, 1, 1, 0.7)
 
-    -- ============================================
-    -- WINDOW OBJECT
-    -- ============================================
     local Window = {}
-    local allTabButtons = {}
 
-    -- ============================================
-    -- TẠO TAB
-    -- ============================================
     function Window:CreateTab(name, icon)
-        local B = Instance.new("TextButton", TScroll)
-        B.Size = UDim2.new(0, 38, 0, 38)
-        B.BackgroundColor3 = settings.TabBackgroundColor or Color3.fromRGB(20, 20, 20)
-        B.BackgroundTransparency = 0.7
+        local B = Instance.new("TextButton", TabContainer)
+        B.Size = UDim2.new(1, 0, 0, 40)
+        B.BackgroundTransparency = 0.8
         B.Text = ""
         B.AutoButtonColor = false
-        Instance.new("UICorner", B).CornerRadius = UDim.new(0, 6)
+        Instance.new("UICorner", B).CornerRadius = UDim.new(0, CORNER_RADIUS)
         CreateHoverEffect(B)
-
-        local tabStroke = Instance.new("UIStroke", B)
-        tabStroke.Color = ACCENT
-        tabStroke.Thickness = 1
-        tabStroke.Transparency = 1
-        tabStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        tabStroke.ZIndex = 2
-        local tabGlowStroke = AddGlowStroke(B, ACCENT, 2, 1, 0.9)
-        if tabGlowStroke then
-            tabGlowStroke.Transparency = 1
-        end
-
-        -- Icon
+        
         if icon then
             local IC = Instance.new("ImageLabel", B)
             IC.Size = UDim2.new(0, 20, 0, 20)
-            IC.Position = UDim2.new(0.5, -10, 0.5, -10)
+            IC.Position = UDim2.new(0, 12, 0.5, -10)
             IC.BackgroundTransparency = 1
-            IC.ClipsDescendants = true
+            IC.Image = ResolveIcon(icon) or "rbxassetid://6031094700"
+            IC.ImageColor3 = Color3.fromRGB(100, 100, 100)
             IC.ScaleType = Enum.ScaleType.Crop
-            IC.ZIndex = 2
-            local iconCorner = Instance.new("UICorner", IC)
-            iconCorner.CornerRadius = UDim.new(0, 4)
-            local iconImage = ResolveIcon(icon)
-            if iconImage then
-                IC.Image = iconImage
-            else
-                IC.Image = "rbxassetid://6031094700"
-            end
-            IC.ImageColor3 = Color3.new(1, 1, 1)
         end
-
-        -- Tên tab nhỏ bên dưới
+        
         local BT = Instance.new("TextLabel", B)
-        BT.Size = UDim2.new(1, 0, 0, 10)
-        BT.Position = UDim2.new(0, 0, 1, -10)
+        BT.Size = UDim2.new(1, -40, 1, 0)
+        BT.Position = UDim2.new(0, 40, 0, 0)
         BT.BackgroundTransparency = 1
         BT.Text = name
-        if useAutoContrast then
-            BT.TextColor3 = GetContrastColor(B.BackgroundColor3)
-        else
-            BT.TextColor3 = Color3.fromRGB(200, 200, 200)
-        end
-        BT.TextTransparency = 0
-        BT.Font = "Gotham"
-        BT.TextSize = 8
-        BT.TextXAlignment = "Center"
+        BT.TextColor3 = Color3.fromRGB(100, 100, 100)
+        BT.Font = "GothamMedium"
+        BT.TextSize = 13
+        BT.TextXAlignment = "Left"
         BT.ZIndex = 2
-        BT.TextTruncate = Enum.TextTruncate.AtEnd
-
-        -- Tab Container (không có search)
-        local TabContainer = Instance.new("ScrollingFrame", Cont)
-        TabContainer.Size = UDim2.new(1, -20, 1, -20)
-        TabContainer.Position = UDim2.new(0, 10, 0, 10)
-        TabContainer.BackgroundTransparency = 1
-        TabContainer.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        TabContainer.Visible = false
-        TabContainer.ScrollBarThickness = 3
-        TabContainer.ScrollBarImageColor3 = ACCENT
-        TabContainer.ScrollBarImageTransparency = 0.5
-        TabContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
-        TabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
-        TabContainer.BorderSizePixel = 0
-        TabContainer.ClipsDescendants = true
-
-        local ContentFrame = Instance.new("Frame", TabContainer)
+        
+        local TabContent = Instance.new("ScrollingFrame", Cont)
+        TabContent.Size = UDim2.new(1, -20, 1, -20)
+        TabContent.Position = UDim2.new(0, 10, 0, 10)
+        TabContent.BackgroundTransparency = 1
+        TabContent.Visible = false
+        TabContent.ScrollBarThickness = 3
+        TabContent.ScrollBarImageColor3 = ACCENT
+        TabContent.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        TabContent.CanvasSize = UDim2.new(0, 0, 0, 0)
+        
+        local ContentFrame = Instance.new("Frame", TabContent)
         ContentFrame.Size = UDim2.new(1, 0, 0, 0)
-        ContentFrame.Position = UDim2.new(0, 0, 0, 0)
         ContentFrame.BackgroundTransparency = 1
         local ContentLayout = Instance.new("UIListLayout", ContentFrame)
-        ContentLayout.Padding = UDim.new(0, 8)
-        ContentLayout.HorizontalAlignment = "Center"
+        ContentLayout.Padding = UDim.new(0, 10)
         ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
+        
         local function updateCanvas()
             task.wait()
-            TabContainer.CanvasSize = UDim2.new(0, 0, 0, ContentFrame.AbsoluteSize.Y + 10)
+            TabContent.CanvasSize = UDim2.new(0, 0, 0, ContentFrame.AbsoluteSize.Y + 10)
         end
         ContentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas)
-
-        -- Reset các tab khác
-        local function resetAllTabs()
-            for _, btn in pairs(allTabButtons) do
-                local t = btn:FindFirstChild("TextLabel")
-                if t then
-                    if useAutoContrast then
-                        t.TextColor3 = GetContrastColor(btn.BackgroundColor3)
-                    else
-                        t.TextColor3 = Color3.fromRGB(150, 150, 150)
-                    end
-                end
-                local img = btn:FindFirstChild("ImageLabel")
-                if img then img.ImageColor3 = Color3.fromRGB(150, 150, 150) end
-                local stroke = btn:FindFirstChildWhichIsA("UIStroke")
-                if stroke and stroke.Name ~= "GlowStroke" then stroke.Transparency = 1 end
-                local glow = btn:FindFirstChild("GlowStroke")
-                if glow then glow.Transparency = 1 end
-            end
-        end
-
-        -- Chọn tab
+        
         local function selectThisTab()
             for _, v in pairs(Cont:GetChildren()) do
-                if v:IsA("ScrollingFrame") then
-                    v.Visible = false
-                end
+                if v:IsA("ScrollingFrame") then v.Visible = false end
+            end
+            TabContent.Visible = true
+            Cont.Visible = true
+            
+            for _, btn in pairs(allTabButtons) do
+                btn.BackgroundTransparency = 0.8
+                local txt = btn:FindFirstChild("TextLabel")
+                if txt then txt.TextColor3 = Color3.fromRGB(100, 100, 100) end
+                local img = btn:FindFirstChild("ImageLabel")
+                if img then img.ImageColor3 = Color3.fromRGB(100, 100, 100) end
             end
             
-            TabContainer.Visible = true
-            
-            local headerPos = Header.Position
-            Cont.Position = UDim2.new(headerPos.X.Scale, headerPos.X.Offset + Header.Size.X.Offset + 10, headerPos.Y.Scale, headerPos.Y.Offset)
-            
-            Cont.Position = UDim2.new(headerPos.X.Scale, headerPos.X.Offset - 50, headerPos.Y.Scale, headerPos.Y.Offset)
-            Cont.Visible = true
-            Cont.BackgroundTransparency = 1
-            TweenService:Create(Cont, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Position = UDim2.new(headerPos.X.Scale, headerPos.X.Offset + Header.Size.X.Offset + 10, headerPos.Y.Scale, headerPos.Y.Offset),
-                BackgroundTransparency = 0.95
-            }):Play()
-            
-            resetAllTabs()
+            B.BackgroundTransparency = 0.95
             BT.TextColor3 = ACCENT
-            tabStroke.Transparency = 0
-            if tabGlowStroke then tabGlowStroke.Transparency = 0.7 end
-            local tabImg = B:FindFirstChild("ImageLabel")
-            if tabImg then tabImg.ImageColor3 = ACCENT end
+            local img = B:FindFirstChild("ImageLabel")
+            if img then img.ImageColor3 = ACCENT end
+            
             updateCanvas()
         end
-
+        
         B.MouseButton1Click:Connect(function()
             PlaySound("Tab")
             CreateClickScaleEffect(B)
             selectThisTab()
         end)
-
+        
         table.insert(allTabButtons, B)
-
-        if #TScroll:GetChildren() == 1 then
-            selectThisTab()
-        end
-
-        -- Tab Object
-        local Tab = { Count = 0, Elements = {}, Connections = {}, _currentSectionContent = nil, _sectionLayout = nil }
+        
+        local Tab = { Count = 0, Elements = {}, Connections = {}, _currentSectionContent = nil }
         local function GetO() Tab.Count = Tab.Count + 1; return Tab.Count end
-
+        
         -- ============================================
-        -- ELEMENTS (giữ nguyên như cũ)
+        -- CÁC ELEMENT CƠ BẢN
         -- ============================================
-        function Tab:CreateLabel(text, updateFunction)
-            local parent = Tab._currentSectionContent or ContentFrame
-            local l = Instance.new("TextLabel", parent)
-            l.Size = UDim2.new(0.95, 0, 0, 20)
+        function Tab:CreateLabel(text)
+            local l = Instance.new("TextLabel", ContentFrame)
+            l.Size = UDim2.new(1, 0, 0, 20)
             l.BackgroundTransparency = 1
-            l.Text = type(text) == "function" and text() or text
-            if useAutoContrast then
-                l.TextColor3 = GetContrastColor(Color3.fromRGB(15, 15, 15))
-            else
-                l.TextColor3 = Color3.fromRGB(255, 255, 255)
-            end
+            l.Text = text
+            l.TextColor3 = Color3.fromRGB(100, 100, 100)
             l.TextTransparency = 0
-            l.Font = "Gotham"
+            l.Font = "GothamMedium"
             l.TextSize = 12
             l.TextXAlignment = "Left"
             l.LayoutOrder = GetO()
-            l.Name = "Label"
             table.insert(Tab.Elements, l)
-            CreateSpringEffect(l, 0.05 * Tab.Count)
-            if type(text) == "function" then
-                local connection = RunService.RenderStepped:Connect(function()
-                    if l and l.Parent then
-                        l.Text = text()
-                    else
-                        connection:Disconnect()
-                    end
-                end)
-                table.insert(Tab.Connections, connection)
-                table.insert(NoirUI.Connections, connection)
-            end
             return l
         end
-
-        function Tab:CreateSection(title, noLine)
+        
+        function Tab:CreateSection(title)
             local s = Instance.new("Frame", ContentFrame)
-            s.Size = UDim2.new(0.95, 0, 0, noLine and 25 or 35)
+            s.Size = UDim2.new(1, 0, 0, 30)
             s.BackgroundTransparency = 1
             s.LayoutOrder = GetO()
             s.Name = title
-            s.ClipsDescendants = true
-            table.insert(Tab.Elements, s)
-            CreateSpringEffect(s, 0.05 * Tab.Count)
-
-            local headerBtn = Instance.new("TextButton", s)
-            headerBtn.Size = UDim2.new(1, 0, 0, 25)
-            headerBtn.Position = UDim2.new(0, 0, 0, 0)
-            headerBtn.BackgroundTransparency = 1
-            headerBtn.Text = ""
-            headerBtn.AutoButtonColor = false
-            CreateHoverEffect(headerBtn)
-
-            local lbl = Instance.new("TextLabel", headerBtn)
-            lbl.Size = UDim2.new(1, -30, 1, 0)
-            lbl.Position = UDim2.new(0, 0, 0, 0)
+            
+            local lbl = Instance.new("TextLabel", s)
+            lbl.Size = UDim2.new(1, 0, 1, 0)
+            lbl.BackgroundTransparency = 1
             lbl.Text = title:upper()
-            if useAutoContrast then
-                lbl.TextColor3 = GetContrastColor(Color3.fromRGB(15, 15, 15))
-            else
-                lbl.TextColor3 = ACCENT
-            end
-            lbl.TextTransparency = 0
+            lbl.TextColor3 = Color3.fromRGB(180, 180, 180)
             lbl.Font = "GothamBold"
             lbl.TextSize = 11
             lbl.TextXAlignment = "Left"
-            lbl.BackgroundTransparency = 1
-            if settings.UseGlow then
-                CreateGlowTextSlide(lbl, {
-                    Color3.fromRGB(200, 200, 200),
-                    Color3.fromRGB(255, 255, 255),
-                    Color3.fromRGB(200, 200, 200)
-                }, 1.2)
-            end
-
-            local arrow = Instance.new("TextLabel", headerBtn)
-            arrow.Size = UDim2.new(0, 20, 1, 0)
-            arrow.Position = UDim2.new(1, -25, 0, 0)
-            arrow.BackgroundTransparency = 1
-            arrow.Text = "▼"
-            if useAutoContrast then
-                arrow.TextColor3 = GetContrastColor(Color3.fromRGB(15, 15, 15))
-            else
-                arrow.TextColor3 = Color3.fromRGB(180, 180, 180)
-            end
-            arrow.TextTransparency = 0
-            arrow.Font = "GothamMedium"
-            arrow.TextSize = 10
-            arrow.TextXAlignment = "Center"
-            arrow.TextYAlignment = "Center"
-            arrow.Name = "Arrow"
-
-            local sectionContent = Instance.new("Frame", s)
-            sectionContent.Size = UDim2.new(1, 0, 0, 0)
-            sectionContent.Position = UDim2.new(0, 0, 0, 25)
-            sectionContent.BackgroundTransparency = 1
-            sectionContent.Name = "SectionContent"
-            local sectionLayout = Instance.new("UIListLayout", sectionContent)
-            sectionLayout.Padding = UDim.new(0, 4)
-            sectionLayout.HorizontalAlignment = "Center"
-            sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-            local isCollapsed = false
-            local contentHeight = 0
-            local function updateSectionHeight()
-                task.wait()
-                contentHeight = sectionLayout.AbsoluteContentSize.Y
-                if not isCollapsed then
-                    s.Size = UDim2.new(0.95, 0, 0, 25 + contentHeight)
-                    sectionContent.Size = UDim2.new(1, 0, 0, contentHeight)
-                end
-            end
-            sectionLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateSectionHeight)
-
-            headerBtn.MouseButton1Click:Connect(function()
-                PlaySound("Element")
-                CreateClickScaleEffect(headerBtn)
-                isCollapsed = not isCollapsed
-                arrow.Text = isCollapsed and "▶" or "▼"
-                if isCollapsed then
-                    TweenService:Create(sectionContent, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                        Size = UDim2.new(1, 0, 0, 0)
-                    }):Play()
-                    TweenService:Create(s, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                        Size = UDim2.new(0.95, 0, 0, 25)
-                    }):Play()
-                else
-                    TweenService:Create(sectionContent, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                        Size = UDim2.new(1, 0, 0, contentHeight)
-                    }):Play()
-                    TweenService:Create(s, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                        Size = UDim2.new(0.95, 0, 0, 25 + contentHeight)
-                    }):Play()
-                end
-            end)
-
-            if not noLine then
-                local line = Instance.new("Frame", s)
-                line.Size = UDim2.new(1, 0, 0, 1)
-                line.Position = UDim2.new(0, 0, 0, 22)
-                line.BackgroundColor3 = ACCENT
-                line.BackgroundTransparency = 0.5
-                line.BorderSizePixel = 0
-            end
-
-            Tab._currentSectionContent = sectionContent
-            Tab._sectionLayout = sectionLayout
+            
+            local line = Instance.new("Frame", s)
+            line.Size = UDim2.new(1, 0, 0, 1)
+            line.Position = UDim2.new(0, 0, 0, 28)
+            line.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+            line.BackgroundTransparency = 0.5
+            line.BorderSizePixel = 0
+            
             return s
         end
-
-        function Tab:CreateParagraph(opt)
-            local parent = Tab._currentSectionContent or ContentFrame
-            local f = Instance.new("Frame", parent)
-            f.Size = UDim2.new(0.95, 0, 0, 65)
-            if settings.ElementBackgroundColor then
-                f.BackgroundColor3 = settings.ElementBackgroundColor
-            else
-                f.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-            end
-            f.BackgroundTransparency = 0.5
-            Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
-            f.LayoutOrder = GetO()
-            f.Name = opt.Title or ""
-            table.insert(Tab.Elements, f)
-            CreateSpringEffect(f, 0.05 * Tab.Count)
-
-            local title = Instance.new("TextLabel", f)
-            title.Size = UDim2.new(1, -20, 0, 25)
-            title.Position = UDim2.new(0, 10, 0, 5)
-            title.Text = opt.Title or ""
-            if useAutoContrast then
-                title.TextColor3 = GetContrastColor(f.BackgroundColor3)
-            else
-                title.TextColor3 = Color3.fromRGB(255, 255, 255)
-            end
-            title.TextTransparency = 0
-            title.Font = "GothamBold"
-            title.TextSize = 13
-            title.BackgroundTransparency = 1
-            title.TextXAlignment = "Left"
-
-            local content = Instance.new("TextLabel", f)
-            content.Size = UDim2.new(1, -20, 0, 30)
-            content.Position = UDim2.new(0, 10, 0, 25)
-            content.Text = opt.Content or ""
-            content.TextColor3 = Color3.fromRGB(200, 200, 200)
-            content.TextTransparency = 0
-            content.Font = "Gotham"
-            content.TextSize = 11
-            content.BackgroundTransparency = 1
-            content.TextWrapped = true
-            content.TextXAlignment = "Left"
-            content.TextYAlignment = "Top"
-            return f
-        end
-
-        function Tab:CreateTextBox(opt)
-            local parent = Tab._currentSectionContent or ContentFrame
-            local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
-            local f = Instance.new("Frame", parent)
-            f.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
-            if settings.ElementBackgroundColor then
-                f.BackgroundColor3 = settings.ElementBackgroundColor
-            else
-                f.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-            end
-            f.BackgroundTransparency = 0.7
-            Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
-            f.LayoutOrder = GetO()
-            f.Name = opt.Name or ""
-            table.insert(Tab.Elements, f)
-            CreateSpringEffect(f, 0.05 * Tab.Count)
-
-            local i = Instance.new("TextBox", f)
-            i.Size = UDim2.new(1, -20, 0, 35)
-            i.Position = UDim2.new(0, 10, 0, 0)
-            i.BackgroundTransparency = 1
-            i.PlaceholderText = opt.Name
-            i.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-            i.Text = opt.Default or ""
-            if useAutoContrast then
-                i.TextColor3 = GetContrastColor(f.BackgroundColor3)
-            else
-                i.TextColor3 = Color3.fromRGB(255, 255, 255)
-            end
-            i.TextTransparency = 0
-            i.Font = "Gotham"
-            i.TextSize = 12
-            i.TextXAlignment = "Left"
-            i.FocusLost:Connect(function() if opt.Callback then opt.Callback(i.Text) end end)
-            if hasSubtitle then
-                AddSubtitle(f, opt.Subtitle, 38)
-            end
-        end
-
+        
         function Tab:CreateButton(opt)
-            local parent = Tab._currentSectionContent or ContentFrame
-            local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
-            local b = Instance.new("TextButton", parent)
-            b.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
-            if settings.ElementBackgroundColor then
-                b.BackgroundColor3 = settings.ElementBackgroundColor
-            else
-                b.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-            end
-            b.BackgroundTransparency = 0.6
+            local b = Instance.new("TextButton", ContentFrame)
+            b.Size = UDim2.new(1, 0, 0, 40)
+            b.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+            b.BackgroundTransparency = 0.7
             b.Text = opt.Name
-            if useAutoContrast then
-                b.TextColor3 = GetContrastColor(b.BackgroundColor3)
-            else
-                b.TextColor3 = Color3.fromRGB(255, 255, 255)
-            end
-            b.TextTransparency = 0
+            b.TextColor3 = Color3.fromRGB(0, 0, 0)
             b.Font = "GothamMedium"
-            b.TextSize = 12
-            Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+            b.TextSize = 13
+            Instance.new("UICorner", b).CornerRadius = UDim.new(0, CORNER_RADIUS)
             b.LayoutOrder = GetO()
-            b.Name = opt.Name
             b.AutoButtonColor = false
             table.insert(Tab.Elements, b)
             CreateSpringEffect(b, 0.05 * Tab.Count)
-            
-            if opt.Align == false then
-                b.TextXAlignment = "Left"
-                b.Text = "  " .. opt.Name
-                local hint = Instance.new("TextLabel", b)
-                hint.Size = UDim2.new(0, 50, 0, 35)
-                hint.Position = UDim2.new(1, -55, 0, 0)
-                hint.BackgroundTransparency = 1
-                hint.Text = "button"
-                hint.TextColor3 = Color3.fromRGB(150, 150, 150)
-                hint.TextTransparency = 0
-                hint.Font = "Gotham"
-                hint.TextSize = 10
-                hint.TextXAlignment = "Right"
-                hint.TextYAlignment = "Center"
-                hint.ZIndex = 2
-            else
-                b.TextXAlignment = "Center"
-            end
-            
-            if hasSubtitle then
-                AddSubtitle(b, opt.Subtitle, 38)
-            end
             
             b.MouseButton1Click:Connect(function()
                 PlaySound("Element")
                 CreateClickScaleEffect(b)
                 if opt.Callback then opt.Callback() end
             end)
+            return b
         end
-
+        
         function Tab:CreateToggle(opt)
-            local parent = Tab._currentSectionContent or ContentFrame
-            local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
             local s = opt.Default or false
-            local t = Instance.new("TextButton", parent)
-            t.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
-            if settings.ElementBackgroundColor then
-                t.BackgroundColor3 = settings.ElementBackgroundColor
-            else
-                t.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-            end
-            t.BackgroundTransparency = 0.6
+            local t = Instance.new("TextButton", ContentFrame)
+            t.Size = UDim2.new(1, 0, 0, 40)
+            t.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+            t.BackgroundTransparency = 0.7
             t.Text = "  " .. opt.Name
-            if useAutoContrast then
-                t.TextColor3 = s and GetContrastColor(t.BackgroundColor3) or Color3.fromRGB(180, 180, 180)
-            else
-                t.TextColor3 = s and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 180)
-            end
-            t.TextTransparency = 0
+            t.TextColor3 = s and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(150, 150, 150)
             t.TextXAlignment = "Left"
-            t.TextSize = 12
+            t.TextSize = 13
             t.Font = "GothamMedium"
-            Instance.new("UICorner", t).CornerRadius = UDim.new(0, 8)
+            Instance.new("UICorner", t).CornerRadius = UDim.new(0, CORNER_RADIUS)
             t.LayoutOrder = GetO()
-            t.Name = opt.Name
             t.AutoButtonColor = false
             table.insert(Tab.Elements, t)
-            CreateSpringEffect(t, 0.05 * Tab.Count)
             
             local bx = Instance.new("Frame", t)
             bx.Size = UDim2.new(0, 30, 0, 16)
-            bx.Position = UDim2.new(1, -40, 0.5, hasSubtitle and -15 or -8)
-            bx.BackgroundColor3 = s and ACCENT or Color3.fromRGB(40, 40, 40)
+            bx.Position = UDim2.new(1, -40, 0.5, -8)
+            bx.BackgroundColor3 = s and ACCENT or Color3.fromRGB(200, 200, 200)
             bx.BackgroundTransparency = 0.3
             Instance.new("UICorner", bx).CornerRadius = UDim.new(1, 0)
-            
-            if hasSubtitle then
-                AddSubtitle(t, opt.Subtitle, 38)
-            end
             
             t.MouseButton1Click:Connect(function()
                 PlaySound("Element")
                 CreateClickScaleEffect(t)
                 s = not s
-                if useAutoContrast then
-                    t.TextColor3 = s and GetContrastColor(t.BackgroundColor3) or Color3.fromRGB(180, 180, 180)
-                else
-                    t.TextColor3 = s and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 180)
-                end
+                t.TextColor3 = s and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(150, 150, 150)
                 TweenService:Create(bx, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                    BackgroundColor3 = s and ACCENT or Color3.fromRGB(40, 40, 40)
+                    BackgroundColor3 = s and ACCENT or Color3.fromRGB(200, 200, 200)
                 }):Play()
                 if opt.Callback then opt.Callback(s) end
             end)
+            return t
         end
-
-        function Tab:CreateSlider(opt)
-            local parent = Tab._currentSectionContent or ContentFrame
-            local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
-            local range = opt.range or {0, 100}
-            local min = range[1]
-            local max = range[2]
-            local increment = opt.increment or 1
-            local defaultValue = opt.Default or min
-            defaultValue = math.floor((defaultValue - min) / increment) * increment + min
-            defaultValue = math.clamp(defaultValue, min, max)
-            
-            local f = Instance.new("Frame", parent)
-            f.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 70 or 50)
-            if settings.ElementBackgroundColor then
-                f.BackgroundColor3 = settings.ElementBackgroundColor
-            else
-                f.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-            end
-            f.BackgroundTransparency = 0.7
-            Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
-            f.LayoutOrder = GetO()
-            f.Name = opt.Name or ""
-            table.insert(Tab.Elements, f)
-            CreateSpringEffect(f, 0.05 * Tab.Count)
-            
-            local l = Instance.new("TextLabel", f)
-            l.Size = UDim2.new(1, 0, 0, 20)
-            l.Position = UDim2.new(0, 12, 0, hasSubtitle and 5 or 5)
-            l.BackgroundTransparency = 1
-            l.Text = opt.Name .. ": " .. defaultValue
-            if useAutoContrast then
-                l.TextColor3 = GetContrastColor(f.BackgroundColor3)
-            else
-                l.TextColor3 = Color3.fromRGB(255, 255, 255)
-            end
-            l.TextTransparency = 0
-            l.TextXAlignment = "Left"
-            l.TextSize = 11
-            l.Font = "GothamMedium"
-            
-            local sbg = Instance.new("Frame", f)
-            sbg.Size = UDim2.new(0.9, 0, 0, 8)
-            sbg.Position = UDim2.new(0.05, 0, hasSubtitle and 0.55 or 0.7, 0)
-            sbg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            sbg.BackgroundTransparency = 0.5
-            Instance.new("UICorner", sbg)
-            
-            local fill = Instance.new("Frame", sbg)
-            local percent = (defaultValue - min) / (max - min)
-            fill.Size = UDim2.new(percent, 0, 1, 0)
-            fill.BackgroundColor3 = ACCENT
-            Instance.new("UICorner", fill)
-            
-            if hasSubtitle then
-                AddSubtitle(f, opt.Subtitle, 48)
-            end
-            
-            local isHeld = false
-            local function UpdateSlider(input)
-                local p = math.clamp((input.Position.X - sbg.AbsolutePosition.X) / sbg.AbsoluteSize.X, 0, 1)
-                local rawValue = min + (max - min) * p
-                local v = math.floor((rawValue - min) / increment) * increment + min
-                v = math.clamp(v, min, max)
-                local newPercent = (v - min) / (max - min)
-                TweenService:Create(fill, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    Size = UDim2.new(newPercent, 0, 1, 0)
-                }):Play()
-                l.Text = opt.Name .. ": " .. v
-                if opt.Callback then opt.Callback(v) end
-            end
-            
-            sbg.InputBegan:Connect(function(i)
-                if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-                    isHeld = true
-                    UpdateSlider(i)
-                end
-            end)
-            UIS.InputEnded:Connect(function(i)
-                if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-                    isHeld = false
-                end
-            end)
-            UIS.InputChanged:Connect(function(i)
-                if isHeld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
-                    UpdateSlider(i)
-                end
-            end)
-        end
-
-        function Tab:CreateColorPicker(opt)
-            local parent = Tab._currentSectionContent or ContentFrame
-            local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
-            local ColorSelected = opt.Default or Color3.fromRGB(170, 85, 255)
-            local h, s, v = ColorSelected:ToHSV()
-            local open = false
-            
-            local f = Instance.new("Frame", parent)
-            f.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
-            if settings.ElementBackgroundColor then
-                f.BackgroundColor3 = settings.ElementBackgroundColor
-            else
-                f.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-            end
-            f.BackgroundTransparency = 0.7
-            Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
-            f.LayoutOrder = GetO()
-            f.ClipsDescendants = true
-            f.Name = opt.Name or ""
-            table.insert(Tab.Elements, f)
-            CreateSpringEffect(f, 0.05 * Tab.Count)
-            
-            local t = Instance.new("TextLabel", f)
-            t.Size = UDim2.new(1, 0, 0, 35)
-            t.Position = UDim2.new(0, 12, 0, 0)
-            t.BackgroundTransparency = 1
-            t.Text = opt.Name
-            if useAutoContrast then
-                t.TextColor3 = GetContrastColor(f.BackgroundColor3)
-            else
-                t.TextColor3 = Color3.fromRGB(255, 255, 255)
-            end
-            t.TextTransparency = 0
-            t.Font = "GothamMedium"
-            t.TextSize = 12
-            t.TextXAlignment = "Left"
-            
-            local pvw = Instance.new("TextButton", f)
-            pvw.Size = UDim2.new(0, 40, 0, 18)
-            pvw.Position = UDim2.new(1, -50, 0, hasSubtitle and 8.5 or 8.5)
-            pvw.BackgroundColor3 = ColorSelected
-            pvw.Text = ""
-            Instance.new("UICorner", pvw).CornerRadius = UDim.new(0, 4)
-            pvw.AutoButtonColor = false
-            
-            if hasSubtitle then
-                AddSubtitle(f, opt.Subtitle, 38)
-            end
-            
-            local Holder = Instance.new("Frame", f)
-            Holder.Size = UDim2.new(1, 0, 0, 140)
-            Holder.Position = UDim2.new(0, 0, 0, 35)
-            Holder.BackgroundTransparency = 1
-            
-            local satBox = Instance.new("ImageButton", Holder)
-            satBox.Size = UDim2.new(0.9, 0, 0, 100)
-            satBox.Position = UDim2.new(0.05, 0, 0, 5)
-            satBox.Image = "rbxassetid://4155801252"
-            satBox.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
-            Instance.new("UICorner", satBox).CornerRadius = UDim.new(0, 6)
-            satBox.AutoButtonColor = false
-            
-            local cursor = Instance.new("Frame", satBox)
-            cursor.Size = UDim2.new(0, 10, 0, 10)
-            cursor.AnchorPoint = Vector2.new(0.5, 0.5)
-            cursor.BackgroundColor3 = Color3.new(1, 1, 1)
-            cursor.Position = UDim2.new(s, 0, 1 - v, 0)
-            Instance.new("UICorner", cursor).CornerRadius = UDim.new(1, 0)
-            cursor.BorderSizePixel = 1
-            cursor.BorderColor3 = Color3.fromRGB(50, 50, 50)
-            
-            local hueSlide = Instance.new("ImageButton", Holder)
-            hueSlide.Size = UDim2.new(0.9, 0, 0, 14)
-            hueSlide.Position = UDim2.new(0.05, 0, 0, 115)
-            Instance.new("UICorner", hueSlide).CornerRadius = UDim.new(0, 6)
-            hueSlide.AutoButtonColor = false
-            
-            local hueGradient = Instance.new("UIGradient", hueSlide)
-            local hueColorSequence = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
-                ColorSequenceKeypoint.new(0.166, Color3.fromRGB(255, 255, 0)),
-                ColorSequenceKeypoint.new(0.333, Color3.fromRGB(0, 255, 0)),
-                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
-                ColorSequenceKeypoint.new(0.666, Color3.fromRGB(0, 0, 255)),
-                ColorSequenceKeypoint.new(0.833, Color3.fromRGB(255, 0, 255)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))
-            })
-            hueGradient.Color = hueColorSequence
-            
-            local hCursor = Instance.new("Frame", hueSlide)
-            hCursor.Size = UDim2.new(0, 4, 1, 4)
-            hCursor.Position = UDim2.new(h, 0, 0.5, 0)
-            hCursor.AnchorPoint = Vector2.new(0.5, 0.5)
-            hCursor.BackgroundColor3 = Color3.new(1, 1, 1)
-            Instance.new("UICorner", hCursor)
-            hCursor.BorderSizePixel = 1
-            hCursor.BorderColor3 = Color3.fromRGB(50, 50, 50)
-            
-            local function UpdateColor()
-                local finalCol = Color3.fromHSV(h, s, v)
-                pvw.BackgroundColor3 = finalCol
-                satBox.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
-                cursor.Position = UDim2.new(s, 0, 1 - v, 0)
-                hCursor.Position = UDim2.new(h, 0, 0.5, 0)
-                local lightness = (s + v) / 2
-                if lightness > 0.6 then
-                    cursor.BackgroundColor3 = Color3.new(0, 0, 0)
-                else
-                    cursor.BackgroundColor3 = Color3.new(1, 1, 1)
-                end
-                if opt.Callback then 
-                    pcall(function() opt.Callback(finalCol) end)
-                end
-            end
-            
-            local isDraggingSat = false
-            satBox.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    isDraggingSat = true
-                    local relativeX = math.clamp((input.Position.X - satBox.AbsolutePosition.X) / satBox.AbsoluteSize.X, 0, 1)
-                    local relativeY = math.clamp((input.Position.Y - satBox.AbsolutePosition.Y) / satBox.AbsoluteSize.Y, 0, 1)
-                    s = math.clamp(relativeX, 0, 1)
-                    v = math.clamp(1 - relativeY, 0, 1)
-                    UpdateColor()
-                end
-            end)
-            
-            local isDraggingHue = false
-            hueSlide.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    isDraggingHue = true
-                    local relativeX = math.clamp((input.Position.X - hueSlide.AbsolutePosition.X) / hueSlide.AbsoluteSize.X, 0, 1)
-                    h = math.clamp(relativeX, 0, 1)
-                    UpdateColor()
-                end
-            end)
-            
-            local function onInputChanged(input)
-                if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                    if isDraggingSat then
-                        local relativeX = math.clamp((input.Position.X - satBox.AbsolutePosition.X) / satBox.AbsoluteSize.X, 0, 1)
-                        local relativeY = math.clamp((input.Position.Y - satBox.AbsolutePosition.Y) / satBox.AbsoluteSize.Y, 0, 1)
-                        s = math.clamp(relativeX, 0, 1)
-                        v = math.clamp(1 - relativeY, 0, 1)
-                        UpdateColor()
-                    elseif isDraggingHue then
-                        local relativeX = math.clamp((input.Position.X - hueSlide.AbsolutePosition.X) / hueSlide.AbsoluteSize.X, 0, 1)
-                        h = math.clamp(relativeX, 0, 1)
-                        UpdateColor()
-                    end
-                end
-            end
-            
-            local function onInputEnded(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    isDraggingSat = false
-                    isDraggingHue = false
-                end
-            end
-            
-            UIS.InputChanged:Connect(onInputChanged)
-            UIS.InputEnded:Connect(onInputEnded)
-            
-            pvw.MouseButton1Click:Connect(function()
-                PlaySound("Element")
-                CreateClickScaleEffect(pvw)
-                open = not open
-                TweenService:Create(f, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    Size = open and UDim2.new(0.95, 0, 0, 180) or UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
-                }):Play()
-            end)
-            UpdateColor()
-        end
-
-        function Tab:CreateDropdown(opt)
-            local parent = Tab._currentSectionContent or ContentFrame
-            local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
-            local d = Instance.new("Frame", parent)
-            d.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
-            if settings.ElementBackgroundColor then
-                d.BackgroundColor3 = settings.ElementBackgroundColor
-            else
-                d.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-            end
-            d.BackgroundTransparency = 0.7
-            Instance.new("UICorner", d).CornerRadius = UDim.new(0, 8)
-            d.LayoutOrder = GetO()
-            d.ClipsDescendants = true
-            d.Name = opt.Name or ""
-            table.insert(Tab.Elements, d)
-            CreateSpringEffect(d, 0.05 * Tab.Count)
-            
-            local t = Instance.new("TextButton", d)
-            t.Name = "DropdownButton"
-            t.Size = UDim2.new(1, 0, 0, 35)
-            t.BackgroundTransparency = 1
-            t.Text = "  " .. opt.Name .. " : " .. (opt.Default or (opt.Options and opt.Options[1] or "Đang tải..."))
-            if useAutoContrast then
-                t.TextColor3 = GetContrastColor(d.BackgroundColor3)
-            else
-                t.TextColor3 = Color3.fromRGB(255, 255, 255)
-            end
-            t.TextTransparency = 0
-            t.Font = "GothamMedium"
-            t.TextSize = 12
-            t.TextXAlignment = "Left"
-            t.AutoButtonColor = false
-            CreateHoverEffect(t)
-            
-            local Arrow = Instance.new("TextLabel", t)
-            Arrow.Name = "ArrowLabel"
-            Arrow.Size = UDim2.new(0, 30, 1, 0)
-            Arrow.Position = UDim2.new(1, -35, 0, 0)
-            Arrow.BackgroundTransparency = 1
-            Arrow.Text = "▼"
-            if useAutoContrast then
-                Arrow.TextColor3 = GetContrastColor(d.BackgroundColor3)
-            else
-                Arrow.TextColor3 = Color3.fromRGB(180, 180, 180)
-            end
-            Arrow.TextTransparency = 0
-            Arrow.Font = "GothamMedium"
-            Arrow.TextSize = 14
-            Arrow.TextXAlignment = "Center"
-            
-            if hasSubtitle then
-                AddSubtitle(d, opt.Subtitle, 38)
-            end
-            
-            local il = Instance.new("ScrollingFrame", d)
-            il.Name = "OptionsList"
-            il.Size = UDim2.new(1, 0, 0, 120)
-            il.Position = UDim2.new(0, 0, 0, 35)
-            il.BackgroundTransparency = 1
-            il.ScrollBarThickness = 2
-            il.AutomaticCanvasSize = "Y"
-            il.Visible = false
-            local ilLayout = Instance.new("UIListLayout", il)
-            ilLayout.Padding = UDim.new(0, 2)
-            
-            local function refreshOptions()
-                if not opt.GetOptions then return end
-                local newOptions = opt.GetOptions()
-                if not newOptions then return end
-                for _, child in pairs(il:GetChildren()) do
-                    if child:IsA("TextButton") then
-                        child:Destroy()
-                    end
-                end
-                for _, option in pairs(newOptions) do
-                    local it = Instance.new("TextButton", il)
-                    it.Size = UDim2.new(1, 0, 0, 30)
-                    if settings.ElementBackgroundColor then
-                        it.BackgroundColor3 = settings.ElementBackgroundColor
-                    else
-                        it.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
-                    end
-                    it.BackgroundTransparency = 0.5
-                    it.Text = option
-                    if useAutoContrast then
-                        it.TextColor3 = GetContrastColor(it.BackgroundColor3)
-                    else
-                        it.TextColor3 = Color3.fromRGB(255, 255, 255)
-                    end
-                    it.TextTransparency = 0
-                    it.Font = "GothamMedium"
-                    it.TextSize = 11
-                    it.AutoButtonColor = false
-                    it.MouseButton1Click:Connect(function()
-                        PlaySound("Element")
-                        CreateClickScaleEffect(it)
-                        il.Visible = false
-                        Arrow.Text = "▼"
-                        t.Text = "  " .. opt.Name .. " : " .. option
-                        TweenService:Create(d, TweenInfo.new(0.3), {Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)}):Play()
-                        if opt.Callback then opt.Callback(option) end
-                    end)
-                end
-                task.wait()
-                local optionCount = math.min(#newOptions, 4)
-                il.Size = UDim2.new(1, 0, 0, optionCount * 32)
-                if opt.Default then
-                    t.Text = "  " .. opt.Name .. " : " .. opt.Default
-                elseif newOptions[1] then
-                    t.Text = "  " .. opt.Name .. " : " .. newOptions[1]
-                end
-            end
-            
-            local open = false
-            t.MouseButton1Click:Connect(function()
-                PlaySound("Element")
-                CreateClickScaleEffect(t)
-                open = not open
-                il.Visible = open
-                Arrow.Text = open and "▲" or "▼"
-                if open and opt.RefreshOnOpen then
-                    refreshOptions()
-                end
-                TweenService:Create(d, TweenInfo.new(0.3), {Size = open and UDim2.new(0.95, 0, 0, 35 + il.Size.Y.Offset + (hasSubtitle and 20 or 0)) or UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)}):Play()
-            end)
-            
-            if opt.GetOptions then
-                refreshOptions()
-            elseif opt.Options then
-                for _, v in pairs(opt.Options) do
-                    local it = Instance.new("TextButton", il)
-                    it.Size = UDim2.new(1, 0, 0, 30)
-                    if settings.ElementBackgroundColor then
-                        it.BackgroundColor3 = settings.ElementBackgroundColor
-                    else
-                        it.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
-                    end
-                    it.BackgroundTransparency = 0.5
-                    it.Text = v
-                    if useAutoContrast then
-                        it.TextColor3 = GetContrastColor(it.BackgroundColor3)
-                    else
-                        it.TextColor3 = Color3.fromRGB(255, 255, 255)
-                    end
-                    it.TextTransparency = 0
-                    it.Font = "GothamMedium"
-                    it.TextSize = 11
-                    it.AutoButtonColor = false
-                    it.MouseButton1Click:Connect(function()
-                        PlaySound("Element")
-                        CreateClickScaleEffect(it)
-                        open = false
-                        il.Visible = false
-                        Arrow.Text = "▼"
-                        t.Text = "  " .. opt.Name .. " : " .. v
-                        TweenService:Create(d, TweenInfo.new(0.3), {Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)}):Play()
-                        if opt.Callback then opt.Callback(v) end
-                    end)
-                end
-                local optionCount = math.min(#opt.Options, 4)
-                il.Size = UDim2.new(1, 0, 0, optionCount * 32)
-            end
-            
-            if opt.RefreshInterval and opt.GetOptions then
-                local refreshConnection = RunService.RenderStepped:Connect(function()
-                    if d and d.Parent then
-                        local newOptions = opt.GetOptions()
-                        if newOptions then
-                            local currentCount = 0
-                            for _, child in pairs(il:GetChildren()) do
-                                if child:IsA("TextButton") then currentCount = currentCount + 1 end
-                            end
-                            if currentCount ~= #newOptions then
-                                refreshOptions()
-                            end
-                        end
-                    else
-                        refreshConnection:Disconnect()
-                    end
-                end)
-                table.insert(Tab.Connections, refreshConnection)
-                table.insert(NoirUI.Connections, refreshConnection)
-            end
-        end
-
-        function Tab:CreateRunBox(opt)
-            local parent = Tab._currentSectionContent or ContentFrame
-            local f = Instance.new("Frame", parent)
-            f.Size = UDim2.new(0.95, 0, 0, 38)
-            if settings.ElementBackgroundColor then
-                f.BackgroundColor3 = settings.ElementBackgroundColor
-            else
-                f.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-            end
-            f.BackgroundTransparency = 0.7
-            Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
-            f.LayoutOrder = GetO()
-            f.Name = "RunBox"
-            table.insert(Tab.Elements, f)
-            CreateSpringEffect(f, 0.05 * Tab.Count)
-            
-            local i = Instance.new("TextBox", f)
-            i.Size = UDim2.new(1, -65, 1, 0)
-            i.Position = UDim2.new(0, 10, 0, 0)
-            i.BackgroundTransparency = 1
-            i.PlaceholderText = opt.Placeholder or "Nhập: .cmd, loadstring('url'), or lua code"
-            i.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-            i.Text = ""
-            if useAutoContrast then
-                i.TextColor3 = GetContrastColor(f.BackgroundColor3)
-            else
-                i.TextColor3 = Color3.fromRGB(255, 255, 255)
-            end
-            i.TextTransparency = 0
-            i.Font = "Gotham"
-            i.TextSize = 11
-            i.TextXAlignment = "Left"
-            i.ClearTextOnFocus = false
-            
-            local r = Instance.new("TextButton", f)
-            r.Size = UDim2.new(0, 50, 0, 26)
-            r.Position = UDim2.new(1, -55, 0.5, -13)
-            r.BackgroundColor3 = ACCENT
-            r.Text = "RUN"
-            if useAutoContrast then
-                r.TextColor3 = GetContrastColor(ACCENT)
-            else
-                r.TextColor3 = Color3.new(1,1,1)
-            end
-            r.TextTransparency = 0
-            r.Font = "GothamBold"
-            r.TextSize = 10
-            Instance.new("UICorner", r).CornerRadius = UDim.new(0, 6)
-            r.AutoButtonColor = false
-            
-            r.MouseButton1Click:Connect(function()
-                PlaySound("Element")
-                CreateClickScaleEffect(r)
-                local input = i.Text
-                if input == "" then return end
-                
-                if input:sub(1, 1) == "." then
-                    local parts = {}
-                    for part in input:sub(2):gmatch("%S+") do
-                        table.insert(parts, part)
-                    end
-                    local cmd = parts[1] and parts[1]:lower() or ""
-                    local args = {}
-                    for j = 2, #parts do
-                        table.insert(args, parts[j])
-                    end
-                    local customCallback = NoirUI.CustomCommands[cmd]
-                    if customCallback then
-                        local success, err = pcall(function()
-                            customCallback(args)
-                        end)
-                        if not success then
-                            NoirUI:Notify("Command Error", err or "Lỗi không xác định", nil, "Error")
-                        end
-                    else
-                        NoirUI:Notify("❌ Unknown Command", "Không tìm thấy lệnh: ." .. cmd, nil, "Error")
-                    end
-                elseif input:lower():match("loadstring") then
-                    local str = input:match("loadstring%((.+)%)")
-                    if str then
-                        local cleaned = str:gsub("^[\"'](.*)[\"']$", "%1")
-                        local success, err = loadstring(cleaned)
-                        if success then
-                            success()
-                            NoirUI:Notify("Loadstring", "Đã chạy thành công!", nil, "Success")
-                        else
-                            NoirUI:Notify("Loadstring Error", err or "Lỗi cú pháp", nil, "Error")
-                        end
-                    else
-                        NoirUI:Notify("Loadstring Error", "Cú pháp không hợp lệ", nil, "Error")
-                    end
-                else
-                    local success, err = loadstring(input)
-                    if success then
-                        success()
-                        NoirUI:Notify("Execute", "Code đã chạy thành công!", nil, "Success")
-                    else
-                        NoirUI:Notify("Error", err or "Lỗi cú pháp", nil, "Error")
-                    end
-                end
-                if opt.ClearOnExecute then
-                    i.Text = ""
-                end
-            end)
-        end
-
-        Tab._button = B
+        
         return Tab
     end
 
-    task.wait()
     return Window
 end
 
