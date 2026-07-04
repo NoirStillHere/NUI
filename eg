@@ -3,6 +3,7 @@ local NoirUI = {}
 -- Service
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
 -- Hàm tạo tween
@@ -20,7 +21,7 @@ local function createInstance(class, props)
 end
 
 -- ============================================================
--- 1. Tạo cửa sổ chính
+-- 1. Tạo cửa sổ chính (Có Drag & Clamp + Responsive)
 -- ============================================================
 function NoirUI.CreateWindow(config)
     config = config or {}
@@ -33,8 +34,10 @@ function NoirUI.CreateWindow(config)
         TextMuted = Color3.fromRGB(180, 180, 200),
         CardBg = Color3.fromRGB(20, 20, 35)
     }
-    local size = config.Size or UDim2.new(0, 750, 0, 500)
-    local position = config.Position or UDim2.new(0.5, -375, 0.5, -250)
+    
+    -- Kích thước cơ bản (sẽ được scale tự động)
+    local baseWidth = 750
+    local baseHeight = 500
 
     -- ScreenGui
     local gui = createInstance("ScreenGui", {
@@ -44,7 +47,7 @@ function NoirUI.CreateWindow(config)
         Parent = LocalPlayer.PlayerGui
     })
 
-    -- Float Button (nút mở UI)
+    -- Float Button (giữ nguyên)
     local floatBtn = createInstance("TextButton", {
         Size = UDim2.new(0, 60, 0, 60),
         Position = UDim2.new(0.02, 0, 0.5, -30),
@@ -57,17 +60,30 @@ function NoirUI.CreateWindow(config)
     })
     createInstance("UICorner", {CornerRadius = UDim.new(1, 0), Parent = floatBtn})
 
-    -- Main Window
+    -- Main Window (Dùng Scale để responsive)
     local main = createInstance("Frame", {
-        Size = size,
-        Position = position,
+        Size = UDim2.new(0, baseWidth, 0, baseHeight),
+        Position = UDim2.new(0.5, -baseWidth/2, 0.5, -baseHeight/2), -- Căn giữa màn hình
         BackgroundColor3 = theme.MainBg,
         Visible = false,
         Parent = gui
     })
     createInstance("UICorner", {CornerRadius = UDim.new(0, 16), Parent = main})
 
-    -- Sidebar (trái)
+    -- Responsive: Tự co giãn theo màn hình (nhưng không vượt quá 80% màn hình)
+    local aspectRatio = createInstance("UIAspectRatioConstraint", {
+        AspectRatio = baseWidth / baseHeight,
+        Parent = main
+    })
+    
+    -- Giới hạn kích thước tối đa (để không bị che mất nội dung)
+    local maxSize = createInstance("UISizeConstraint", {
+        MaxSize = Vector2.new(baseWidth * 1.2, baseHeight * 1.2),
+        MinSize = Vector2.new(baseWidth * 0.6, baseHeight * 0.6),
+        Parent = main
+    })
+
+    -- Sidebar
     local sidebar = createInstance("Frame", {
         Size = UDim2.new(0, 80, 1, 0),
         BackgroundColor3 = theme.SidebarBg,
@@ -75,7 +91,7 @@ function NoirUI.CreateWindow(config)
     })
     createInstance("UICorner", {CornerRadius = UDim.new(0, 16), Parent = sidebar})
 
-    -- Content area (phần nội dung chính)
+    -- Content area
     local content = createInstance("Frame", {
         Size = UDim2.new(1, -100, 1, -30),
         Position = UDim2.new(0, 100, 0, 15),
@@ -108,6 +124,50 @@ function NoirUI.CreateWindow(config)
         Parent = main
     })
 
+    -- ============================================================
+    -- DRAG & DROP THÔNG MINH (CÓ GIỚI HẠN)
+    -- ============================================================
+    local dragging = false
+    local dragInput, mousePos, framePos
+
+    main.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            mousePos = input.Position
+            framePos = main.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    main.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - mousePos
+            local newX = framePos.X.Offset + delta.X
+            local newY = framePos.Y.Offset + delta.Y
+            
+            -- Lấy kích thước màn hình thực tế
+            local screenSize = workspace.CurrentCamera.ViewportSize
+            local frameSize = main.AbsoluteSize
+            
+            -- Dùng math.clamp để khóa không cho ra ngoài màn hình
+            newX = math.clamp(newX, 0, screenSize.X - frameSize.X)
+            newY = math.clamp(newY, 0, screenSize.Y - frameSize.Y)
+            
+            main.Position = UDim2.new(0, newX, 0, newY)
+        end
+    end)
+
     -- Animation toggle
     local isOpen = false
     local openTweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
@@ -117,9 +177,13 @@ function NoirUI.CreateWindow(config)
         isOpen = not isOpen
         if isOpen then
             main.Visible = true
-            createTween(main, {Position = position, BackgroundTransparency = 0}, 0.4):Play()
+            -- Nếu đang ở ngoài màn hình, kéo về giữa
+            if main.Position.X.Offset < 0 or main.Position.X.Offset > workspace.CurrentCamera.ViewportSize.X then
+                main.Position = UDim2.new(0.5, -baseWidth/2, 0.5, -baseHeight/2)
+            end
+            createTween(main, {BackgroundTransparency = 0}, 0.4):Play()
         else
-            local t = createTween(main, {Position = UDim2.new(-0.5, 0, 0.5, -250), BackgroundTransparency = 1}, 0.3)
+            local t = createTween(main, {BackgroundTransparency = 1}, 0.3)
             t:Play()
             t.Completed:Connect(function()
                 main.Visible = false
@@ -130,7 +194,7 @@ function NoirUI.CreateWindow(config)
     floatBtn.MouseButton1Click:Connect(toggleUI)
     closeBtn.MouseButton1Click:Connect(toggleUI)
 
-    -- Trả về API cho người dùng
+    -- Trả về API
     return {
         Gui = gui,
         Main = main,
