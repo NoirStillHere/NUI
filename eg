@@ -35,9 +35,9 @@ function NoirUI.CreateWindow(config)
         CardBg = Color3.fromRGB(20, 20, 35)
     }
     
-    -- Kích thước cơ bản (sẽ được scale tự động)
-    local baseWidth = 750
-    local baseHeight = 375
+    -- 🔥 Kích thước cơ bản đã đổi thành 350x700 (dạng mobile)
+    local baseWidth = 350
+    local baseHeight = 700
 
     -- ScreenGui
     local gui = createInstance("ScreenGui", {
@@ -47,79 +47,79 @@ function NoirUI.CreateWindow(config)
         Parent = LocalPlayer.PlayerGui
     })
 
-    -- Float Button (giữ nguyên)
+    -- Float Button (kích thước nhỏ lại cho cân đối)
     local floatBtn = createInstance("TextButton", {
-        Size = UDim2.new(0, 60, 0, 60),
-        Position = UDim2.new(0.02, 0, 0.5, -30),
+        Size = UDim2.new(0, 50, 0, 50),
+        Position = UDim2.new(0.02, 0, 0.5, -25),
         BackgroundColor3 = theme.Accent,
         Text = "N",
         TextColor3 = Color3.fromRGB(255, 255, 255),
-        TextSize = 28,
+        TextSize = 24,
         Font = Enum.Font.GothamBold,
         Parent = gui
     })
     createInstance("UICorner", {CornerRadius = UDim.new(1, 0), Parent = floatBtn})
 
-    -- Main Window (Dùng Scale để responsive)
+    -- Main Window
     local main = createInstance("Frame", {
         Size = UDim2.new(0, baseWidth, 0, baseHeight),
-        Position = UDim2.new(0.5, -baseWidth/2, 0.5, -baseHeight/2), -- Căn giữa màn hình
+        Position = UDim2.new(0.5, -baseWidth/2, 0.5, -baseHeight/2),
         BackgroundColor3 = theme.MainBg,
         Visible = false,
         Parent = gui
     })
     createInstance("UICorner", {CornerRadius = UDim.new(0, 16), Parent = main})
 
-    -- Responsive: Tự co giãn theo màn hình (nhưng không vượt quá 80% màn hình)
+    -- Responsive: Tự co giãn theo màn hình
     local aspectRatio = createInstance("UIAspectRatioConstraint", {
-        AspectRatio = baseWidth / baseHeight,
+        AspectRatio = baseWidth / baseHeight, -- 350/700 = 0.5
         Parent = main
     })
     
-    -- Giới hạn kích thước tối đa (để không bị che mất nội dung)
+    -- Giới hạn kích thước tối đa (không quá to, không quá nhỏ)
     local maxSize = createInstance("UISizeConstraint", {
         MaxSize = Vector2.new(baseWidth * 1.2, baseHeight * 1.2),
         MinSize = Vector2.new(baseWidth * 0.6, baseHeight * 0.6),
         Parent = main
     })
 
-    -- Sidebar
+    -- Sidebar (hẹp hơn cho vừa tỉ lệ)
     local sidebar = createInstance("Frame", {
-        Size = UDim2.new(0, 80, 1, 0),
+        Size = UDim2.new(0, 60, 1, 0), -- 60px thay vì 80px
         BackgroundColor3 = theme.SidebarBg,
         Parent = main
     })
     createInstance("UICorner", {CornerRadius = UDim.new(0, 16), Parent = sidebar})
 
-    -- Content area
+    -- Content area (rộng hơn để chứa nội dung)
     local content = createInstance("Frame", {
-        Size = UDim2.new(1, -100, 1, -30),
-        Position = UDim2.new(0, 100, 0, 15),
+        Size = UDim2.new(1, -80, 1, -20), -- Trừ 80 cho sidebar + padding
+        Position = UDim2.new(0, 80, 0, 10),
         BackgroundTransparency = 1,
         Parent = main
     })
 
-    -- Title
+    -- Title (nhỏ lại)
     createInstance("TextLabel", {
-        Size = UDim2.new(1, 0, 0, 50),
+        Size = UDim2.new(1, 0, 0, 35),
         Position = UDim2.new(0, 0, 0, 0),
         BackgroundTransparency = 1,
         Text = title,
         TextColor3 = theme.Text,
-        TextSize = 28,
+        TextSize = 22,
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Left,
         Parent = content
     })
 
-    -- Close button
+    -- Close button (góc trên phải của main)
     local closeBtn = createInstance("TextButton", {
-        Size = UDim2.new(0, 30, 0, 30),
-        Position = UDim2.new(1, -45, 0, 10),
+        Size = UDim2.new(0, 25, 0, 25),
+        Position = UDim2.new(1, -35, 0, 8),
         BackgroundTransparency = 1,
         Text = "✕",
         TextColor3 = Color3.fromRGB(255, 80, 80),
-        TextSize = 20,
+        TextSize = 16,
         Font = Enum.Font.GothamBold,
         Parent = main
     })
@@ -156,11 +156,9 @@ function NoirUI.CreateWindow(config)
             local newX = framePos.X.Offset + delta.X
             local newY = framePos.Y.Offset + delta.Y
             
-            -- Lấy kích thước màn hình thực tế
             local screenSize = workspace.CurrentCamera.ViewportSize
             local frameSize = main.AbsoluteSize
             
-            -- Dùng math.clamp để khóa không cho ra ngoài màn hình
             newX = math.clamp(newX, 0, screenSize.X - frameSize.X)
             newY = math.clamp(newY, 0, screenSize.Y - frameSize.Y)
             
@@ -177,7 +175,6 @@ function NoirUI.CreateWindow(config)
         isOpen = not isOpen
         if isOpen then
             main.Visible = true
-            -- Nếu đang ở ngoài màn hình, kéo về giữa
             if main.Position.X.Offset < 0 or main.Position.X.Offset > workspace.CurrentCamera.ViewportSize.X then
                 main.Position = UDim2.new(0.5, -baseWidth/2, 0.5, -baseHeight/2)
             end
@@ -208,24 +205,24 @@ function NoirUI.CreateWindow(config)
 end
 
 -- ============================================================
--- 2. Tạo Sidebar Icon
+-- 2. Tạo Sidebar Icon (icon nhỏ hơn cho vừa sidebar 60px)
 -- ============================================================
 function NoirUI.CreateSidebarIcon(window, config)
     local sidebar = window.Sidebar
     local theme = window.Theme
     local icon = config.Icon or "⌂"
-    local position = config.Position or 80
+    local position = config.Position or 60
     local isActive = config.Active or false
     local callback = config.Callback or function() end
 
     local btn = window._CreateElement("TextButton", {
-        Size = UDim2.new(0, 40, 0, 40),
-        Position = UDim2.new(0.5, -20, 0, position),
+        Size = UDim2.new(0, 32, 0, 32), -- Nhỏ hơn
+        Position = UDim2.new(0.5, -16, 0, position),
         BackgroundTransparency = isActive and 0.2 or 1,
         BackgroundColor3 = theme.Accent,
         Text = icon,
         TextColor3 = isActive and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 150, 180),
-        TextSize = 20,
+        TextSize = 16, -- Chữ nhỏ hơn
         Font = Enum.Font.GothamBold,
         Parent = sidebar
     })
@@ -236,42 +233,43 @@ function NoirUI.CreateSidebarIcon(window, config)
 end
 
 -- ============================================================
--- 3. Tạo Card (Dashboard)
+-- 3. Tạo Card (Dashboard) - Nhỏ gọn hơn
 -- ============================================================
 function NoirUI.CreateCard(window, config)
     local content = window.Content
     local theme = window.Theme
     local title = config.Title or "Card"
     local value = config.Value or "0"
-    local position = config.Position or UDim2.new(0, 0, 0, 70)
+    local position = config.Position or UDim2.new(0, 0, 0, 50)
 
+    -- Card nhỏ hơn cho vừa 350px
     local card = window._CreateElement("Frame", {
-        Size = UDim2.new(0, 200, 0, 120),
+        Size = UDim2.new(0, 160, 0, 90),
         Position = position,
         BackgroundColor3 = theme.CardBg,
         Parent = content
     })
-    window._CreateElement("UICorner", {CornerRadius = UDim.new(0, 12), Parent = card})
+    window._CreateElement("UICorner", {CornerRadius = UDim.new(0, 10), Parent = card})
 
     window._CreateElement("TextLabel", {
-        Size = UDim2.new(1, 0, 0, 30),
-        Position = UDim2.new(0, 15, 0, 10),
+        Size = UDim2.new(1, 0, 0, 20),
+        Position = UDim2.new(0, 10, 0, 8),
         BackgroundTransparency = 1,
         Text = title,
         TextColor3 = theme.TextMuted,
-        TextSize = 14,
+        TextSize = 12,
         Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left,
         Parent = card
     })
 
     window._CreateElement("TextLabel", {
-        Size = UDim2.new(1, 0, 0, 40),
-        Position = UDim2.new(0, 15, 0, 45),
+        Size = UDim2.new(1, 0, 0, 30),
+        Position = UDim2.new(0, 10, 0, 30),
         BackgroundTransparency = 1,
         Text = value,
         TextColor3 = theme.Text,
-        TextSize = 32,
+        TextSize = 24,
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Left,
         Parent = card
