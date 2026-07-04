@@ -1965,10 +1965,14 @@ function NoirUI:CreateWindow(settings)
             local isMulti = opt.multi == true or opt.type == "multi"
             local selected = {} -- Luôn là table
             
-            -- Khởi tạo selected cho single
+            -- Khởi tạo selected
             if not isMulti then
                 local def = opt.Default or (opt.Options and opt.Options[1] or "none")
-                selected[def] = true
+                if type(def) == "table" then
+                    for _, v in ipairs(def) do selected[v] = true end
+                else
+                    selected[def] = true
+                end
             else
                 if opt.Default then
                     if type(opt.Default) == "table" then
