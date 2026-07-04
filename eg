@@ -1298,7 +1298,7 @@ function NoirUI:CreateWindow(settings)
         local Tab = { Count = 0, Elements = {}, Connections = {}, _currentSectionContent = nil, _sectionLayout = nil }
         local function GetO() Tab.Count = Tab.Count + 1; return Tab.Count end
         
-        -- Elements (giữ nguyên các hàm)
+        -- Elements
         function Tab:CreateLabel(text, updateFunction)
             local parent = Tab._currentSectionContent or ContentFrame
             local l = Instance.new("TextLabel", parent)
@@ -1963,19 +1963,25 @@ function NoirUI:CreateWindow(settings)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
             local isMulti = opt.multi == true or opt.type == "multi"
-            local selected = {}
-            local open = false
+            local selected = {} -- Luôn là table
             
+            -- Khởi tạo selected cho single
             if not isMulti then
                 local def = opt.Default or (opt.Options and opt.Options[1] or "none")
                 selected[def] = true
             else
                 if opt.Default then
-                    for _, v in ipairs(opt.Default) do
-                        selected[v] = true
+                    if type(opt.Default) == "table" then
+                        for _, v in ipairs(opt.Default) do
+                            selected[v] = true
+                        end
+                    else
+                        selected[opt.Default] = true
                     end
                 end
             end
+            
+            local open = false
             
             local function getSelectedText()
                 local list = {}
@@ -2249,82 +2255,6 @@ function NoirUI:CreateWindow(settings)
             function api:get() return isMulti and getSelectedList() or getSelectedText() end
             function api:setcallback(fn) callback = fn end
             return api
-        end
-        
-        function Tab:CreateRunBox(opt)
-            local parent = Tab._currentSectionContent or ContentFrame
-            local f = Instance.new("Frame", parent)
-            f.Size = UDim2.new(0.95, 0, 0, 38)
-            f.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
-            f.BackgroundTransparency = 0
-            Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
-            f.LayoutOrder = GetO()
-            f.Name = "RunBox"
-            table.insert(Tab.Elements, f)
-            CreateSpringEffect(f, 0.05 * Tab.Count)
-            
-            local i = Instance.new("TextBox", f)
-            i.Size = UDim2.new(1, -65, 1, 0)
-            i.Position = UDim2.new(0, 10, 0, 0)
-            i.BackgroundTransparency = 1
-            i.PlaceholderText = opt.Placeholder or "Nhập: .cmd, loadstring('url'), or lua code"
-            i.PlaceholderColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
-            i.Text = ""
-            i.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
-            i.TextTransparency = 0
-            i.Font = "Gotham"
-            i.TextSize = 11
-            i.TextXAlignment = "Left"
-            i.ClearTextOnFocus = false
-            
-            local r = Instance.new("TextButton", f)
-            r.Size = UDim2.new(0, 50, 0, 26)
-            r.Position = UDim2.new(1, -55, 0.5, -13)
-            r.BackgroundColor3 = ACCENT
-            r.Text = "RUN"
-            r.TextColor3 = currentTheme.text or Color3.new(1,1,1)
-            r.TextTransparency = 0
-            r.Font = "GothamBold"
-            r.TextSize = 10
-            Instance.new("UICorner", r).CornerRadius = UDim.new(0, 6)
-            r.AutoButtonColor = false
-            
-            r.MouseButton1Click:Connect(function()
-                PlaySound("Element")
-                CreateClickScaleEffect(r)
-                local input = i.Text
-                if input == "" then return end
-                
-                if input:sub(1, 1) == "." then
-                    local parts = {}
-                    for part in input:sub(2):gmatch("%S+") do
-                        table.insert(parts, part)
-                    end
-                    local cmd = parts[1] and parts[1]:lower() or ""
-                    local args = {}
-                    for j = 2, #parts do table.insert(args, parts[j]) end
-                    local customCallback = NoirUI.CustomCommands[cmd]
-                    if customCallback then
-                        local success, err = pcall(function() customCallback(args) end)
-                        if not success then NoirUI:Notify("Command Error", err or "Lỗi không xác định", nil, "Error") end
-                    else
-                        NoirUI:Notify("❌ Unknown Command", "Không tìm thấy lệnh: ." .. cmd, nil, "Error")
-                    end
-                elseif input:lower():match("loadstring") then
-                    local str = input:match("loadstring%((.+)%)")
-                    if str then
-                        local cleaned = str:gsub("^[\"'](.*)[\"']$", "%1")
-                        local success, err = loadstring(cleaned)
-                        if success then success() NoirUI:Notify("Loadstring", "Đã chạy thành công!", nil, "Success")
-                        else NoirUI:Notify("Loadstring Error", err or "Lỗi cú pháp", nil, "Error") end
-                    else NoirUI:Notify("Loadstring Error", "Cú pháp không hợp lệ", nil, "Error") end
-                else
-                    local success, err = loadstring(input)
-                    if success then success() NoirUI:Notify("Execute", "Code đã chạy thành công!", nil, "Success")
-                    else NoirUI:Notify("Error", err or "Lỗi cú pháp", nil, "Error") end
-                end
-                if opt.ClearOnExecute then i.Text = "" end
-            end)
         end
         
         Tab._button = B
