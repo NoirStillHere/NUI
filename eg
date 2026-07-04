@@ -37,7 +37,7 @@ function NoirUI.CreateWindow(config)
     
     -- Kích thước cơ bản (sẽ được scale tự động)
     local baseWidth = 750
-    local baseHeight = 500
+    local baseHeight = 375
 
     -- ScreenGui
     local gui = createInstance("ScreenGui", {
