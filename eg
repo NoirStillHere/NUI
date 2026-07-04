@@ -563,7 +563,6 @@ function NoirUI:CreateWindow(settings)
     
     local ACCENT = currentTheme.accent or settings.Accent or Color3.fromRGB(138,116,249)
     
-    -- Sound settings
     if settings.ClickSound then SoundSettings.ClickSoundId = settings.ClickSound end
     if settings.TabSound then SoundSettings.TabSoundId = settings.TabSound end
     if settings.ElementSound then SoundSettings.ElementSoundId = settings.ElementSound end
@@ -592,8 +591,8 @@ function NoirUI:CreateWindow(settings)
     Main.Position = mainDefaultPos
     Main.BackgroundColor3 = currentTheme.bg or settings.MainBgColor or Color3.fromRGB(8,8,10)
     Main.Visible = false
+    Main.ZIndex = 1
     
-    -- Giảm bo góc từ 12 xuống 8 (giống Kyri)
     local mainCorner = Instance.new("UICorner", Main)
     mainCorner.CornerRadius = UDim.new(0, 8)
     
@@ -717,14 +716,13 @@ function NoirUI:CreateWindow(settings)
         end
     end)
     
-    -- Giảm bo góc top bar
+    -- Header
     local Header = Instance.new("Frame", Main)
     Header.Size = UDim2.new(1, 0, 0, 40)
     Header.BackgroundColor3 = currentTheme.container or Color3.fromRGB(14,14,18)
     Header.BackgroundTransparency = 0
     local headerCorner = Instance.new("UICorner", Header)
     headerCorner.CornerRadius = UDim.new(0, 8)
-    -- Không có stroke
     
     local Title = Instance.new("TextLabel", Header)
     Title.Size = UDim2.new(1, -120, 1, 0)
@@ -737,15 +735,74 @@ function NoirUI:CreateWindow(settings)
     Title.TextSize = 14
     Title.TextXAlignment = "Left"
     
+    -- Search bar trên Header
+    local SearchBtn = Instance.new("ImageButton", Header)
+    SearchBtn.Size = UDim2.new(0, 22, 0, 22)
+    SearchBtn.Position = UDim2.new(1, -95, 0.5, 0)
+    SearchBtn.AnchorPoint = Vector2.new(1, 0.5)
+    SearchBtn.BackgroundTransparency = 1
+    SearchBtn.Image = "rbxassetid://7734052925" -- Icon search
+    SearchBtn.ImageColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
+    SearchBtn.ZIndex = 3
+    SearchBtn.Name = "SearchBtn"
+    
+    local SearchBar = Instance.new("Frame", Header)
+    SearchBar.Size = UDim2.new(0, 0, 0, 28)
+    SearchBar.Position = UDim2.new(1, -20, 0.5, 0)
+    SearchBar.AnchorPoint = Vector2.new(1, 0.5)
+    SearchBar.BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26)
+    SearchBar.ClipsDescendants = true
+    SearchBar.ZIndex = 2
+    SearchBar.Visible = false
+    SearchBar.Name = "SearchBar"
+    Instance.new("UICorner", SearchBar).CornerRadius = UDim.new(0, 6)
+    
+    local SearchBox = Instance.new("TextBox", SearchBar)
+    SearchBox.Size = UDim2.new(1, -10, 1, 0)
+    SearchBox.Position = UDim2.new(0, 5, 0, 0)
+    SearchBox.BackgroundTransparency = 1
+    SearchBox.PlaceholderText = "Tìm kiếm..."
+    SearchBox.Text = ""
+    SearchBox.TextColor3 = currentTheme.text or Color3.new(1,1,1)
+    SearchBox.TextTransparency = 0
+    SearchBox.Font = "Gotham"
+    SearchBox.TextSize = 12
+    SearchBox.ClearTextOnFocus = false
+    SearchBox.ZIndex = 3
+    
+    local SearchOpen = false
+    local SearchWidth = 150
+    
+    SearchBtn.MouseButton1Click:Connect(function()
+        PlaySound("Click")
+        SearchOpen = not SearchOpen
+        if SearchOpen then
+            SearchBar.Visible = true
+            TweenService:Create(SearchBar, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, SearchWidth, 0, 28),
+                Position = UDim2.new(1, -20 - SearchWidth, 0.5, 0)
+            }):Play()
+            SearchBox:CaptureFocus()
+        else
+            TweenService:Create(SearchBar, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 0, 0, 28),
+                Position = UDim2.new(1, -20, 0.5, 0)
+            }):Play()
+            task.wait(0.3)
+            SearchBar.Visible = false
+            SearchBox.Text = ""
+        end
+    end)
+    
     local Btns = Instance.new("Frame", Header)
-    Btns.Size = UDim2.new(0, 70, 1, 0)
-    Btns.Position = UDim2.new(1, -75, 0, 0)
+    Btns.Size = UDim2.new(0, 50, 1, 0)
+    Btns.Position = UDim2.new(1, -25, 0, 0)
     Btns.BackgroundTransparency = 1
     local BL = Instance.new("UIListLayout", Btns)
     BL.FillDirection = "Horizontal"
     BL.HorizontalAlignment = "Right"
     BL.VerticalAlignment = "Center"
-    BL.Padding = UDim.new(0, 8)
+    BL.Padding = UDim.new(0, 6)
     
     local function TopB(txt, col, cb)
         local b = Instance.new("TextButton", Btns)
@@ -764,18 +821,18 @@ function NoirUI:CreateWindow(settings)
         end)
     end
     
-    local isM = false
+    -- Minimize button: thu về float button
     TopB("—", Color3.fromRGB(255,200,50), function()
         PlaySound("Click")
-        isM = not isM
-        TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = isM and UDim2.new(0, 520, 0, 40) or UDim2.new(0, 520, 0, 400)
-        }):Play()
+        Main.Visible = false
+        TBtn.Visible = true
     end)
     
+    -- Close button
     TopB("X", Color3.fromRGB(255,100,100), function()
         PlaySound("Click")
         if NoirUI.ActiveConfirmFrame then return end
+        
         local Conf = Instance.new("Frame", ScreenGui)
         NoirUI.ActiveConfirmFrame = Conf
         Conf.Size = UDim2.new(0, 260, 0, 120)
@@ -790,7 +847,7 @@ function NoirUI:CreateWindow(settings)
         local t = Instance.new("TextLabel", Conf)
         t.Size = UDim2.new(1, 0, 0.5, 0)
         t.BackgroundTransparency = 1
-        t.Text = "Bạn có muốn đóng UI không?"
+        t.Text = "wanna leave?"
         t.TextColor3 = currentTheme.text or Color3.new(1,1,1)
         t.TextTransparency = 0
         t.Font = "Gotham"
@@ -801,7 +858,7 @@ function NoirUI:CreateWindow(settings)
         cbtn.Size = UDim2.new(0.4, 0, 0, 32)
         cbtn.Position = UDim2.new(0.07, 0, 0.6, 0)
         cbtn.BackgroundColor3 = currentTheme.element or Color3.fromRGB(35,35,35)
-        cbtn.Text = "Cancel"
+        cbtn.Text = "no"
         cbtn.TextColor3 = currentTheme.text or Color3.new(1,1,1)
         cbtn.TextTransparency = 0
         cbtn.ZIndex = 101
@@ -814,7 +871,7 @@ function NoirUI:CreateWindow(settings)
         fbtn.Size = UDim2.new(0.4, 0, 0, 32)
         fbtn.Position = UDim2.new(0.53, 0, 0.6, 0)
         fbtn.BackgroundColor3 = ACCENT
-        fbtn.Text = "Confirm"
+        fbtn.Text = "yes"
         fbtn.TextColor3 = currentTheme.text or Color3.new(1,1,1)
         fbtn.TextTransparency = 0
         fbtn.ZIndex = 101
@@ -858,7 +915,6 @@ function NoirUI:CreateWindow(settings)
         Side.BackgroundColor3 = settings.SidebarBackgroundColor
         Side.BackgroundTransparency = settings.SidebarTransparency or 0.8
     end
-    -- Không có stroke
     
     local TScroll = Instance.new("ScrollingFrame", Side)
     TScroll.Size = UDim2.new(1, 0, 1, -55)
@@ -899,32 +955,25 @@ function NoirUI:CreateWindow(settings)
     Cont.ClipsDescendants = true
     local contCorner = Instance.new("UICorner", Cont)
     contCorner.CornerRadius = UDim.new(0, 8)
-    -- Không có stroke
     
-    TBtn.Visible = true
-    Main.Visible = true
-    
-    -- Float button toggle
+    -- Float button toggle: ẩn float button khi mở UI
     TBtn.MouseButton1Click:Connect(function()
         PlaySound("Click")
         CreateClickScaleEffect(TBtn)
-        if Main.Visible then
-            PlaySound("Close")
-            TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 0, 0, 0)
-            }):Play()
-            task.wait(0.3)
-            Main.Visible = false
-            Main.Size = UDim2.new(0, 520, 0, 400)
-        else
-            PlaySound("Open")
-            Main.Visible = true
-            Main.Size = UDim2.new(0, 0, 0, 0)
-            Main.Position = mainDefaultPos
-            TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 520, 0, 400)
-            }):Play()
-        end
+        TBtn.Visible = false
+        Main.Visible = true
+        
+        -- Animation kéo từ trên xuống
+        Main.Size = UDim2.new(0, 520, 0, 0)
+        Main.Position = UDim2.new(mainDefaultPos.X.Scale, mainDefaultPos.X.Offset, 0.5, -200)
+        Main.ClipsDescendants = true
+        
+        TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 520, 0, 400),
+            Position = mainDefaultPos
+        }):Play()
+        
+        PlaySound("Open")
     end)
     
     function NoirUI:Notify(title, message, iconName, soundType)
@@ -1135,7 +1184,6 @@ function NoirUI:CreateWindow(settings)
         Instance.new("UICorner", B).CornerRadius = UDim.new(0, 6)
         CreateHoverEffect(B)
         
-        -- Không có stroke
         local BT = Instance.new("TextLabel", B)
         BT.Size = UDim2.new(1, -10, 1, 0)
         BT.Position = UDim2.new(0, icon and 35 or 8, 0, 0)
@@ -1175,46 +1223,32 @@ function NoirUI:CreateWindow(settings)
         TabContainer.BorderSizePixel = 0
         TabContainer.ClipsDescendants = true
         
-        -- Search
-        local SearchFrame = Instance.new("Frame", TabContainer)
-        SearchFrame.Size = UDim2.new(1, -20, 0, 35)
-        SearchFrame.Position = UDim2.new(0, 10, 0, 0)
-        if settings.ElementBackgroundColor then
-            SearchFrame.BackgroundColor3 = settings.ElementBackgroundColor
-        else
-            SearchFrame.BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26)
+        -- Search filter (xử lý tìm kiếm toàn cục)
+        local function filterElements(searchText)
+            local search = searchText:lower()
+            for _, tab in pairs(Window.tabs or {}) do
+                for _, element in pairs(tab.Elements or {}) do
+                    if search == "" or (element.Name and element.Name:lower():find(search)) then
+                        element.Visible = true
+                    else
+                        element.Visible = false
+                    end
+                end
+            end
+            -- Update canvas for current tab
+            local currentTab = Window.active
+            if currentTab and currentTab.page then
+                currentTab.page.CanvasSize = UDim2.new(0, 0, 0, currentTab.page.AbsoluteSize.Y + 55)
+            end
         end
-        SearchFrame.BackgroundTransparency = 0.5
-        Instance.new("UICorner", SearchFrame).CornerRadius = UDim.new(0, 8)
-        local searchStroke = Instance.new("UIStroke", SearchFrame)
-        searchStroke.Color = ACCENT
-        searchStroke.Thickness = 1
-        searchStroke.Transparency = 0.7
         
-        local SearchIcon = Instance.new("TextLabel", SearchFrame)
-        SearchIcon.Size = UDim2.new(0, 30, 1, 0)
-        SearchIcon.BackgroundTransparency = 1
-        SearchIcon.Text = "🔍"
-        SearchIcon.TextColor3 = currentTheme.subtext or Color3.fromRGB(150,150,150)
-        SearchIcon.TextTransparency = 0
-        SearchIcon.Font = "GothamMedium"
-        SearchIcon.TextSize = 14
-        
-        local SearchBox = Instance.new("TextBox", SearchFrame)
-        SearchBox.Size = UDim2.new(1, -35, 1, 0)
-        SearchBox.Position = UDim2.new(0, 35, 0, 0)
-        SearchBox.BackgroundTransparency = 1
-        SearchBox.PlaceholderText = "Tìm kiếm..."
-        SearchBox.Text = ""
-        SearchBox.TextColor3 = currentTheme.text or Color3.new(1,1,1)
-        SearchBox.TextTransparency = 0
-        SearchBox.Font = "Gotham"
-        SearchBox.TextSize = 12
-        SearchBox.ClearTextOnFocus = false
+        SearchBox.Changed:Connect(function(prop)
+            if prop == "Text" then filterElements(SearchBox.Text) end
+        end)
         
         local ContentFrame = Instance.new("Frame", TabContainer)
         ContentFrame.Size = UDim2.new(1, 0, 0, 0)
-        ContentFrame.Position = UDim2.new(0, 0, 0, 45)
+        ContentFrame.Position = UDim2.new(0, 0, 0, 0)
         ContentFrame.BackgroundTransparency = 1
         local ContentLayout = Instance.new("UIListLayout", ContentFrame)
         ContentLayout.Padding = UDim.new(0, 8)
@@ -1264,23 +1298,1034 @@ function NoirUI:CreateWindow(settings)
         local Tab = { Count = 0, Elements = {}, Connections = {}, _currentSectionContent = nil, _sectionLayout = nil }
         local function GetO() Tab.Count = Tab.Count + 1; return Tab.Count end
         
-        local function filterElements(searchText)
-            local search = searchText:lower()
-            for _, element in pairs(Tab.Elements) do
-                if search == "" or (element.Name and element.Name:lower():find(search)) then
-                    element.Visible = true
-                else
-                    element.Visible = false
+        -- Elements (giữ nguyên các hàm)
+        function Tab:CreateLabel(text, updateFunction)
+            local parent = Tab._currentSectionContent or ContentFrame
+            local l = Instance.new("TextLabel", parent)
+            l.Size = UDim2.new(0.95, 0, 0, 20)
+            l.BackgroundTransparency = 1
+            l.Text = type(text) == "function" and text() or text
+            l.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
+            l.TextTransparency = 0
+            l.Font = "Gotham"
+            l.TextSize = 12
+            l.TextXAlignment = "Left"
+            l.LayoutOrder = GetO()
+            l.Name = "Label"
+            table.insert(Tab.Elements, l)
+            CreateSpringEffect(l, 0.05 * Tab.Count)
+            if type(text) == "function" then
+                local connection = RunService.RenderStepped:Connect(function()
+                    if l and l.Parent then l.Text = text() else connection:Disconnect() end
+                end)
+                table.insert(Tab.Connections, connection)
+                table.insert(NoirUI.Connections, connection)
+            end
+            return l
+        end
+        
+        function Tab:CreateSection(title, noLine)
+            local s = Instance.new("Frame", ContentFrame)
+            s.Size = UDim2.new(0.95, 0, 0, noLine and 25 or 35)
+            s.BackgroundTransparency = 1
+            s.LayoutOrder = GetO()
+            s.Name = title
+            s.ClipsDescendants = true
+            table.insert(Tab.Elements, s)
+            CreateSpringEffect(s, 0.05 * Tab.Count)
+            
+            local headerBtn = Instance.new("TextButton", s)
+            headerBtn.Size = UDim2.new(1, 0, 0, 25)
+            headerBtn.Position = UDim2.new(0, 0, 0, 0)
+            headerBtn.BackgroundTransparency = 1
+            headerBtn.Text = ""
+            headerBtn.AutoButtonColor = false
+            CreateHoverEffect(headerBtn)
+            
+            local lbl = Instance.new("TextLabel", headerBtn)
+            lbl.Size = UDim2.new(1, -30, 1, 0)
+            lbl.Position = UDim2.new(0, 0, 0, 0)
+            lbl.Text = title:upper()
+            lbl.TextColor3 = ACCENT
+            lbl.TextTransparency = 0
+            lbl.Font = "GothamBold"
+            lbl.TextSize = 11
+            lbl.TextXAlignment = "Left"
+            lbl.BackgroundTransparency = 1
+            
+            local arrow = Instance.new("TextLabel", headerBtn)
+            arrow.Size = UDim2.new(0, 20, 1, 0)
+            arrow.Position = UDim2.new(1, -25, 0, 0)
+            arrow.BackgroundTransparency = 1
+            arrow.Text = "▼"
+            arrow.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
+            arrow.TextTransparency = 0
+            arrow.Font = "GothamMedium"
+            arrow.TextSize = 10
+            arrow.TextXAlignment = "Center"
+            arrow.TextYAlignment = "Center"
+            arrow.Name = "Arrow"
+            
+            local sectionContent = Instance.new("Frame", s)
+            sectionContent.Size = UDim2.new(1, 0, 0, 0)
+            sectionContent.Position = UDim2.new(0, 0, 0, 25)
+            sectionContent.BackgroundTransparency = 1
+            sectionContent.Name = "SectionContent"
+            local sectionLayout = Instance.new("UIListLayout", sectionContent)
+            sectionLayout.Padding = UDim.new(0, 4)
+            sectionLayout.HorizontalAlignment = "Center"
+            sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            
+            local isCollapsed = false
+            local contentHeight = 0
+            local function updateSectionHeight()
+                task.wait()
+                contentHeight = sectionLayout.AbsoluteContentSize.Y
+                if not isCollapsed then
+                    s.Size = UDim2.new(0.95, 0, 0, 25 + contentHeight)
+                    sectionContent.Size = UDim2.new(1, 0, 0, contentHeight)
                 end
             end
-            updateCanvas()
+            sectionLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateSectionHeight)
+            
+            headerBtn.MouseButton1Click:Connect(function()
+                PlaySound("Element")
+                CreateClickScaleEffect(headerBtn)
+                isCollapsed = not isCollapsed
+                arrow.Text = isCollapsed and "▶" or "▼"
+                if isCollapsed then
+                    TweenService:Create(sectionContent, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Size = UDim2.new(1, 0, 0, 0)
+                    }):Play()
+                    TweenService:Create(s, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Size = UDim2.new(0.95, 0, 0, 25)
+                    }):Play()
+                else
+                    TweenService:Create(sectionContent, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Size = UDim2.new(1, 0, 0, contentHeight)
+                    }):Play()
+                    TweenService:Create(s, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Size = UDim2.new(0.95, 0, 0, 25 + contentHeight)
+                    }):Play()
+                end
+            end)
+            
+            if not noLine then
+                local line = Instance.new("Frame", s)
+                line.Size = UDim2.new(1, 0, 0, 1)
+                line.Position = UDim2.new(0, 0, 0, 22)
+                line.BackgroundColor3 = ACCENT
+                line.BackgroundTransparency = 0.5
+                line.BorderSizePixel = 0
+            end
+            
+            Tab._currentSectionContent = sectionContent
+            Tab._sectionLayout = sectionLayout
+            return s
         end
-        SearchBox.Changed:Connect(function(prop)
-            if prop == "Text" then filterElements(SearchBox.Text) end
-        end)
         
-        -- Elements (giữ nguyên các hàm CreateLabel, CreateSection, CreateParagraph, CreateTextBox, CreateButton, CreateToggle, CreateSlider, CreateColorPicker, CreateDropdown, CreateRunBox từ code trước)
-        -- ... (các hàm này giữ nguyên như bản đã sửa ở trên)
+        function Tab:CreateParagraph(opt)
+            local parent = Tab._currentSectionContent or ContentFrame
+            local f = Instance.new("Frame", parent)
+            f.Size = UDim2.new(0.95, 0, 0, 65)
+            f.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
+            f.BackgroundTransparency = 0
+            Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
+            f.LayoutOrder = GetO()
+            f.Name = opt.Title or ""
+            table.insert(Tab.Elements, f)
+            CreateSpringEffect(f, 0.05 * Tab.Count)
+            
+            local title = Instance.new("TextLabel", f)
+            title.Size = UDim2.new(1, -20, 0, 25)
+            title.Position = UDim2.new(0, 10, 0, 5)
+            title.Text = opt.Title or ""
+            title.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
+            title.TextTransparency = 0
+            title.Font = "GothamBold"
+            title.TextSize = 13
+            title.BackgroundTransparency = 1
+            title.TextXAlignment = "Left"
+            
+            local content = Instance.new("TextLabel", f)
+            content.Size = UDim2.new(1, -20, 0, 30)
+            content.Position = UDim2.new(0, 10, 0, 25)
+            content.Text = opt.Content or ""
+            content.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
+            content.TextTransparency = 0
+            content.Font = "Gotham"
+            content.TextSize = 11
+            content.BackgroundTransparency = 1
+            content.TextWrapped = true
+            content.TextXAlignment = "Left"
+            content.TextYAlignment = "Top"
+            return f
+        end
+        
+        function Tab:CreateTextBox(opt)
+            local parent = Tab._currentSectionContent or ContentFrame
+            local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
+            local f = Instance.new("Frame", parent)
+            f.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
+            f.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
+            f.BackgroundTransparency = 0
+            Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
+            f.LayoutOrder = GetO()
+            f.Name = opt.Name or ""
+            table.insert(Tab.Elements, f)
+            CreateSpringEffect(f, 0.05 * Tab.Count)
+            
+            local i = Instance.new("TextBox", f)
+            i.Size = UDim2.new(1, -20, 0, 35)
+            i.Position = UDim2.new(0, 10, 0, 0)
+            i.BackgroundTransparency = 1
+            i.PlaceholderText = opt.Name
+            i.PlaceholderColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
+            i.Text = opt.Default or ""
+            i.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
+            i.TextTransparency = 0
+            i.Font = "Gotham"
+            i.TextSize = 12
+            i.TextXAlignment = "Left"
+            i.FocusLost:Connect(function() if opt.Callback then opt.Callback(i.Text) end end)
+            if hasSubtitle then AddSubtitle(f, opt.Subtitle, 38) end
+        end
+        
+        function Tab:CreateButton(opt)
+            local parent = Tab._currentSectionContent or ContentFrame
+            local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
+            local b = Instance.new("TextButton", parent)
+            b.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
+            b.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
+            b.BackgroundTransparency = 0
+            b.Text = opt.Name
+            b.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
+            b.TextTransparency = 0
+            b.Font = "GothamMedium"
+            b.TextSize = 12
+            Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+            b.LayoutOrder = GetO()
+            b.Name = opt.Name
+            b.AutoButtonColor = false
+            table.insert(Tab.Elements, b)
+            CreateSpringEffect(b, 0.05 * Tab.Count)
+            
+            if opt.Align == false then
+                b.TextXAlignment = "Left"
+                b.Text = "  " .. opt.Name
+                local hint = Instance.new("TextLabel", b)
+                hint.Size = UDim2.new(0, 50, 0, 35)
+                hint.Position = UDim2.new(1, -55, 0, 0)
+                hint.BackgroundTransparency = 1
+                hint.Text = "button"
+                hint.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
+                hint.TextTransparency = 0
+                hint.Font = "Gotham"
+                hint.TextSize = 10
+                hint.TextXAlignment = "Right"
+                hint.TextYAlignment = "Center"
+                hint.ZIndex = 2
+            else
+                b.TextXAlignment = "Center"
+            end
+            
+            if hasSubtitle then AddSubtitle(b, opt.Subtitle, 38) end
+            
+            b.MouseButton1Click:Connect(function()
+                PlaySound("Element")
+                CreateClickScaleEffect(b)
+                if opt.Callback then opt.Callback() end
+            end)
+        end
+        
+        function Tab:CreateToggle(opt)
+            local parent = Tab._currentSectionContent or ContentFrame
+            local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
+            local s = opt.Default or false
+            local t = Instance.new("TextButton", parent)
+            t.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
+            t.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
+            t.BackgroundTransparency = 0
+            t.Text = "  " .. opt.Name
+            t.TextColor3 = s and currentTheme.text or currentTheme.subtext or Color3.fromRGB(245,245,250)
+            t.TextTransparency = 0
+            t.TextXAlignment = "Left"
+            t.TextSize = 12
+            t.Font = "GothamMedium"
+            Instance.new("UICorner", t).CornerRadius = UDim.new(0, 8)
+            t.LayoutOrder = GetO()
+            t.Name = opt.Name
+            t.AutoButtonColor = false
+            table.insert(Tab.Elements, t)
+            CreateSpringEffect(t, 0.05 * Tab.Count)
+            
+            local bx = Instance.new("Frame", t)
+            bx.Size = UDim2.new(0, 46, 0, 24)
+            bx.Position = UDim2.new(1, -16, 0.5, 0)
+            bx.AnchorPoint = Vector2.new(1, 0.5)
+            bx.BackgroundColor3 = s and ACCENT or currentTheme.container or Color3.fromRGB(14,14,18)
+            Instance.new("UICorner", bx).CornerRadius = UDim.new(1, 0)
+            
+            local knob = Instance.new("Frame", bx)
+            knob.Size = UDim2.new(0, 18, 0, 18)
+            knob.Position = s and UDim2.new(1, -3, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
+            knob.AnchorPoint = Vector2.new(s and 1 or 0, 0.5)
+            knob.BackgroundColor3 = Color3.fromRGB(255,255,255)
+            Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+            
+            if hasSubtitle then AddSubtitle(t, opt.Subtitle, 38) end
+            
+            t.MouseButton1Click:Connect(function()
+                PlaySound("Element")
+                CreateClickScaleEffect(t)
+                s = not s
+                t.TextColor3 = s and currentTheme.text or currentTheme.subtext or Color3.fromRGB(245,245,250)
+                TweenService:Create(bx, TweenInfo.new(0.18, Enum.EasingStyle.Quad), {
+                    BackgroundColor3 = s and ACCENT or currentTheme.container or Color3.fromRGB(14,14,18)
+                }):Play()
+                TweenService:Create(knob, TweenInfo.new(0.18, Enum.EasingStyle.Quad), {
+                    Position = s and UDim2.new(1, -3, 0.5, 0) or UDim2.new(0, 3, 0.5, 0),
+                    AnchorPoint = Vector2.new(s and 1 or 0, 0.5)
+                }):Play()
+                if opt.Callback then opt.Callback(s) end
+            end)
+        end
+        
+        function Tab:CreateSlider(opt)
+            local parent = Tab._currentSectionContent or ContentFrame
+            local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
+            local range = opt.range or {0, 100}
+            local min = range[1]
+            local max = range[2]
+            local increment = opt.increment or 1
+            local defaultValue = opt.Default or min
+            defaultValue = math.floor((defaultValue - min) / increment) * increment + min
+            defaultValue = math.clamp(defaultValue, min, max)
+            local addMobileButtons = opt.mobile or false
+            
+            local f = Instance.new("Frame", parent)
+            f.Size = UDim2.new(0.95, 0, 0, addMobileButtons and (hasSubtitle and 90 or 80) or (hasSubtitle and 70 or 50))
+            f.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
+            f.BackgroundTransparency = 0
+            Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
+            f.LayoutOrder = GetO()
+            f.Name = opt.Name or ""
+            table.insert(Tab.Elements, f)
+            CreateSpringEffect(f, 0.05 * Tab.Count)
+            
+            local l = Instance.new("TextLabel", f)
+            l.Size = UDim2.new(1, -90, 0, 20)
+            l.Position = UDim2.new(0, 12, 0, hasSubtitle and 5 or 5)
+            l.BackgroundTransparency = 1
+            l.Text = opt.Name .. ": " .. defaultValue
+            l.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
+            l.TextTransparency = 0
+            l.TextXAlignment = "Left"
+            l.TextSize = 11
+            l.Font = "GothamMedium"
+            
+            local valBtn = Instance.new("TextButton", f)
+            valBtn.Size = UDim2.new(0, 72, 0, 20)
+            valBtn.Position = UDim2.new(1, -16, 0, 5)
+            valBtn.AnchorPoint = Vector2.new(1, 0)
+            valBtn.BackgroundTransparency = 1
+            valBtn.Text = tostring(defaultValue)
+            valBtn.TextColor3 = ACCENT
+            valBtn.Font = "GothamBold"
+            valBtn.TextSize = 14
+            valBtn.TextXAlignment = "Right"
+            valBtn.AutoButtonColor = false
+            
+            local valInp = Instance.new("TextBox", f)
+            valInp.Size = UDim2.new(0, 72, 0, 20)
+            valInp.Position = UDim2.new(1, -16, 0, 5)
+            valInp.AnchorPoint = Vector2.new(1, 0)
+            valInp.BackgroundColor3 = currentTheme.container or Color3.fromRGB(14,14,18)
+            valInp.Text = tostring(defaultValue)
+            valInp.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
+            valInp.Font = "GothamBold"
+            valInp.TextSize = 14
+            valInp.TextXAlignment = "Right"
+            valInp.Visible = false
+            Instance.new("UICorner", valInp).CornerRadius = UDim.new(0, 4)
+            
+            local sbg = Instance.new("Frame", f)
+            sbg.Size = UDim2.new(0.9, 0, 0, 8)
+            sbg.Position = UDim2.new(0.05, 0, hasSubtitle and 0.55 or 0.65, 0)
+            sbg.BackgroundColor3 = currentTheme.container or Color3.fromRGB(14,14,18)
+            Instance.new("UICorner", sbg)
+            
+            local fill = Instance.new("Frame", sbg)
+            local percent = (defaultValue - min) / (max - min)
+            fill.Size = UDim2.new(percent, 0, 1, 0)
+            fill.BackgroundColor3 = ACCENT
+            Instance.new("UICorner", fill)
+            
+            local handle = Instance.new("Frame", sbg)
+            handle.Size = UDim2.new(0, 18, 0, 18)
+            handle.Position = UDim2.new(percent, 0, 0.5, 0)
+            handle.AnchorPoint = Vector2.new(0.5, 0.5)
+            handle.BackgroundColor3 = Color3.fromRGB(255,255,255)
+            handle.ZIndex = 2
+            Instance.new("UICorner", handle).CornerRadius = UDim.new(1, 0)
+            
+            if hasSubtitle then AddSubtitle(f, opt.Subtitle, hasSubtitle and (addMobileButtons and 75 or 55) or 0) end
+            
+            local isHeld = false
+            local function UpdateSlider(input)
+                local p = math.clamp((input.Position.X - sbg.AbsolutePosition.X) / sbg.AbsoluteSize.X, 0, 1)
+                local rawValue = min + (max - min) * p
+                local v = math.floor((rawValue - min) / increment) * increment + min
+                v = math.clamp(v, min, max)
+                local newPercent = (v - min) / (max - min)
+                TweenService:Create(fill, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(newPercent, 0, 1, 0)
+                }):Play()
+                TweenService:Create(handle, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Position = UDim2.new(newPercent, 0, 0.5, 0)
+                }):Play()
+                l.Text = opt.Name .. ": " .. v
+                valBtn.Text = tostring(v)
+                if opt.Callback then opt.Callback(v) end
+            end
+            
+            local hit = Instance.new("Frame", f)
+            hit.Size = UDim2.new(0.9, 0, 0, 36)
+            hit.Position = UDim2.new(0.05, 0, hasSubtitle and 0.4 or 0.5, 0)
+            hit.BackgroundTransparency = 1
+            hit.ZIndex = 3
+            
+            hit.InputBegan:Connect(function(i)
+                if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+                    isHeld = true
+                    UpdateSlider(i)
+                end
+            end)
+            UIS.InputEnded:Connect(function(i)
+                if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+                    isHeld = false
+                end
+            end)
+            UIS.InputChanged:Connect(function(i)
+                if isHeld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+                    UpdateSlider(i)
+                end
+            end)
+            
+            valBtn.MouseButton1Click:Connect(function()
+                valBtn.Visible = false
+                valInp.Text = tostring(defaultValue)
+                valInp.Visible = true
+                valInp:CaptureFocus()
+            end)
+            valInp.FocusLost:Connect(function()
+                local num = tonumber(valInp.Text)
+                if num then
+                    local v = math.floor((num - min) / increment) * increment + min
+                    v = math.clamp(v, min, max)
+                    local newPercent = (v - min) / (max - min)
+                    TweenService:Create(fill, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Size = UDim2.new(newPercent, 0, 1, 0)
+                    }):Play()
+                    TweenService:Create(handle, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Position = UDim2.new(newPercent, 0, 0.5, 0)
+                    }):Play()
+                    l.Text = opt.Name .. ": " .. v
+                    valBtn.Text = tostring(v)
+                    if opt.Callback then opt.Callback(v) end
+                end
+                valInp.Visible = false
+                valBtn.Visible = true
+            end)
+            
+            if addMobileButtons then
+                local btnRow = Instance.new("Frame", f)
+                btnRow.Size = UDim2.new(0.9, 0, 0, 28)
+                btnRow.Position = UDim2.new(0.05, 0, hasSubtitle and 0.75 or 0.85, 0)
+                btnRow.BackgroundTransparency = 1
+                
+                local minusBtn = Instance.new("TextButton", btnRow)
+                minusBtn.Size = UDim2.new(0.45, 0, 1, 0)
+                minusBtn.BackgroundColor3 = currentTheme.container or Color3.fromRGB(14,14,18)
+                minusBtn.Text = "–"
+                minusBtn.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
+                minusBtn.Font = "GothamBold"
+                minusBtn.TextSize = 16
+                minusBtn.AutoButtonColor = false
+                Instance.new("UICorner", minusBtn).CornerRadius = UDim.new(0, 6)
+                
+                local plusBtn = Instance.new("TextButton", btnRow)
+                plusBtn.Size = UDim2.new(0.45, 0, 1, 0)
+                plusBtn.Position = UDim2.new(0.55, 0, 0, 0)
+                plusBtn.BackgroundColor3 = currentTheme.container or Color3.fromRGB(14,14,18)
+                plusBtn.Text = "+"
+                plusBtn.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
+                plusBtn.Font = "GothamBold"
+                plusBtn.TextSize = 16
+                plusBtn.AutoButtonColor = false
+                Instance.new("UICorner", plusBtn).CornerRadius = UDim.new(0, 6)
+                
+                minusBtn.MouseButton1Click:Connect(function()
+                    local newVal = defaultValue - (opt.step or 1)
+                    newVal = math.floor((newVal - min) / increment) * increment + min
+                    newVal = math.clamp(newVal, min, max)
+                    local newPercent = (newVal - min) / (max - min)
+                    TweenService:Create(fill, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Size = UDim2.new(newPercent, 0, 1, 0)
+                    }):Play()
+                    TweenService:Create(handle, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Position = UDim2.new(newPercent, 0, 0.5, 0)
+                    }):Play()
+                    defaultValue = newVal
+                    l.Text = opt.Name .. ": " .. newVal
+                    valBtn.Text = tostring(newVal)
+                    if opt.Callback then opt.Callback(newVal) end
+                end)
+                
+                plusBtn.MouseButton1Click:Connect(function()
+                    local newVal = defaultValue + (opt.step or 1)
+                    newVal = math.floor((newVal - min) / increment) * increment + min
+                    newVal = math.clamp(newVal, min, max)
+                    local newPercent = (newVal - min) / (max - min)
+                    TweenService:Create(fill, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Size = UDim2.new(newPercent, 0, 1, 0)
+                    }):Play()
+                    TweenService:Create(handle, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Position = UDim2.new(newPercent, 0, 0.5, 0)
+                    }):Play()
+                    defaultValue = newVal
+                    l.Text = opt.Name .. ": " .. newVal
+                    valBtn.Text = tostring(newVal)
+                    if opt.Callback then opt.Callback(newVal) end
+                end)
+            end
+        end
+        
+        function Tab:CreateColorPicker(opt)
+            local parent = Tab._currentSectionContent or ContentFrame
+            local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
+            local ColorSelected = opt.Default or Color3.fromRGB(138,116,249)
+            local h, s, v = ColorSelected:ToHSV()
+            local open = false
+            
+            local f = Instance.new("Frame", parent)
+            f.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
+            f.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
+            f.BackgroundTransparency = 0
+            Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
+            f.LayoutOrder = GetO()
+            f.ClipsDescendants = true
+            f.Name = opt.Name or ""
+            table.insert(Tab.Elements, f)
+            CreateSpringEffect(f, 0.05 * Tab.Count)
+            
+            local t = Instance.new("TextLabel", f)
+            t.Size = UDim2.new(1, 0, 0, 35)
+            t.Position = UDim2.new(0, 12, 0, 0)
+            t.BackgroundTransparency = 1
+            t.Text = opt.Name
+            t.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
+            t.TextTransparency = 0
+            t.Font = "GothamMedium"
+            t.TextSize = 12
+            t.TextXAlignment = "Left"
+            
+            local pvw = Instance.new("TextButton", f)
+            pvw.Size = UDim2.new(0, 40, 0, 18)
+            pvw.Position = UDim2.new(1, -50, 0, hasSubtitle and 8.5 or 8.5)
+            pvw.BackgroundColor3 = ColorSelected
+            pvw.Text = ""
+            Instance.new("UICorner", pvw).CornerRadius = UDim.new(0, 4)
+            pvw.AutoButtonColor = false
+            
+            if hasSubtitle then AddSubtitle(f, opt.Subtitle, 38) end
+            
+            local Holder = Instance.new("Frame", f)
+            Holder.Size = UDim2.new(1, 0, 0, 140)
+            Holder.Position = UDim2.new(0, 0, 0, 35)
+            Holder.BackgroundTransparency = 1
+            
+            local satBox = Instance.new("ImageButton", Holder)
+            satBox.Size = UDim2.new(0.9, 0, 0, 100)
+            satBox.Position = UDim2.new(0.05, 0, 0, 5)
+            satBox.Image = "rbxassetid://4155801252"
+            satBox.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
+            Instance.new("UICorner", satBox).CornerRadius = UDim.new(0, 6)
+            satBox.AutoButtonColor = false
+            
+            local cursor = Instance.new("Frame", satBox)
+            cursor.Size = UDim2.new(0, 10, 0, 10)
+            cursor.AnchorPoint = Vector2.new(0.5, 0.5)
+            cursor.BackgroundColor3 = Color3.new(1,1,1)
+            cursor.Position = UDim2.new(s, 0, 1 - v, 0)
+            Instance.new("UICorner", cursor).CornerRadius = UDim.new(1, 0)
+            cursor.BorderSizePixel = 1
+            cursor.BorderColor3 = Color3.fromRGB(50,50,50)
+            
+            local hueSlide = Instance.new("ImageButton", Holder)
+            hueSlide.Size = UDim2.new(0.9, 0, 0, 14)
+            hueSlide.Position = UDim2.new(0.05, 0, 0, 115)
+            Instance.new("UICorner", hueSlide).CornerRadius = UDim.new(0, 6)
+            hueSlide.AutoButtonColor = false
+            
+            local hueGradient = Instance.new("UIGradient", hueSlide)
+            local hueColorSequence = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+                ColorSequenceKeypoint.new(0.166, Color3.fromRGB(255, 255, 0)),
+                ColorSequenceKeypoint.new(0.333, Color3.fromRGB(0, 255, 0)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
+                ColorSequenceKeypoint.new(0.666, Color3.fromRGB(0, 0, 255)),
+                ColorSequenceKeypoint.new(0.833, Color3.fromRGB(255, 0, 255)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))
+            })
+            hueGradient.Color = hueColorSequence
+            
+            local hCursor = Instance.new("Frame", hueSlide)
+            hCursor.Size = UDim2.new(0, 4, 1, 4)
+            hCursor.Position = UDim2.new(h, 0, 0.5, 0)
+            hCursor.AnchorPoint = Vector2.new(0.5, 0.5)
+            hCursor.BackgroundColor3 = Color3.new(1,1,1)
+            Instance.new("UICorner", hCursor)
+            hCursor.BorderSizePixel = 1
+            hCursor.BorderColor3 = Color3.fromRGB(50,50,50)
+            
+            local function UpdateColor()
+                local finalCol = Color3.fromHSV(h, s, v)
+                pvw.BackgroundColor3 = finalCol
+                satBox.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
+                cursor.Position = UDim2.new(s, 0, 1 - v, 0)
+                hCursor.Position = UDim2.new(h, 0, 0.5, 0)
+                local lightness = (s + v) / 2
+                if lightness > 0.6 then cursor.BackgroundColor3 = Color3.new(0,0,0) else cursor.BackgroundColor3 = Color3.new(1,1,1) end
+                if opt.Callback then pcall(function() opt.Callback(finalCol) end) end
+            end
+            
+            local isDraggingSat = false
+            satBox.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    isDraggingSat = true
+                    local relativeX = math.clamp((input.Position.X - satBox.AbsolutePosition.X) / satBox.AbsoluteSize.X, 0, 1)
+                    local relativeY = math.clamp((input.Position.Y - satBox.AbsolutePosition.Y) / satBox.AbsoluteSize.Y, 0, 1)
+                    s = math.clamp(relativeX, 0, 1)
+                    v = math.clamp(1 - relativeY, 0, 1)
+                    UpdateColor()
+                end
+            end)
+            
+            local isDraggingHue = false
+            hueSlide.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    isDraggingHue = true
+                    local relativeX = math.clamp((input.Position.X - hueSlide.AbsolutePosition.X) / hueSlide.AbsoluteSize.X, 0, 1)
+                    h = math.clamp(relativeX, 0, 1)
+                    UpdateColor()
+                end
+            end)
+            
+            local function onInputChanged(input)
+                if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                    if isDraggingSat then
+                        local relativeX = math.clamp((input.Position.X - satBox.AbsolutePosition.X) / satBox.AbsoluteSize.X, 0, 1)
+                        local relativeY = math.clamp((input.Position.Y - satBox.AbsolutePosition.Y) / satBox.AbsoluteSize.Y, 0, 1)
+                        s = math.clamp(relativeX, 0, 1)
+                        v = math.clamp(1 - relativeY, 0, 1)
+                        UpdateColor()
+                    elseif isDraggingHue then
+                        local relativeX = math.clamp((input.Position.X - hueSlide.AbsolutePosition.X) / hueSlide.AbsoluteSize.X, 0, 1)
+                        h = math.clamp(relativeX, 0, 1)
+                        UpdateColor()
+                    end
+                end
+            end
+            
+            local function onInputEnded(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    isDraggingSat = false
+                    isDraggingHue = false
+                end
+            end
+            
+            UIS.InputChanged:Connect(onInputChanged)
+            UIS.InputEnded:Connect(onInputEnded)
+            
+            pvw.MouseButton1Click:Connect(function()
+                PlaySound("Element")
+                CreateClickScaleEffect(pvw)
+                open = not open
+                TweenService:Create(f, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Size = open and UDim2.new(0.95, 0, 0, 180) or UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
+                }):Play()
+            end)
+            UpdateColor()
+        end
+        
+        function Tab:CreateDropdown(opt)
+            local parent = Tab._currentSectionContent or ContentFrame
+            local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
+            local isMulti = opt.multi == true or opt.type == "multi"
+            local selected = {}
+            local open = false
+            
+            if not isMulti then
+                local def = opt.Default or (opt.Options and opt.Options[1] or "none")
+                selected[def] = true
+            else
+                if opt.Default then
+                    for _, v in ipairs(opt.Default) do
+                        selected[v] = true
+                    end
+                end
+            end
+            
+            local function getSelectedText()
+                local list = {}
+                for k, v in pairs(selected) do
+                    if v then table.insert(list, k) end
+                end
+                if #list == 0 then return "none" end
+                if isMulti then
+                    if #list == 1 then return list[1] end
+                    return #list .. " selected"
+                else
+                    return list[1] or "none"
+                end
+            end
+            
+            local function getSelectedList()
+                local list = {}
+                for k, v in pairs(selected) do
+                    if v then table.insert(list, k) end
+                end
+                return list
+            end
+            
+            local d = Instance.new("Frame", parent)
+            d.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 42)
+            d.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
+            d.BackgroundTransparency = 0
+            Instance.new("UICorner", d).CornerRadius = UDim.new(0, 8)
+            d.LayoutOrder = GetO()
+            d.ClipsDescendants = true
+            d.Name = opt.Name or ""
+            table.insert(Tab.Elements, d)
+            CreateSpringEffect(d, 0.05 * Tab.Count)
+            
+            local t = Instance.new("TextButton", d)
+            t.Name = "DropdownButton"
+            t.Size = UDim2.new(1, 0, 0, 42)
+            t.BackgroundTransparency = 1
+            t.Text = "  " .. opt.Name .. " : " .. getSelectedText()
+            t.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
+            t.TextTransparency = 0
+            t.Font = "GothamMedium"
+            t.TextSize = 12
+            t.TextXAlignment = "Left"
+            t.AutoButtonColor = false
+            CreateHoverEffect(t)
+            
+            local Arrow = Instance.new("TextLabel", t)
+            Arrow.Name = "ArrowLabel"
+            Arrow.Size = UDim2.new(0, 30, 1, 0)
+            Arrow.Position = UDim2.new(1, -35, 0, 0)
+            Arrow.BackgroundTransparency = 1
+            Arrow.Text = "▼"
+            Arrow.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
+            Arrow.TextTransparency = 0
+            Arrow.Font = "GothamMedium"
+            Arrow.TextSize = 14
+            Arrow.TextXAlignment = "Center"
+            
+            if hasSubtitle then AddSubtitle(d, opt.Subtitle, 42) end
+            
+            local listFrame = Instance.new("Frame", d)
+            listFrame.Size = UDim2.new(1, 0, 0, 0)
+            listFrame.Position = UDim2.new(0, 0, 0, 42)
+            listFrame.BackgroundColor3 = currentTheme.bg or Color3.fromRGB(8,8,10)
+            listFrame.ClipsDescendants = true
+            listFrame.Visible = false
+            listFrame.ZIndex = 2
+            Instance.new("UICorner", listFrame).CornerRadius = UDim.new(0, 8)
+            
+            local searchBox = Instance.new("TextBox", listFrame)
+            searchBox.Size = UDim2.new(1, -16, 0, 26)
+            searchBox.Position = UDim2.new(0, 8, 0, 4)
+            searchBox.BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26)
+            searchBox.PlaceholderText = "search..."
+            searchBox.PlaceholderColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
+            searchBox.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
+            searchBox.Font = "Gotham"
+            searchBox.TextSize = 13
+            searchBox.TextXAlignment = "Left"
+            searchBox.ClearTextOnFocus = false
+            Instance.new("UICorner", searchBox).CornerRadius = UDim.new(0, 5)
+            
+            local listContainer = Instance.new("ScrollingFrame", listFrame)
+            listContainer.Size = UDim2.new(1, 0, 1, -34)
+            listContainer.Position = UDim2.new(0, 0, 0, 34)
+            listContainer.BackgroundTransparency = 1
+            listContainer.ScrollBarThickness = 3
+            listContainer.ScrollBarImageColor3 = ACCENT
+            listContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+            listContainer.ScrollingDirection = Enum.ScrollingDirection.Y
+            listContainer.BorderSizePixel = 0
+            
+            local listLayout = Instance.new("UIListLayout", listContainer)
+            listLayout.Padding = UDim.new(0, 2)
+            listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            Instance.new("UIPadding", listContainer).PaddingTop = UDim.new(0, 4)
+            Instance.new("UIPadding", listContainer).PaddingBottom = UDim.new(0, 4)
+            Instance.new("UIPadding", listContainer).PaddingLeft = UDim.new(0, 8)
+            Instance.new("UIPadding", listContainer).PaddingRight = UDim.new(0, 8)
+            
+            listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                listContainer.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 8)
+            end)
+            
+            local optionRefs = {}
+            
+            local function closeDropdown()
+                open = false
+                searchBox.Text = ""
+                for _, ref in ipairs(optionRefs) do
+                    if ref.btn then ref.btn.Visible = true end
+                end
+                TweenService:Create(d, TweenInfo.new(0.2), {Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 42)}):Play()
+                TweenService:Create(listFrame, TweenInfo.new(0.2), {Size = UDim2.new(1, 0, 0, 0)}):Play()
+                TweenService:Create(Arrow, TweenInfo.new(0.2), {Rotation = 0}):Play()
+                task.wait(0.2)
+                if listFrame and listFrame.Parent then listFrame.Visible = false end
+            end
+            
+            local function refreshOptions()
+                for _, child in pairs(listContainer:GetChildren()) do
+                    if child:IsA("TextButton") then child:Destroy() end
+                end
+                optionRefs = {}
+                
+                local options = opt.GetOptions and opt.GetOptions() or opt.Options
+                if not options then return end
+                
+                for _, option in ipairs(options) do
+                    local isSel = selected[option] == true
+                    local optBtn = Instance.new("TextButton", listContainer)
+                    optBtn.Size = UDim2.new(1, 0, 0, 30)
+                    optBtn.BackgroundColor3 = isSel and currentTheme.active or currentTheme.element or Color3.fromRGB(20,20,26)
+                    optBtn.Text = ""
+                    optBtn.AutoButtonColor = false
+                    Instance.new("UICorner", optBtn).CornerRadius = UDim.new(0, 6)
+                    
+                    local optLbl = Instance.new("TextLabel", optBtn)
+                    optLbl.Size = UDim2.new(1, -46, 1, 0)
+                    optLbl.Position = UDim2.new(0, 8, 0, 0)
+                    optLbl.BackgroundTransparency = 1
+                    optLbl.Text = option
+                    optLbl.TextColor3 = isSel and ACCENT or currentTheme.text or Color3.fromRGB(245,245,250)
+                    optLbl.Font = "Gotham"
+                    optLbl.TextSize = 13
+                    optLbl.TextXAlignment = "Left"
+                    
+                    local check = Instance.new("TextLabel", optBtn)
+                    check.Size = UDim2.new(0, 20, 0, 20)
+                    check.Position = UDim2.new(1, -8, 0.5, 0)
+                    check.AnchorPoint = Vector2.new(1, 0.5)
+                    check.BackgroundTransparency = 1
+                    check.Text = isSel and "✓" or ""
+                    check.TextColor3 = ACCENT
+                    check.Font = "GothamBold"
+                    check.TextSize = 14
+                    
+                    table.insert(optionRefs, {btn = optBtn, lbl = optLbl, check = check, text = option})
+                    
+                    optBtn.MouseEnter:Connect(function()
+                        if not selected[option] then
+                            TweenService:Create(optBtn, TweenInfo.new(0.15), {BackgroundColor3 = currentTheme.hover or Color3.fromRGB(28,28,36)}):Play()
+                        end
+                    end)
+                    optBtn.MouseLeave:Connect(function()
+                        if not selected[option] then
+                            TweenService:Create(optBtn, TweenInfo.new(0.15), {BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26)}):Play()
+                        end
+                    end)
+                    
+                    optBtn.MouseButton1Click:Connect(function()
+                        PlaySound("Element")
+                        if isMulti then
+                            selected[option] = not selected[option]
+                            local now = selected[option] == true
+                            check.Text = now and "✓" or ""
+                            optLbl.TextColor3 = now and ACCENT or currentTheme.text or Color3.fromRGB(245,245,250)
+                            optBtn.BackgroundColor3 = now and currentTheme.active or currentTheme.element or Color3.fromRGB(20,20,26)
+                            t.Text = "  " .. opt.Name .. " : " .. getSelectedText()
+                            if opt.Callback then opt.Callback(getSelectedList()) end
+                        else
+                            for k in pairs(selected) do selected[k] = false end
+                            selected[option] = true
+                            t.Text = "  " .. opt.Name .. " : " .. option
+                            if opt.Callback then opt.Callback(option) end
+                            closeDropdown()
+                        end
+                    end)
+                end
+            end
+            
+            searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+                local q = searchBox.Text:lower()
+                for _, ref in ipairs(optionRefs) do
+                    ref.btn.Visible = q == "" or ref.text:lower():find(q, 1, true) ~= nil
+                end
+            end)
+            
+            t.MouseButton1Click:Connect(function()
+                PlaySound("Element")
+                CreateClickScaleEffect(t)
+                open = not open
+                if open then
+                    if opt.RefreshOnOpen and opt.GetOptions then refreshOptions() end
+                    local contentHeight = listLayout.AbsoluteContentSize.Y + 8
+                    local maxList = math.min(contentHeight, 166)
+                    listFrame.Visible = true
+                    TweenService:Create(d, TweenInfo.new(0.2), {
+                        Size = UDim2.new(0.95, 0, 0, 42 + 34 + maxList + 4 + (hasSubtitle and 20 or 0))
+                    }):Play()
+                    TweenService:Create(listFrame, TweenInfo.new(0.2), {
+                        Size = UDim2.new(1, 0, 0, 34 + maxList)
+                    }):Play()
+                    TweenService:Create(Arrow, TweenInfo.new(0.2), {Rotation = 180}):Play()
+                else
+                    closeDropdown()
+                end
+            end)
+            
+            UIS.InputBegan:Connect(function(inp, gpe)
+                if not open then return end
+                if inp.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+                local pos = inp.Position
+                local ap = d.AbsolutePosition
+                local as = d.AbsoluteSize
+                if pos.X < ap.X or pos.X > ap.X + as.X or pos.Y < ap.Y or pos.Y > ap.Y + as.Y then
+                    closeDropdown()
+                end
+            end)
+            
+            if opt.GetOptions then
+                refreshOptions()
+            elseif opt.Options then
+                refreshOptions()
+            end
+            
+            if opt.RefreshInterval and opt.GetOptions then
+                local refreshConnection = RunService.RenderStepped:Connect(function()
+                    if d and d.Parent then
+                        local newOptions = opt.GetOptions()
+                        if newOptions then
+                            local currentCount = 0
+                            for _, child in pairs(listContainer:GetChildren()) do
+                                if child:IsA("TextButton") then currentCount = currentCount + 1 end
+                            end
+                            if currentCount ~= #newOptions then refreshOptions() end
+                        end
+                    else
+                        refreshConnection:Disconnect()
+                    end
+                end)
+                table.insert(Tab.Connections, refreshConnection)
+                table.insert(NoirUI.Connections, refreshConnection)
+            end
+            
+            local api = {container = d}
+            function api:set(option)
+                if isMulti then
+                    if type(option) == "table" then
+                        for k in pairs(selected) do selected[k] = false end
+                        for _, v in ipairs(option) do selected[v] = true end
+                    end
+                else
+                    for k in pairs(selected) do selected[k] = false end
+                    selected[option] = true
+                end
+                t.Text = "  " .. opt.Name .. " : " .. getSelectedText()
+                refreshOptions()
+            end
+            function api:get() return isMulti and getSelectedList() or getSelectedText() end
+            function api:setcallback(fn) callback = fn end
+            return api
+        end
+        
+        function Tab:CreateRunBox(opt)
+            local parent = Tab._currentSectionContent or ContentFrame
+            local f = Instance.new("Frame", parent)
+            f.Size = UDim2.new(0.95, 0, 0, 38)
+            f.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
+            f.BackgroundTransparency = 0
+            Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
+            f.LayoutOrder = GetO()
+            f.Name = "RunBox"
+            table.insert(Tab.Elements, f)
+            CreateSpringEffect(f, 0.05 * Tab.Count)
+            
+            local i = Instance.new("TextBox", f)
+            i.Size = UDim2.new(1, -65, 1, 0)
+            i.Position = UDim2.new(0, 10, 0, 0)
+            i.BackgroundTransparency = 1
+            i.PlaceholderText = opt.Placeholder or "Nhập: .cmd, loadstring('url'), or lua code"
+            i.PlaceholderColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
+            i.Text = ""
+            i.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
+            i.TextTransparency = 0
+            i.Font = "Gotham"
+            i.TextSize = 11
+            i.TextXAlignment = "Left"
+            i.ClearTextOnFocus = false
+            
+            local r = Instance.new("TextButton", f)
+            r.Size = UDim2.new(0, 50, 0, 26)
+            r.Position = UDim2.new(1, -55, 0.5, -13)
+            r.BackgroundColor3 = ACCENT
+            r.Text = "RUN"
+            r.TextColor3 = currentTheme.text or Color3.new(1,1,1)
+            r.TextTransparency = 0
+            r.Font = "GothamBold"
+            r.TextSize = 10
+            Instance.new("UICorner", r).CornerRadius = UDim.new(0, 6)
+            r.AutoButtonColor = false
+            
+            r.MouseButton1Click:Connect(function()
+                PlaySound("Element")
+                CreateClickScaleEffect(r)
+                local input = i.Text
+                if input == "" then return end
+                
+                if input:sub(1, 1) == "." then
+                    local parts = {}
+                    for part in input:sub(2):gmatch("%S+") do
+                        table.insert(parts, part)
+                    end
+                    local cmd = parts[1] and parts[1]:lower() or ""
+                    local args = {}
+                    for j = 2, #parts do table.insert(args, parts[j]) end
+                    local customCallback = NoirUI.CustomCommands[cmd]
+                    if customCallback then
+                        local success, err = pcall(function() customCallback(args) end)
+                        if not success then NoirUI:Notify("Command Error", err or "Lỗi không xác định", nil, "Error") end
+                    else
+                        NoirUI:Notify("❌ Unknown Command", "Không tìm thấy lệnh: ." .. cmd, nil, "Error")
+                    end
+                elseif input:lower():match("loadstring") then
+                    local str = input:match("loadstring%((.+)%)")
+                    if str then
+                        local cleaned = str:gsub("^[\"'](.*)[\"']$", "%1")
+                        local success, err = loadstring(cleaned)
+                        if success then success() NoirUI:Notify("Loadstring", "Đã chạy thành công!", nil, "Success")
+                        else NoirUI:Notify("Loadstring Error", err or "Lỗi cú pháp", nil, "Error") end
+                    else NoirUI:Notify("Loadstring Error", "Cú pháp không hợp lệ", nil, "Error") end
+                else
+                    local success, err = loadstring(input)
+                    if success then success() NoirUI:Notify("Execute", "Code đã chạy thành công!", nil, "Success")
+                    else NoirUI:Notify("Error", err or "Lỗi cú pháp", nil, "Error") end
+                end
+                if opt.ClearOnExecute then i.Text = "" end
+            end)
+        end
         
         Tab._button = B
         return Tab
