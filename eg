@@ -1169,23 +1169,20 @@ function NoirUI:CreateWindow(settings)
         TabContainer.BorderSizePixel = 0
         TabContainer.ClipsDescendants = true
         
+        -- Search filter
+        local searchData = {} -- Lưu trữ dữ liệu tìm kiếm thay vì gán vào object
         local function filterElements(searchText)
             local search = searchText:lower()
-            for _, tab in pairs(Window.tabs or {}) do
-                for _, element in pairs(tab.Elements or {}) do
-                    local visible = false
-                    if search == "" then
-                        visible = true
-                    elseif element.SearchText and element.SearchText:lower():find(search, 1, true) then
-                        visible = true
-                    end
-                    element.Visible = visible
+            for i, element in pairs(Tab.Elements) do
+                local visible = false
+                if search == "" then
+                    visible = true
+                elseif searchData[i] and searchData[i]:lower():find(search, 1, true) then
+                    visible = true
                 end
+                element.Visible = visible
             end
-            local currentTab = Window.active
-            if currentTab and currentTab.page then
-                currentTab.page.CanvasSize = UDim2.new(0, 0, 0, currentTab.page.AbsoluteSize.Y + 55)
-            end
+            updateCanvas()
         end
         
         SearchBox.Changed:Connect(function(prop)
@@ -1256,14 +1253,17 @@ function NoirUI:CreateWindow(settings)
             l.TextXAlignment = "Left"
             l.LayoutOrder = GetO()
             l.Name = "Label"
-            l.SearchText = type(text) == "string" and text or ""
+            local idx = #Tab.Elements + 1
             table.insert(Tab.Elements, l)
+            searchData[idx] = type(text) == "string" and text or ""
+            
             CreateSpringEffect(l, 0.05 * Tab.Count)
             if type(text) == "function" then
                 local connection = RunService.RenderStepped:Connect(function()
                     if l and l.Parent then
-                        l.Text = text()
-                        l.SearchText = l.Text
+                        local newText = text()
+                        l.Text = newText
+                        searchData[idx] = newText
                     else connection:Disconnect() end
                 end)
                 table.insert(Tab.Connections, connection)
@@ -1279,8 +1279,9 @@ function NoirUI:CreateWindow(settings)
             s.LayoutOrder = GetO()
             s.Name = title
             s.ClipsDescendants = true
-            s.SearchText = title
+            local idx = #Tab.Elements + 1
             table.insert(Tab.Elements, s)
+            searchData[idx] = title
             CreateSpringEffect(s, 0.05 * Tab.Count)
             
             local headerBtn = Instance.new("TextButton", s)
@@ -1382,8 +1383,9 @@ function NoirUI:CreateWindow(settings)
             Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
             f.LayoutOrder = GetO()
             f.Name = opt.Title or ""
-            f.SearchText = opt.Title or ""
+            local idx = #Tab.Elements + 1
             table.insert(Tab.Elements, f)
+            searchData[idx] = opt.Title or ""
             CreateSpringEffect(f, 0.05 * Tab.Count)
             
             local title = Instance.new("TextLabel", f)
@@ -1422,8 +1424,9 @@ function NoirUI:CreateWindow(settings)
             Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
             f.LayoutOrder = GetO()
             f.Name = opt.Name or ""
-            f.SearchText = opt.Name or ""
+            local idx = #Tab.Elements + 1
             table.insert(Tab.Elements, f)
+            searchData[idx] = opt.Name or ""
             CreateSpringEffect(f, 0.05 * Tab.Count)
             
             local i = Instance.new("TextBox", f)
@@ -1457,9 +1460,12 @@ function NoirUI:CreateWindow(settings)
             Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
             b.LayoutOrder = GetO()
             b.Name = opt.Name
-            b.SearchText = opt.Name or ""
             b.AutoButtonColor = false
+            
+            local idx = #Tab.Elements + 1
             table.insert(Tab.Elements, b)
+            searchData[idx] = opt.Name or ""
+            
             CreateSpringEffect(b, 0.05 * Tab.Count)
             
             if opt.Align == false then
@@ -1507,9 +1513,12 @@ function NoirUI:CreateWindow(settings)
             Instance.new("UICorner", t).CornerRadius = UDim.new(0, 8)
             t.LayoutOrder = GetO()
             t.Name = opt.Name
-            t.SearchText = opt.Name or ""
             t.AutoButtonColor = false
+            
+            local idx = #Tab.Elements + 1
             table.insert(Tab.Elements, t)
+            searchData[idx] = opt.Name or ""
+            
             CreateSpringEffect(t, 0.05 * Tab.Count)
             
             local bx = Instance.new("Frame", t)
@@ -1564,8 +1573,9 @@ function NoirUI:CreateWindow(settings)
             Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
             f.LayoutOrder = GetO()
             f.Name = opt.Name or ""
-            f.SearchText = opt.Name or ""
+            local idx = #Tab.Elements + 1
             table.insert(Tab.Elements, f)
+            searchData[idx] = opt.Name or ""
             CreateSpringEffect(f, 0.05 * Tab.Count)
             
             local l = Instance.new("TextLabel", f)
@@ -1758,8 +1768,9 @@ function NoirUI:CreateWindow(settings)
             f.LayoutOrder = GetO()
             f.ClipsDescendants = true
             f.Name = opt.Name or ""
-            f.SearchText = opt.Name or ""
+            local idx = #Tab.Elements + 1
             table.insert(Tab.Elements, f)
+            searchData[idx] = opt.Name or ""
             CreateSpringEffect(f, 0.05 * Tab.Count)
             
             local t = Instance.new("TextLabel", f)
@@ -1959,8 +1970,9 @@ function NoirUI:CreateWindow(settings)
             d.LayoutOrder = GetO()
             d.ClipsDescendants = true
             d.Name = opt.Name or ""
-            d.SearchText = opt.Name or ""
+            local idx = #Tab.Elements + 1
             table.insert(Tab.Elements, d)
+            searchData[idx] = opt.Name or ""
             CreateSpringEffect(d, 0.05 * Tab.Count)
             
             local t = Instance.new("TextButton", d)
