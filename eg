@@ -590,7 +590,7 @@ function NoirUI:CreateWindow(settings)
     Main.Size = UDim2.new(0, 520, 0, 400)
     Main.Position = mainDefaultPos
     Main.BackgroundColor3 = currentTheme.bg or settings.MainBgColor or Color3.fromRGB(8,8,10)
-    Main.Visible = false
+    Main.Visible = true -- FIX: Đã bật mặc định để hiển thị ngay trên Mobile
     Main.ZIndex = 1
     
     local mainCorner = Instance.new("UICorner", Main)
@@ -611,7 +611,7 @@ function NoirUI:CreateWindow(settings)
     TBtn.ZIndex = 10
     TBtn.ClipsDescendants = true
     TBtn.AutoButtonColor = false
-    TBtn.Visible = false
+    TBtn.Visible = false -- Ẩn mặc định vì Main đã hiện
     
     local floatCorner = Instance.new("UICorner", TBtn)
     floatCorner.CornerRadius = UDim.new(0, floatCornerRadius)
