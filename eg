@@ -201,7 +201,8 @@ local BackgroundMusic = {
     UIHidden = false,
 }
 
-local function PlaySound(soundType)
+-- Hàm phát âm thanh nội bộ
+local function PlaySoundInternal(soundType)
     if not SoundSettings.Enabled then return end
     local soundId = nil
     if soundType == "Click" then soundId = SoundSettings.ClickSoundId
@@ -244,7 +245,7 @@ end
 
 function NoirUI:ToggleSound(enabled)
     SoundSettings.Enabled = enabled
-    self:Notify("🔊 Sound", "Đã " .. (enabled and "bật" or "tắt") .. " âm thanh", enabled and "volume-2" or "volume-x")
+    self:Notify("🔊 Sound", "Đã " .. (enabled and "bật" or "tắt") .. " âm thanh", "volume-2", enabled and "Success" or nil)
 end
 
 function NoirUI:SetVolume(volume)
@@ -772,7 +773,7 @@ function NoirUI:CreateWindow(settings)
     local SearchWidth = 150
     
     SearchBtn.MouseButton1Click:Connect(function()
-        PlaySound("Click")
+        PlaySoundInternal("Click")
         SearchOpen = not SearchOpen
         if SearchOpen then
             SearchBar.Visible = true
@@ -826,7 +827,7 @@ function NoirUI:CreateWindow(settings)
 
     -- Minimize Button (Biến thành Float Button + Animation trượt dưới lên)
     TopImageB("minus", Color3.fromRGB(255,200,50), function()
-        PlaySound("Click")
+        PlaySoundInternal("Click")
         local startPos = Main.Position
         local targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset, 1, 50)
         TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
@@ -846,10 +847,10 @@ function NoirUI:CreateWindow(settings)
 
     -- Close Button (Xóa luôn UI, không cần bảng confirm)
     TopImageB("x", Color3.fromRGB(255,100,100), function()
-        PlaySound("Click")
+        PlaySoundInternal("Click")
         StopAndCleanupMusic()
         ScreenGui:Destroy()
-        PlaySound("Close")
+        PlaySoundInternal("Close")
     end)
     
     -- Sidebar
@@ -907,7 +908,7 @@ function NoirUI:CreateWindow(settings)
     
     -- Float button toggle: ẩn float button khi mở UI
     TBtn.MouseButton1Click:Connect(function()
-        PlaySound("Click")
+        PlaySoundInternal("Click")
         CreateClickScaleEffect(TBtn)
         TBtn.Visible = false
         Main.Visible = true
@@ -922,12 +923,14 @@ function NoirUI:CreateWindow(settings)
             BackgroundTransparency = 0
         }):Play()
         
-        PlaySound("Open")
+        PlaySoundInternal("Open")
     end)
     
-    -- ĐƯA HÀM NOTIFY RA NGOÀI Global ĐỂ DÙNG
+    -- Hàm NOTIFY ĐÃ SỬA LỖI (Dùng biến PlaySoundInternal cục bộ)
     local function NotifyGlobal(title, message, iconName, soundType)
-        if soundType then PlaySound(soundType) else PlaySound("Notification") end
+        -- PlaySoundInternal được định nghĩa ở đầu file, dùng được ngay ở đây
+        if soundType then PlaySoundInternal(soundType) else PlaySoundInternal("Notification") end
+        
         local n = Instance.new("Frame", ScreenGui)
         n.Size = UDim2.new(0, 260, 0, 65)
         n.Position = UDim2.new(1, 20, 0.8, 0)
@@ -989,7 +992,7 @@ function NoirUI:CreateWindow(settings)
         end)
     end
     
-    NoirUI.Notify = NotifyGlobal -- Gán vào bảng chính để dùng
+    NoirUI.Notify = NotifyGlobal -- Gán vào bảng chính để dùng ngoài
 
     local Window = {}
     local allTabButtons = {}
@@ -1095,7 +1098,7 @@ function NoirUI:CreateWindow(settings)
         end
         
         header.MouseButton1Click:Connect(function()
-            PlaySound("Element")
+            PlaySoundInternal("Element")
             CreateClickScaleEffect(header)
             isOpen = not isOpen
             arrow.Text = isOpen and "▼" or "▶"
@@ -1173,7 +1176,7 @@ function NoirUI:CreateWindow(settings)
         TabContainer.ClipsDescendants = true
         
         -- Search filter
-        local searchData = {} -- Lưu trữ dữ liệu tìm kiếm thay vì gán vào object
+        local searchData = {} -- Lưu trữ dữ liệu tìm kiếm
         local function filterElements(searchText)
             local search = searchText:lower()
             for i, element in pairs(Tab.Elements) do
@@ -1229,7 +1232,7 @@ function NoirUI:CreateWindow(settings)
         end
         
         B.MouseButton1Click:Connect(function()
-            PlaySound("Tab")
+            PlaySoundInternal("Tab")
             CreateClickScaleEffect(B)
             selectThisTab()
         end)
@@ -1342,7 +1345,7 @@ function NoirUI:CreateWindow(settings)
             sectionLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateSectionHeight)
             
             headerBtn.MouseButton1Click:Connect(function()
-                PlaySound("Element")
+                PlaySoundInternal("Element")
                 CreateClickScaleEffect(headerBtn)
                 isCollapsed = not isCollapsed
                 arrow.Text = isCollapsed and "▶" or "▼"
@@ -1493,7 +1496,7 @@ function NoirUI:CreateWindow(settings)
             if hasSubtitle then AddSubtitle(b, opt.Subtitle, 38) end
             
             b.MouseButton1Click:Connect(function()
-                PlaySound("Element")
+                PlaySoundInternal("Element")
                 CreateClickScaleEffect(b)
                 if opt.Callback then opt.Callback() end
             end)
@@ -1541,7 +1544,7 @@ function NoirUI:CreateWindow(settings)
             if hasSubtitle then AddSubtitle(t, opt.Subtitle, 38) end
             
             t.MouseButton1Click:Connect(function()
-                PlaySound("Element")
+                PlaySoundInternal("Element")
                 CreateClickScaleEffect(t)
                 s = not s
                 t.TextColor3 = s and currentTheme.text or currentTheme.subtext or Color3.fromRGB(245,245,250)
@@ -1567,11 +1570,10 @@ function NoirUI:CreateWindow(settings)
             defaultValue = math.floor((defaultValue - min) / increment) * increment + min
             defaultValue = math.clamp(defaultValue, min, max)
             local currentValue = defaultValue
-            local addMobileButtons = opt.mobile or false
             
-            -- FIX: Tăng chiều cao khung để không bị đè lên nhau
+            -- FIX: Bỏ hẳn addMobileButtons, chỉ giữ lại Slider cơ bản
             local f = Instance.new("Frame", parent)
-            f.Size = UDim2.new(0.95, 0, 0, addMobileButtons and (hasSubtitle and 115 or 100) or (hasSubtitle and 70 or 50))
+            f.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 70 or 50)
             f.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
             f.BackgroundTransparency = 0
             Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
@@ -1638,7 +1640,7 @@ function NoirUI:CreateWindow(settings)
             handle.ZIndex = 2
             Instance.new("UICorner", handle).CornerRadius = UDim.new(1, 0)
             
-            if hasSubtitle then AddSubtitle(f, opt.Subtitle, hasSubtitle and (addMobileButtons and 80 or 60) or 0) end
+            if hasSubtitle then AddSubtitle(f, opt.Subtitle, hasSubtitle and 60 or 0) end
             
             local isHeld = false
             local function UpdateSlider(input, animate)
@@ -1713,48 +1715,6 @@ function NoirUI:CreateWindow(settings)
                 valInp.Visible = false
                 valBtn.Visible = true
             end)
-            
-            if addMobileButtons then
-                local btnRow = Instance.new("Frame", f)
-                btnRow.Size = UDim2.new(0.9, 0, 0, 28)
-                btnRow.Position = UDim2.new(0.05, 0, hasSubtitle and 0.85 or 0.95, 0)
-                btnRow.BackgroundTransparency = 1
-                
-                local minusBtn = Instance.new("TextButton", btnRow)
-                minusBtn.Size = UDim2.new(0.45, 0, 1, 0)
-                minusBtn.BackgroundColor3 = currentTheme.container or Color3.fromRGB(14,14,18)
-                minusBtn.Text = "–"
-                minusBtn.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
-                minusBtn.Font = "GothamBold"
-                minusBtn.TextSize = 16
-                minusBtn.AutoButtonColor = false
-                Instance.new("UICorner", minusBtn).CornerRadius = UDim.new(0, 6)
-                
-                local plusBtn = Instance.new("TextButton", btnRow)
-                plusBtn.Size = UDim2.new(0.45, 0, 1, 0)
-                plusBtn.Position = UDim2.new(0.55, 0, 0, 0)
-                plusBtn.BackgroundColor3 = currentTheme.container or Color3.fromRGB(14,14,18)
-                plusBtn.Text = "+"
-                plusBtn.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
-                plusBtn.Font = "GothamBold"
-                plusBtn.TextSize = 16
-                plusBtn.AutoButtonColor = false
-                Instance.new("UICorner", plusBtn).CornerRadius = UDim.new(0, 6)
-                
-                minusBtn.MouseButton1Click:Connect(function()
-                    local newVal = currentValue - (opt.step or 1)
-                    newVal = math.floor((newVal - min) / increment) * increment + min
-                    newVal = math.clamp(newVal, min, max)
-                    UpdateSlider({Position = Vector2.new(sbg.AbsolutePosition.X + ((newVal - min) / (max - min)) * sbg.AbsoluteSize.X, 0)}, true)
-                end)
-                
-                plusBtn.MouseButton1Click:Connect(function()
-                    local newVal = currentValue + (opt.step or 1)
-                    newVal = math.floor((newVal - min) / increment) * increment + min
-                    newVal = math.clamp(newVal, min, max)
-                    UpdateSlider({Position = Vector2.new(sbg.AbsolutePosition.X + ((newVal - min) / (max - min)) * sbg.AbsoluteSize.X, 0)}, true)
-                end)
-            end
         end
         
         function Tab:CreateColorPicker(opt)
@@ -1907,7 +1867,7 @@ function NoirUI:CreateWindow(settings)
             UIS.InputEnded:Connect(onInputEnded)
             
             pvw.MouseButton1Click:Connect(function()
-                PlaySound("Element")
+                PlaySoundInternal("Element")
                 CreateClickScaleEffect(pvw)
                 open = not open
                 TweenService:Create(f, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -2113,7 +2073,7 @@ function NoirUI:CreateWindow(settings)
                     end)
                     
                     optBtn.MouseButton1Click:Connect(function()
-                        PlaySound("Element")
+                        PlaySoundInternal("Element")
                         if isMulti then
                             selected[option] = not selected[option]
                             local now = selected[option] == true
@@ -2141,7 +2101,7 @@ function NoirUI:CreateWindow(settings)
             end)
             
             t.MouseButton1Click:Connect(function()
-                PlaySound("Element")
+                PlaySoundInternal("Element")
                 CreateClickScaleEffect(t)
                 open = not open
                 if open then
