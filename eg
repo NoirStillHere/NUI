@@ -773,7 +773,6 @@ function NoirUI:CreateWindow(settings)
     local SearchWidth = 150
     
     SearchBtn.MouseButton1Click:Connect(function()
-        PlaySoundInternal("Click")
         SearchOpen = not SearchOpen
         if SearchOpen then
             SearchBar.Visible = true
@@ -827,7 +826,6 @@ function NoirUI:CreateWindow(settings)
 
     -- Minimize Button (Biến thành Float Button + Animation trượt dưới lên)
     TopImageB("minus", Color3.fromRGB(255,200,50), function()
-        PlaySoundInternal("Click")
         local startPos = Main.Position
         local targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset, 1, 50)
         TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
@@ -847,10 +845,8 @@ function NoirUI:CreateWindow(settings)
 
     -- Close Button (Xóa luôn UI, không cần bảng confirm)
     TopImageB("x", Color3.fromRGB(255,100,100), function()
-        PlaySoundInternal("Click")
         StopAndCleanupMusic()
         ScreenGui:Destroy()
-        PlaySoundInternal("Close")
     end)
     
     -- Sidebar
@@ -908,7 +904,6 @@ function NoirUI:CreateWindow(settings)
     
     -- Float button toggle: ẩn float button khi mở UI
     TBtn.MouseButton1Click:Connect(function()
-        PlaySoundInternal("Click")
         CreateClickScaleEffect(TBtn)
         TBtn.Visible = false
         Main.Visible = true
@@ -922,14 +917,11 @@ function NoirUI:CreateWindow(settings)
             Position = mainDefaultPos,
             BackgroundTransparency = 0
         }):Play()
-        
-        PlaySoundInternal("Open")
     end)
     
-    -- Hàm NOTIFY ĐÃ SỬA LỖI (Dùng biến PlaySoundInternal cục bộ)
+    -- Hàm NOTIFY ĐÃ XÓA HOÀN TOÀN ÂM THANH
     local function NotifyGlobal(title, message, iconName, soundType)
-        -- PlaySoundInternal được định nghĩa ở đầu file, dùng được ngay ở đây
-        if soundType then PlaySoundInternal(soundType) else PlaySoundInternal("Notification") end
+        -- Bỏ hoàn toàn việc gọi play sound ở đây để tránh lỗi nil
         
         local n = Instance.new("Frame", ScreenGui)
         n.Size = UDim2.new(0, 260, 0, 65)
@@ -1098,7 +1090,6 @@ function NoirUI:CreateWindow(settings)
         end
         
         header.MouseButton1Click:Connect(function()
-            PlaySoundInternal("Element")
             CreateClickScaleEffect(header)
             isOpen = not isOpen
             arrow.Text = isOpen and "▼" or "▶"
@@ -1232,7 +1223,6 @@ function NoirUI:CreateWindow(settings)
         end
         
         B.MouseButton1Click:Connect(function()
-            PlaySoundInternal("Tab")
             CreateClickScaleEffect(B)
             selectThisTab()
         end)
@@ -1345,7 +1335,6 @@ function NoirUI:CreateWindow(settings)
             sectionLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateSectionHeight)
             
             headerBtn.MouseButton1Click:Connect(function()
-                PlaySoundInternal("Element")
                 CreateClickScaleEffect(headerBtn)
                 isCollapsed = not isCollapsed
                 arrow.Text = isCollapsed and "▶" or "▼"
@@ -1496,7 +1485,6 @@ function NoirUI:CreateWindow(settings)
             if hasSubtitle then AddSubtitle(b, opt.Subtitle, 38) end
             
             b.MouseButton1Click:Connect(function()
-                PlaySoundInternal("Element")
                 CreateClickScaleEffect(b)
                 if opt.Callback then opt.Callback() end
             end)
@@ -1544,7 +1532,6 @@ function NoirUI:CreateWindow(settings)
             if hasSubtitle then AddSubtitle(t, opt.Subtitle, 38) end
             
             t.MouseButton1Click:Connect(function()
-                PlaySoundInternal("Element")
                 CreateClickScaleEffect(t)
                 s = not s
                 t.TextColor3 = s and currentTheme.text or currentTheme.subtext or Color3.fromRGB(245,245,250)
@@ -1867,7 +1854,6 @@ function NoirUI:CreateWindow(settings)
             UIS.InputEnded:Connect(onInputEnded)
             
             pvw.MouseButton1Click:Connect(function()
-                PlaySoundInternal("Element")
                 CreateClickScaleEffect(pvw)
                 open = not open
                 TweenService:Create(f, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -2073,7 +2059,6 @@ function NoirUI:CreateWindow(settings)
                     end)
                     
                     optBtn.MouseButton1Click:Connect(function()
-                        PlaySoundInternal("Element")
                         if isMulti then
                             selected[option] = not selected[option]
                             local now = selected[option] == true
@@ -2101,7 +2086,6 @@ function NoirUI:CreateWindow(settings)
             end)
             
             t.MouseButton1Click:Connect(function()
-                PlaySoundInternal("Element")
                 CreateClickScaleEffect(t)
                 open = not open
                 if open then
