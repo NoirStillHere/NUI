@@ -244,12 +244,12 @@ end
 
 function NoirUI:ToggleSound(enabled)
     SoundSettings.Enabled = enabled
-    NoirUI:Notify("🔊 Sound", "Đã " .. (enabled and "bật" or "tắt") .. " âm thanh", enabled and "volume-2" or "volume-x")
+    self:Notify("🔊 Sound", "Đã " .. (enabled and "bật" or "tắt") .. " âm thanh", enabled and "volume-2" or "volume-x")
 end
 
 function NoirUI:SetVolume(volume)
     SoundSettings.Volume = math.clamp(volume, 0, 1)
-    NoirUI:Notify("🔊 Volume", "Âm lượng: " .. math.floor(volume * 100) .. "%", "volume-2")
+    self:Notify("🔊 Volume", "Âm lượng: " .. math.floor(volume * 100) .. "%", "volume-2")
 end
 
 function NoirUI:Destroy()
@@ -925,7 +925,8 @@ function NoirUI:CreateWindow(settings)
         PlaySound("Open")
     end)
     
-    function NoirUI:Notify(title, message, iconName, soundType)
+    -- ĐƯA HÀM NOTIFY RA NGOÀI Global ĐỂ DÙNG
+    local function NotifyGlobal(title, message, iconName, soundType)
         if soundType then PlaySound(soundType) else PlaySound("Notification") end
         local n = Instance.new("Frame", ScreenGui)
         n.Size = UDim2.new(0, 260, 0, 65)
@@ -988,6 +989,8 @@ function NoirUI:CreateWindow(settings)
         end)
     end
     
+    NoirUI.Notify = NotifyGlobal -- Gán vào bảng chính để dùng
+
     local Window = {}
     local allTabButtons = {}
     
@@ -1566,8 +1569,9 @@ function NoirUI:CreateWindow(settings)
             local currentValue = defaultValue
             local addMobileButtons = opt.mobile or false
             
+            -- FIX: Tăng chiều cao khung để không bị đè lên nhau
             local f = Instance.new("Frame", parent)
-            f.Size = UDim2.new(0.95, 0, 0, addMobileButtons and (hasSubtitle and 110 or 95) or (hasSubtitle and 70 or 50))
+            f.Size = UDim2.new(0.95, 0, 0, addMobileButtons and (hasSubtitle and 115 or 100) or (hasSubtitle and 70 or 50))
             f.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
             f.BackgroundTransparency = 0
             Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
@@ -1634,7 +1638,7 @@ function NoirUI:CreateWindow(settings)
             handle.ZIndex = 2
             Instance.new("UICorner", handle).CornerRadius = UDim.new(1, 0)
             
-            if hasSubtitle then AddSubtitle(f, opt.Subtitle, hasSubtitle and (addMobileButtons and 75 or 55) or 0) end
+            if hasSubtitle then AddSubtitle(f, opt.Subtitle, hasSubtitle and (addMobileButtons and 80 or 60) or 0) end
             
             local isHeld = false
             local function UpdateSlider(input, animate)
