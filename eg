@@ -111,7 +111,7 @@ local function GetContrastColor(backgroundColor)
 end
 
 -- ====================================================
--- ANIMATION
+-- ANIMATION MỚI
 -- ====================================================
 local function CreateClickScaleEffect(button)
     if not button then return end
@@ -911,7 +911,7 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ==========================================================
-    -- NOTIFY MỚI (Đã sửa lỗi không đóng, dùng task.delay)
+    -- NOTIFY MỚI (Đã sửa lỗi không đóng bằng tween.Completed)
     -- ==========================================================
     function NoirUI:Notify(title, message, iconName, soundType, duration, progressColor)
         if soundType then
@@ -931,14 +931,12 @@ function NoirUI:CreateWindow(settings)
         n.ZIndex = 1
         n.ClipsDescendants = true
 
-        -- Bo góc 8
         local notifCorner = Instance.new("UICorner", n)
         notifCorner.CornerRadius = UDim.new(0, 8)
 
         SetupBackground(n, settings.NotificationBackground, n.BackgroundColor3, 0.1)
         CreateSpringEffect(n, 0.05)
 
-        -- Icon nếu có
         if iconName then
             local iconImg = ResolveIcon(iconName)
             if iconImg then
@@ -952,7 +950,6 @@ function NoirUI:CreateWindow(settings)
             end
         end
 
-        -- Title
         local tl = Instance.new("TextLabel", n)
         tl.Size = UDim2.new(1, iconName and -48 or -18, 0, 20)
         tl.Position = UDim2.new(0, iconName and 44 or 16, 0, 6)
@@ -965,7 +962,6 @@ function NoirUI:CreateWindow(settings)
         tl.TextXAlignment = Enum.TextXAlignment.Left
         tl.ZIndex = 2
 
-        -- Message
         local ml = Instance.new("TextLabel", n)
         ml.Size = UDim2.new(1, iconName and -48 or -28, 0, 30)
         ml.Position = UDim2.new(0, iconName and 44 or 16, 0, 26)
@@ -980,7 +976,6 @@ function NoirUI:CreateWindow(settings)
         ml.TextSize = 11
         ml.ZIndex = 2
 
-        -- 🟢 THANH TIẾN TRÌNH (Progress Bar)
         local progressBg = Instance.new("Frame", n)
         progressBg.Size = UDim2.new(1, -16, 0, 3)
         progressBg.Position = UDim2.new(0, 8, 1, -8)
@@ -997,7 +992,6 @@ function NoirUI:CreateWindow(settings)
         progressFill.ZIndex = 4
         Instance.new("UICorner", progressFill).CornerRadius = UDim.new(1, 0)
 
-        -- Animation thanh tiến trình
         local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
         local tween = TweenService:Create(progressFill, tweenInfo, {
             Size = UDim2.new(0, 0, 1, 0),
@@ -1005,7 +999,6 @@ function NoirUI:CreateWindow(settings)
         })
         tween:Play()
 
-        -- Dời các thông báo cũ lên
         for i, v in ipairs(NoirUI.Notifications) do
             TweenService:Create(v, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Position = UDim2.new(1, -280, 0.8, -(i * 85))
@@ -1014,27 +1007,31 @@ function NoirUI:CreateWindow(settings)
 
         table.insert(NoirUI.Notifications, 1, n)
 
-        -- Animation xuất hiện
         TweenService:Create(n, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
             Position = UDim2.new(1, -280, 0.8, 0)
         }):Play()
 
-        -- 👉 DÙNG TASK.DELAY THAY VÌ TWEEN.COMPLETED
-        task.delay(duration, function()
-            if not n or not n.Parent then return end -- Kiểm tra xem nó còn tồn tại không
-            TweenService:Create(n, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+        local isClosing = false
+        tween.Completed:Connect(function()
+            if isClosing or not n or not n.Parent then return end
+            isClosing = true
+            
+            local closeTween = TweenService:Create(n, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
                 Position = UDim2.new(1, 20, n.Position.Y.Scale, n.Position.Y.Offset),
                 BackgroundTransparency = 1,
                 TextTransparency = 1
-            }):Play()
-            task.wait(0.4)
-            for i, v in ipairs(NoirUI.Notifications) do
-                if v == n then
-                    table.remove(NoirUI.Notifications, i)
-                    break
+            })
+            closeTween:Play()
+            
+            closeTween.Completed:Connect(function()
+                for i, v in ipairs(NoirUI.Notifications) do
+                    if v == n then
+                        table.remove(NoirUI.Notifications, i)
+                        break
+                    end
                 end
-            end
-            n:Destroy()
+                n:Destroy()
+            end)
         end)
     end
 
