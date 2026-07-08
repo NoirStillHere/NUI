@@ -4,7 +4,7 @@
 	Lua Scripter: NoirNF, Adono
 	Executor Compatibility Tester: Adono
 	Animation Engineer: Adono
-	Version: 2.0.0
+	Version: 2.0.1
 ]]
 
 --Core
@@ -25,7 +25,7 @@ if OldGui then OldGui:Destroy() end
 local NoirUI = { Notifications = {}, ActiveConfirmFrame = nil, CustomCommands = {}, Connections = {}, TabGroups = {}, Flags = {}, FlagGroups = {} }
 
 local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
-local _version = "2.0.0"
+local _version = "2.0.1"
 
 -- === THEME PRESETS ===
 local ThemePresets = {
@@ -366,7 +366,7 @@ local function StopAndCleanupMusic()
 end
 
 -- ==========================================================
--- LOGGER SYSTEM
+-- LOGGER SYSTEM (Port from Luau)
 -- ==========================================================
 function NoirUI:CreateLogger()
     if NoirUI.__LogSystem then
@@ -400,7 +400,6 @@ function NoirUI:CreateLogger()
         local UIStroke = Instance.new("UIStroke")
         local LogContent = Instance.new("TextLabel")
         local IconLabel = Instance.new("TextLabel")
-        local Shadow = NoirUI:CreateShadow(LogFrame, true)
         
         LogFrame.Name = RandomString()
         LogFrame.Parent = Log
@@ -447,10 +446,7 @@ function NoirUI:CreateLogger()
         local size = TextService:GetTextSize(LogContent.Text, LogContent.TextSize, LogContent.Font, Vector2.new(math.huge, math.huge))
         LogFrame.Size = UDim2.new(0, size.X + 35, 0, 20)
         
-        Shadow:Render(true)
-        
         task.delay(duration, function()
-            Shadow:Render(false)
             TweenService:Create(LogFrame, TweenInfo.new(0.3), {
                 BackgroundTransparency = 1
             }):Play()
@@ -463,7 +459,7 @@ function NoirUI:CreateLogger()
 end
 
 -- ==========================================================
--- INDICATOR SYSTEM
+-- INDICATOR SYSTEM (Port from Luau)
 -- ==========================================================
 function NoirUI:CreateIndicator()
     local IndicatorFrame = Instance.new("Frame")
@@ -515,7 +511,6 @@ function NoirUI:CreateIndicator()
         local UIGradient = Instance.new("UIGradient")
         local Icon = Instance.new("TextLabel")
         local Content = Instance.new("TextLabel")
-        local Shadow = NoirUI:CreateShadow(Item)
         
         Item.Name = RandomString()
         Item.Parent = IndicatorFrame
@@ -591,13 +586,11 @@ function NoirUI:CreateIndicator()
                 Line.BackgroundTransparency = 0
                 Icon.TextTransparency = 0.25
                 Content.TextTransparency = 0.2
-                Shadow:Render(true)
             else
                 Item.BackgroundTransparency = 1
                 Line.BackgroundTransparency = 1
                 Icon.TextTransparency = 1
                 Content.TextTransparency = 1
-                Shadow:Render(false)
             end
         end
         
@@ -628,7 +621,7 @@ function NoirUI:CreateIndicator()
 end
 
 -- ==========================================================
--- SHADOW EFFECT
+-- SHADOW EFFECT (Port from Luau)
 -- ==========================================================
 function NoirUI:RollingEffect(parent)
     local gradient = Instance.new("UIGradient")
@@ -699,7 +692,7 @@ function NoirUI:CreateShadow(parent, rollingEffect)
 end
 
 -- ==========================================================
--- BLUR EFFECT
+-- BLUR EFFECT (Port from Luau)
 -- ==========================================================
 local BlurManager = {
     Enabled = false,
@@ -1648,12 +1641,146 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ==========================================================
-    -- WINDOW ADVANCED FEATURES (Blur, Shadow, Config, Flags)
+    -- NOTIFY MỚI
     -- ==========================================================
+    function NoirUI:Notify(title, message, iconName, soundType, duration, progressColor)
+        if soundType then
+            PlaySound(soundType)
+        else
+            PlaySound("Notification")
+        end
+
+        local notifyDuration = duration or 4
+        local progressColor = progressColor or (currentTheme and currentTheme.accent) or ACCENT
+
+        local n = Instance.new("Frame", ScreenGui)
+        n.Size = UDim2.new(0, 260, 0, 75)
+        n.Position = UDim2.new(1, 20, 0.8, 0)
+        n.BackgroundColor3 = currentTheme.container or settings.NotificationBackgroundColor or Color3.fromRGB(14,14,18)
+        n.BackgroundTransparency = 0.1
+        n.ZIndex = 1
+        n.ClipsDescendants = true
+
+        -- Bo góc 8
+        local notifCorner = Instance.new("UICorner", n)
+        notifCorner.CornerRadius = UDim.new(0, 8)
+
+        SetupBackground(n, settings.NotificationBackground, n.BackgroundColor3, 0.1)
+        CreateSpringEffect(n, 0.05)
+
+        -- Icon nếu có
+        if iconName then
+            local iconImg = ResolveIcon(iconName)
+            if iconImg then
+                local icon = Instance.new("ImageLabel", n)
+                icon.Size = UDim2.new(0, 24, 0, 24)
+                icon.Position = UDim2.new(0, 12, 0.5, -12)
+                icon.BackgroundTransparency = 1
+                icon.Image = iconImg
+                icon.ImageColor3 = progressColor
+                icon.ZIndex = 2
+            end
+        end
+
+        -- Title
+        local tl = Instance.new("TextLabel", n)
+        tl.Size = UDim2.new(1, iconName and -48 or -18, 0, 20)
+        tl.Position = UDim2.new(0, iconName and 44 or 16, 0, 6)
+        tl.Text = title
+        tl.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
+        tl.TextTransparency = 0
+        tl.BackgroundTransparency = 1
+        tl.Font = Enum.Font.GothamBold
+        tl.TextSize = 13
+        tl.TextXAlignment = Enum.TextXAlignment.Left
+        tl.ZIndex = 2
+
+        -- Message
+        local ml = Instance.new("TextLabel", n)
+        ml.Size = UDim2.new(1, iconName and -48 or -28, 0, 30)
+        ml.Position = UDim2.new(0, iconName and 44 or 16, 0, 26)
+        ml.Text = message
+        ml.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
+        ml.TextTransparency = 0
+        ml.BackgroundTransparency = 1
+        ml.TextWrapped = true
+        ml.TextXAlignment = Enum.TextXAlignment.Left
+        ml.TextYAlignment = Enum.TextYAlignment.Top
+        ml.Font = Enum.Font.Gotham
+        ml.TextSize = 11
+        ml.ZIndex = 2
+
+        -- 🟢 THANH TIẾN TRÌNH
+        local progressBg = Instance.new("Frame", n)
+        progressBg.Size = UDim2.new(1, -16, 0, 3)
+        progressBg.Position = UDim2.new(0, 8, 1, -8)
+        progressBg.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+        progressBg.BackgroundTransparency = 0.5
+        progressBg.ZIndex = 3
+        Instance.new("UICorner", progressBg).CornerRadius = UDim.new(1, 0)
+
+        local progressFill = Instance.new("Frame", progressBg)
+        progressFill.Size = UDim2.new(1, 0, 1, 0)
+        progressFill.Position = UDim2.new(0, 0, 0, 0)
+        progressFill.BackgroundColor3 = progressColor
+        progressFill.BackgroundTransparency = 0
+        progressFill.ZIndex = 4
+        Instance.new("UICorner", progressFill).CornerRadius = UDim.new(1, 0)
+
+        -- Animation thanh tiến trình
+        TweenService:Create(progressFill, TweenInfo.new(notifyDuration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 0, 1, 0),
+            Position = UDim2.new(1, 0, 0, 0)
+        }):Play()
+
+        -- Dời các thông báo cũ lên
+        for i, v in ipairs(NoirUI.Notifications) do
+            TweenService:Create(v, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Position = UDim2.new(1, -280, 0.8, -(i * 85))
+            }):Play()
+        end
+
+        table.insert(NoirUI.Notifications, 1, n)
+
+        -- Animation xuất hiện
+        TweenService:Create(n, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Position = UDim2.new(1, -280, 0.8, 0)
+        }):Play()
+
+        -- Đóng Notify
+        task.spawn(function()
+            task.wait(notifyDuration)
+            if n and n.Parent then
+                local frameTween = TweenService:Create(n, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                    Position = UDim2.new(1, 20, n.Position.Y.Scale, n.Position.Y.Offset),
+                    BackgroundTransparency = 1
+                })
+                frameTween:Play()
+
+                local textInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+                TweenService:Create(tl, textInfo, { TextTransparency = 1 }):Play()
+                TweenService:Create(ml, textInfo, { TextTransparency = 1 }):Play()
+                TweenService:Create(progressBg, textInfo, { BackgroundTransparency = 1 }):Play()
+                TweenService:Create(progressFill, textInfo, { BackgroundTransparency = 1 }):Play()
+
+                frameTween.Completed:Wait()
+                for i, v in ipairs(NoirUI.Notifications) do
+                    if v == n then
+                        table.remove(NoirUI.Notifications, i)
+                        break
+                    end
+                end
+                n:Destroy()
+            end
+        end)
+    end
+
     local Window = {}
     local allTabButtons = {}
     
-    -- Blur
+    -- ==========================================================
+    -- WINDOW ADVANCED FEATURES
+    -- ==========================================================
     function Window:SetBlur(intensity)
         if not self._blur then
             self._blur = BlurManager:Create(Main)
@@ -1679,7 +1806,6 @@ function NoirUI:CreateWindow(settings)
         end
     end
     
-    -- Shadow
     function Window:EnableShadow(rolling)
         if not self._shadow then
             self._shadow = NoirUI:CreateShadow(Main, rolling or false)
@@ -1702,12 +1828,10 @@ function NoirUI:CreateWindow(settings)
         end
     end
     
-    -- Config Manager
     function Window:CreateConfigManager(configSettings)
         return NoirUI:CreateConfigManager(configSettings)
     end
     
-    -- Flags API
     function Window:GetFlag(name)
         return NoirUI:GetFlag(name)
     end
@@ -1750,10 +1874,6 @@ function NoirUI:CreateWindow(settings)
         SetupBackground(Main, {Image = imageId}, Main.BackgroundColor3, 0)
     end
     
-    function Window:SetBlur(amount)
-        -- Logic thêm BlurOverlay nếu cần
-    end
-    
     function Window:Hide()
         Main.Visible = false
         TBtn.Visible = true
@@ -1769,7 +1889,7 @@ function NoirUI:CreateWindow(settings)
     end
 
     -- ==========================================================
-    -- ELEMENTS (Tabs, Sections, etc.)
+    -- ELEMENTS
     -- ==========================================================
     function Window:CreateTabGroup(title, defaultOpen)
         local group = {}
