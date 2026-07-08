@@ -4,7 +4,8 @@
 	Lua Scripter: NoirNF, Adono
 	Executor Compatibility Tester: Adono
 	Animation Engineer: Adono
-	Version: 2.0.1
+	Version: 1.5.7
+	Features: 18 tính năng tổng hợp (Asset Cache, Config Manager, Blur, Flag System, Shadow, Logger, Indicator, Loader, Key System, Auto-Save, Theme Manager, Confirm Dialog, Hotkey, Context Menu, Toast, Music Player UI)
 ]]
 
 --Core
@@ -13,79 +14,141 @@ local UIS = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
-local Lighting = game:GetService("Lighting")
-local TextService = game:GetService("TextService")
 local CoreGui = game:GetService("CoreGui")
+local TextService = game:GetService("TextService")
+local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
-local LocalPlayer = Players.LocalPlayer
 
 local OldGui = CoreGui:FindFirstChild("NoirUI_V3_Ultimate")
 if OldGui then OldGui:Destroy() end
 
-local NoirUI = { Notifications = {}, ActiveConfirmFrame = nil, CustomCommands = {}, Connections = {}, TabGroups = {}, Flags = {}, FlagGroups = {} }
-
-local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
-local _version = "2.0.1"
-
--- === THEME PRESETS ===
-local ThemePresets = {
-	["kyri"] = {
-		bg = Color3.fromRGB(8,8,10),
-		container = Color3.fromRGB(14,14,18),
-		element = Color3.fromRGB(20,20,26),
-		hover = Color3.fromRGB(28,28,36),
-		active = Color3.fromRGB(32,32,42),
-		accent = Color3.fromRGB(138,116,249),
-		text = Color3.fromRGB(245,245,250),
-		subtext = Color3.fromRGB(165,165,180),
-		border = Color3.fromRGB(32,32,40)
-	},
-	["midnight"] = {
-		bg = Color3.fromRGB(6,8,14),
-		container = Color3.fromRGB(10,14,22),
-		element = Color3.fromRGB(16,20,32),
-		hover = Color3.fromRGB(22,28,44),
-		active = Color3.fromRGB(26,34,52),
-		accent = Color3.fromRGB(80,160,255),
-		text = Color3.fromRGB(240,245,255),
-		subtext = Color3.fromRGB(140,160,200),
-		border = Color3.fromRGB(24,32,50)
-	},
-	["rose"] = {
-		bg = Color3.fromRGB(12,8,10),
-		container = Color3.fromRGB(18,12,16),
-		element = Color3.fromRGB(26,18,22),
-		hover = Color3.fromRGB(36,24,30),
-		active = Color3.fromRGB(44,28,36),
-		accent = Color3.fromRGB(255,110,150),
-		text = Color3.fromRGB(255,245,248),
-		subtext = Color3.fromRGB(190,160,170),
-		border = Color3.fromRGB(40,26,32)
-	},
-	["forest"] = {
-		bg = Color3.fromRGB(8,12,8),
-		container = Color3.fromRGB(12,18,12),
-		element = Color3.fromRGB(18,26,18),
-		hover = Color3.fromRGB(24,34,24),
-		active = Color3.fromRGB(30,42,30),
-		accent = Color3.fromRGB(80,220,120),
-		text = Color3.fromRGB(240,250,240),
-		subtext = Color3.fromRGB(150,190,155),
-		border = Color3.fromRGB(24,38,24)
-	},
-	["slate"] = {
-		bg = Color3.fromRGB(12,12,14),
-		container = Color3.fromRGB(18,18,22),
-		element = Color3.fromRGB(26,26,32),
-		hover = Color3.fromRGB(34,34,42),
-		active = Color3.fromRGB(40,40,50),
-		accent = Color3.fromRGB(160,160,185),
-		text = Color3.fromRGB(240,240,245),
-		subtext = Color3.fromRGB(160,160,175),
-		border = Color3.fromRGB(36,36,44)
-	}
+local NoirUI = { 
+    Notifications = {}, 
+    ActiveConfirmFrame = nil, 
+    CustomCommands = {}, 
+    Connections = {}, 
+    TabGroups = {},
+    Flags = {},
+    FlagGroups = {},
+    Hotkeys = {},
+    HotkeyConnections = {},
+    _version = "1.5.7",
+    GlobalLogo = "rbxassetid://94916110511437",
+    AccentColor = Color3.fromRGB(138, 116, 249),
+    ScreenGui = nil,
+    BuiltInBold = Enum.Font.GothamBold,
 }
 
+local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
+
+-- === THEME PRESETS (Gộp cả cũ + mới) ===
+local ThemePresets = {
+    -- Cũ
+    ["kyri"] = {
+        bg = Color3.fromRGB(8,8,10),
+        container = Color3.fromRGB(14,14,18),
+        element = Color3.fromRGB(20,20,26),
+        hover = Color3.fromRGB(28,28,36),
+        active = Color3.fromRGB(32,32,42),
+        accent = Color3.fromRGB(138,116,249),
+        text = Color3.fromRGB(245,245,250),
+        subtext = Color3.fromRGB(165,165,180),
+        border = Color3.fromRGB(32,32,40)
+    },
+    ["midnight"] = {
+        bg = Color3.fromRGB(6,8,14),
+        container = Color3.fromRGB(10,14,22),
+        element = Color3.fromRGB(16,20,32),
+        hover = Color3.fromRGB(22,28,44),
+        active = Color3.fromRGB(26,34,52),
+        accent = Color3.fromRGB(80,160,255),
+        text = Color3.fromRGB(240,245,255),
+        subtext = Color3.fromRGB(140,160,200),
+        border = Color3.fromRGB(24,32,50)
+    },
+    ["rose"] = {
+        bg = Color3.fromRGB(12,8,10),
+        container = Color3.fromRGB(18,12,16),
+        element = Color3.fromRGB(26,18,22),
+        hover = Color3.fromRGB(36,24,30),
+        active = Color3.fromRGB(44,28,36),
+        accent = Color3.fromRGB(255,110,150),
+        text = Color3.fromRGB(255,245,248),
+        subtext = Color3.fromRGB(190,160,170),
+        border = Color3.fromRGB(40,26,32)
+    },
+    ["forest"] = {
+        bg = Color3.fromRGB(8,12,8),
+        container = Color3.fromRGB(12,18,12),
+        element = Color3.fromRGB(18,26,18),
+        hover = Color3.fromRGB(24,34,24),
+        active = Color3.fromRGB(30,42,30),
+        accent = Color3.fromRGB(80,220,120),
+        text = Color3.fromRGB(240,250,240),
+        subtext = Color3.fromRGB(150,190,155),
+        border = Color3.fromRGB(24,38,24)
+    },
+    ["slate"] = {
+        bg = Color3.fromRGB(12,12,14),
+        container = Color3.fromRGB(18,18,22),
+        element = Color3.fromRGB(26,26,32),
+        hover = Color3.fromRGB(34,34,42),
+        active = Color3.fromRGB(40,40,50),
+        accent = Color3.fromRGB(160,160,185),
+        text = Color3.fromRGB(240,240,245),
+        subtext = Color3.fromRGB(160,160,175),
+        border = Color3.fromRGB(36,36,44)
+    },
+    -- Mới
+    ["Noir"] = {
+        bg = Color3.fromRGB(8, 8, 10),
+        container = Color3.fromRGB(14, 14, 18),
+        element = Color3.fromRGB(20, 20, 26),
+        hover = Color3.fromRGB(28, 28, 36),
+        active = Color3.fromRGB(32, 32, 42),
+        accent = Color3.fromRGB(138, 116, 249),
+        text = Color3.fromRGB(245, 245, 250),
+        subtext = Color3.fromRGB(165, 165, 180),
+        border = Color3.fromRGB(32, 32, 40)
+    },
+    ["Cyber"] = {
+        bg = Color3.fromRGB(6, 6, 10),
+        container = Color3.fromRGB(12, 12, 18),
+        element = Color3.fromRGB(18, 18, 26),
+        hover = Color3.fromRGB(28, 28, 38),
+        active = Color3.fromRGB(34, 34, 46),
+        accent = Color3.fromRGB(0, 229, 255),
+        text = Color3.fromRGB(245, 245, 250),
+        subtext = Color3.fromRGB(165, 200, 220),
+        border = Color3.fromRGB(28, 28, 40)
+    },
+    ["Sunset"] = {
+        bg = Color3.fromRGB(12, 6, 8),
+        container = Color3.fromRGB(18, 10, 12),
+        element = Color3.fromRGB(26, 16, 18),
+        hover = Color3.fromRGB(36, 24, 26),
+        active = Color3.fromRGB(44, 30, 32),
+        accent = Color3.fromRGB(255, 150, 50),
+        text = Color3.fromRGB(255, 248, 245),
+        subtext = Color3.fromRGB(210, 180, 170),
+        border = Color3.fromRGB(40, 28, 30)
+    },
+    ["Ocean"] = {
+        bg = Color3.fromRGB(6, 10, 14),
+        container = Color3.fromRGB(10, 16, 22),
+        element = Color3.fromRGB(16, 22, 30),
+        hover = Color3.fromRGB(24, 32, 42),
+        active = Color3.fromRGB(30, 38, 50),
+        accent = Color3.fromRGB(60, 200, 230),
+        text = Color3.fromRGB(240, 248, 255),
+        subtext = Color3.fromRGB(150, 190, 210),
+        border = Color3.fromRGB(24, 34, 46)
+    }
+}
+
+-- ============================================================
+-- HÀM HỖ TRỢ CỐT LÕI
+-- ============================================================
 local function ResolveIcon(iconInput)
     if not iconInput then return nil end
     if type(iconInput) == "number" then
@@ -117,13 +180,6 @@ local function GetContrastColor(backgroundColor)
     end
 end
 
-local function RandomString()
-    return string.char(math.random(65,90)) .. string.char(math.random(65,90)) .. tostring(os.time()):sub(-4)
-end
-
--- ====================================================
--- ANIMATION
--- ====================================================
 local function CreateClickScaleEffect(button)
     if not button then return end
     local origSize = button.Size
@@ -182,9 +238,154 @@ local function CreateHoverEffect(button)
     end)
 end
 
--- ==========================================================
--- ASSET CACHE SYSTEM
--- ==========================================================
+local function MakeDraggable(frame)
+    local dragging, dragInput, dragStart, startPos
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    UIS.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+local function SetupBackground(frame, bgSetting, bgColor, defaultTransparency)
+    local existingBg = frame:FindFirstChild("_BackgroundImage")
+    if existingBg then existingBg:Destroy() end
+    if bgSetting and bgSetting.Image then
+        local frameCorner = frame:FindFirstChild("UICorner")
+        local cornerRadius = frameCorner and frameCorner.CornerRadius or UDim.new(0, 8)
+        local bgImage = Instance.new("ImageLabel")
+        bgImage.Name = "_BackgroundImage"
+        bgImage.Size = UDim2.new(1, 0, 1, 0)
+        bgImage.Position = UDim2.new(0, 0, 0, 0)
+        bgImage.BackgroundTransparency = 1
+        bgImage.ImageTransparency = bgSetting.Transparency or 0
+        bgImage.ScaleType = Enum.ScaleType.Crop
+        bgImage.ZIndex = 0
+        bgImage.Parent = frame
+        local bgCorner = Instance.new("UICorner")
+        bgCorner.CornerRadius = cornerRadius
+        bgCorner.Parent = bgImage
+        local imgValue = bgSetting.Image
+        if type(imgValue) == "number" or (type(imgValue) == "string" and imgValue:match("^%d+$")) then
+            bgImage.Image = "rbxassetid://" .. tostring(imgValue)
+        elseif type(imgValue) == "string" then
+            bgImage.Image = imgValue
+        end
+        bgImage.ZIndex = 0
+        for _, child in pairs(frame:GetChildren()) do
+            if child ~= bgImage and child:IsA("GuiObject") then
+                child.ZIndex = math.max(child.ZIndex, 1)
+            end
+        end
+        frame.ClipsDescendants = true
+        frame.BackgroundTransparency = 1
+        return true
+    else
+        frame.BackgroundTransparency = defaultTransparency or 0
+        frame.BackgroundColor3 = bgColor or Color3.fromRGB(10, 10, 10)
+        frame.ClipsDescendants = false
+        return false
+    end
+end
+
+local function AddSubtitle(parent, subtitleText, yOffset)
+    if not subtitleText or subtitleText == "" then return nil end
+    local subtitle = Instance.new("TextLabel", parent)
+    subtitle.Size = UDim2.new(1, -20, 0, 0)
+    subtitle.Position = UDim2.new(0, 10, 0, yOffset)
+    subtitle.BackgroundTransparency = 1
+    subtitle.Text = subtitleText
+    subtitle.TextColor3 = Color3.fromRGB(160, 160, 160)
+    subtitle.TextTransparency = 0
+    subtitle.Font = "Gotham"
+    subtitle.TextSize = 10
+    subtitle.TextXAlignment = "Left"
+    subtitle.TextYAlignment = "Top"
+    subtitle.TextWrapped = true
+    subtitle.Name = "Subtitle"
+    local function updateHeight()
+        local textBounds = subtitle.TextBounds
+        local lineCount = math.max(1, math.ceil(textBounds.X / (subtitle.AbsoluteSize.X - 20)))
+        local newHeight = lineCount * 14
+        subtitle.Size = UDim2.new(1, -20, 0, newHeight)
+    end
+    task.defer(updateHeight)
+    subtitle:GetPropertyChangedSignal("Text"):Connect(updateHeight)
+    subtitle:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateHeight)
+    return subtitle
+end
+
+-- ============================================================
+-- ÂM THANH
+-- ============================================================
+local SoundSettings = {
+    Enabled = true,
+    Volume = 0.5,
+    ClickSoundId = nil,
+    TabSoundId = nil,
+    ElementSoundId = nil,
+    OpenSoundId = nil,
+    CloseSoundId = nil,
+    NotificationSoundId = nil,
+    ErrorSoundId = nil,
+    SuccessSoundId = nil,
+}
+
+local function PlaySound(soundType)
+    if not SoundSettings.Enabled then return end
+    local soundId = nil
+    if soundType == "Click" then soundId = SoundSettings.ClickSoundId
+    elseif soundType == "Tab" then soundId = SoundSettings.TabSoundId
+    elseif soundType == "Element" then soundId = SoundSettings.ElementSoundId
+    elseif soundType == "Open" then soundId = SoundSettings.OpenSoundId
+    elseif soundType == "Close" then soundId = SoundSettings.CloseSoundId
+    elseif soundType == "Notification" then soundId = SoundSettings.NotificationSoundId
+    elseif soundType == "Error" then soundId = SoundSettings.ErrorSoundId
+    elseif soundType == "Success" then soundId = SoundSettings.SuccessSoundId
+    end
+    if not soundId then return end
+    local sound = Instance.new("Sound")
+    sound.SoundId = soundId
+    sound.Volume = SoundSettings.Volume
+    sound.Parent = CoreGui
+    sound:Play()
+    sound.Ended:Connect(function() sound:Destroy() end)
+    task.delay(3, function() if sound then sound:Destroy() end end)
+end
+
+function NoirUI:SetCustomSound(soundType, soundId)
+    if soundType == "Click" then SoundSettings.ClickSoundId = soundId
+    elseif soundType == "Tab" then SoundSettings.TabSoundId = soundId
+    elseif soundType == "Element" then SoundSettings.ElementSoundId = soundId
+    elseif soundType == "Open" then SoundSettings.OpenSoundId = soundId
+    elseif soundType == "Close" then SoundSettings.CloseSoundId = soundId
+    elseif soundType == "Notification" then SoundSettings.NotificationSoundId = soundId
+    elseif soundType == "Error" then SoundSettings.ErrorSoundId = soundId
+    elseif soundType == "Success" then SoundSettings.SuccessSoundId = soundId
+    end
+end
+
+-- ============================================================
+-- 1. ASSET CACHE SYSTEM (Từ CK)
+-- ============================================================
 local AssetCache = {
     Directory = "NoirUI_Cache",
     Assets = {},
@@ -201,16 +402,17 @@ end
 function AssetCache:Hash(str)
     if type(str) ~= "string" then return "unknown" end
     local hash = #str
-    string.gsub(str, '.', function(char)
-        hash = hash + char:byte()
-    end)
+    for i = 1, #str do
+        local char = string.sub(str, i, i)
+        hash = hash + string.byte(char)
+    end
     return "cache_" .. tostring(hash)
 end
 
 function AssetCache:GetAsset(id)
     if not self.Enabled then return id end
     
-    if type(id) == "string" and id:match("^rbxthumb://") then
+    if type(id) == "string" and string.match(id, "^rbxthumb://") then
         return self:CacheThumbnail(id)
     end
     
@@ -218,7 +420,7 @@ function AssetCache:GetAsset(id)
     if type(id) == "number" then
         numericId = id
     elseif type(id) == "string" then
-        numericId = id:match("%d+")
+        numericId = string.match(id, "%d+")
     end
     
     if not numericId then return id end
@@ -259,7 +461,7 @@ function AssetCache:GetAsset(id)
 end
 
 function AssetCache:CacheThumbnail(thumbUrl)
-    local id = thumbUrl:match("id=(%d+)")
+    local id = string.match(thumbUrl, "id=(%d+)")
     if not id then return thumbUrl end
     
     local hash = self:Hash("thumb_" .. id)
@@ -309,391 +511,137 @@ function NoirUI:EnableAssetCache(directory)
     NoirUI._AssetCache = AssetCache
 end
 
--- ==========================================================
--- SOUND & MUSIC
--- ==========================================================
-local SoundSettings = {
-    Enabled = true,
-    Volume = 0.5,
-    ClickSoundId = nil,
-    TabSoundId = nil,
-    ElementSoundId = nil,
-    OpenSoundId = nil,
-    CloseSoundId = nil,
-    NotificationSoundId = nil,
-    ErrorSoundId = nil,
-    SuccessSoundId = nil,
-}
-
-local function PlaySound(soundType)
-    if not SoundSettings.Enabled then return end
-    local soundId = nil
-    if soundType == "Click" then soundId = SoundSettings.ClickSoundId
-    elseif soundType == "Tab" then soundId = SoundSettings.TabSoundId
-    elseif soundType == "Element" then soundId = SoundSettings.ElementSoundId
-    elseif soundType == "Open" then soundId = SoundSettings.OpenSoundId
-    elseif soundType == "Close" then soundId = SoundSettings.CloseSoundId
-    elseif soundType == "Notification" then soundId = SoundSettings.NotificationSoundId
-    elseif soundType == "Error" then soundId = SoundSettings.ErrorSoundId
-    elseif soundType == "Success" then soundId = SoundSettings.SuccessSoundId
-    end
-    if not soundId then return end
-    local sound = Instance.new("Sound")
-    sound.SoundId = soundId
-    sound.Volume = SoundSettings.Volume
-    sound.Parent = CoreGui
-    sound:Play()
-    sound.Ended:Connect(function() sound:Destroy() end)
-    task.delay(3, function() if sound then sound:Destroy() end end)
-end
-
-function NoirUI:SetCustomSound(soundType, soundId)
-    if soundType == "Click" then SoundSettings.ClickSoundId = soundId
-    elseif soundType == "Tab" then SoundSettings.TabSoundId = soundId
-    elseif soundType == "Element" then SoundSettings.ElementSoundId = soundId
-    elseif soundType == "Open" then SoundSettings.OpenSoundId = soundId
-    elseif soundType == "Close" then SoundSettings.CloseSoundId = soundId
-    elseif soundType == "Notification" then SoundSettings.NotificationSoundId = soundId
-    elseif soundType == "Error" then SoundSettings.ErrorSoundId = soundId
-    elseif soundType == "Success" then SoundSettings.SuccessSoundId = soundId
-    end
-end
-
-local function StopAndCleanupMusic()
-    if NoirUI.Music and NoirUI.Music.CurrentSound then
-        NoirUI.Music.CurrentSound:Stop()
-    end
-end
-
--- ==========================================================
--- LOGGER SYSTEM (Port from Luau)
--- ==========================================================
-function NoirUI:CreateLogger()
-    if NoirUI.__LogSystem then
-        return NoirUI.__LogSystem
+-- ============================================================
+-- 2. CONFIG MANAGER (Từ CK + NL)
+-- ============================================================
+function NoirUI:CreateConfigManager(settings)
+    settings = settings or {}
+    settings.Directory = settings.Directory or "NoirUI_Configs"
+    settings.EnableNotifications = settings.EnableNotifications or true
+    
+    if not isfolder(settings.Directory) then
+        makefolder(settings.Directory)
     end
     
-    local Logging = {}
-    local Log = Instance.new("Frame")
-    local UIListLayout = Instance.new("UIListLayout")
-    
-    Log.Name = RandomString()
-    Log.Parent = CoreGui
-    Log.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Log.BackgroundTransparency = 1
-    Log.Position = UDim2.new(0, 25, 0, 5)
-    Log.Size = UDim2.new(0, 25, 0, 25)
-    
-    UIListLayout.Parent = Log
-    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    UIListLayout.Padding = UDim.new(0, 12)
-    
-    NoirUI.__LogSystem = Logging
-    
-    function Logging.new(icon, message, duration)
-        duration = duration or 3
-        message = message or "Log"
-        icon = icon or "crosshairs"
-        
-        local LogFrame = Instance.new("Frame")
-        local UICorner = Instance.new("UICorner")
-        local UIStroke = Instance.new("UIStroke")
-        local LogContent = Instance.new("TextLabel")
-        local IconLabel = Instance.new("TextLabel")
-        
-        LogFrame.Name = RandomString()
-        LogFrame.Parent = Log
-        LogFrame.BackgroundColor3 = Color3.fromRGB(20, 22, 27)
-        LogFrame.BackgroundTransparency = 0.075
-        LogFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        LogFrame.BorderSizePixel = 0
-        LogFrame.ClipsDescendants = true
-        LogFrame.Size = UDim2.new(0, 0, 0, 20)
-        LogFrame.ZIndex = 130
-        
-        UICorner.CornerRadius = UDim.new(0, 4)
-        UICorner.Parent = LogFrame
-        
-        UIStroke.Transparency = 0.650
-        UIStroke.Color = Color3.fromRGB(45, 48, 58)
-        UIStroke.Parent = LogFrame
-        
-        LogContent.Parent = LogFrame
-        LogContent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        LogContent.BackgroundTransparency = 1
-        LogContent.Position = UDim2.new(0, 25, 0, 2)
-        LogContent.Size = UDim2.new(0, 200, 0, 15)
-        LogContent.ZIndex = 132
-        LogContent.Font = Enum.Font.GothamBold
-        LogContent.Text = message
-        LogContent.TextColor3 = Color3.fromRGB(255, 255, 255)
-        LogContent.TextSize = 12
-        LogContent.TextTransparency = 0.25
-        LogContent.TextXAlignment = Enum.TextXAlignment.Left
-        
-        IconLabel.Parent = LogFrame
-        IconLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        IconLabel.BackgroundTransparency = 1
-        IconLabel.Position = UDim2.new(0, 7, 0, 3)
-        IconLabel.Size = UDim2.new(0, 15, 0, 15)
-        IconLabel.ZIndex = 133
-        IconLabel.Font = Enum.Font.GothamBold
-        IconLabel.Text = icon
-        IconLabel.TextColor3 = Color3.fromRGB(223, 223, 223)
-        IconLabel.TextSize = 13
-        IconLabel.TextTransparency = 0.25
-        
-        local size = TextService:GetTextSize(LogContent.Text, LogContent.TextSize, LogContent.Font, Vector2.new(math.huge, math.huge))
-        LogFrame.Size = UDim2.new(0, size.X + 35, 0, 20)
-        
-        task.delay(duration, function()
-            TweenService:Create(LogFrame, TweenInfo.new(0.3), {
-                BackgroundTransparency = 1
-            }):Play()
-            task.wait(0.3)
-            LogFrame:Destroy()
-        end)
-    end
-    
-    return Logging
-end
-
--- ==========================================================
--- INDICATOR SYSTEM (Port from Luau)
--- ==========================================================
-function NoirUI:CreateIndicator()
-    local IndicatorFrame = Instance.new("Frame")
-    local UIListLayout = Instance.new("UIListLayout")
-    
-    IndicatorFrame.Name = RandomString()
-    IndicatorFrame.Parent = CoreGui
-    IndicatorFrame.AnchorPoint = Vector2.new(0, 0.5)
-    IndicatorFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    IndicatorFrame.BackgroundTransparency = 1
-    IndicatorFrame.Position = UDim2.new(0, 15, 0.5, 0)
-    IndicatorFrame.Size = UDim2.new(0, 100, 0, 100)
-    IndicatorFrame.ZIndex = 15
-    
-    UIListLayout.Parent = IndicatorFrame
-    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    UIListLayout.Padding = UDim.new(0, 10)
-    
-    local Indicators = {}
-    
-    Indicators.Colors = {
-        Red = Color3.fromRGB(255, 102, 105),
-        Green = Color3.fromRGB(135, 255, 143),
-        White = Color3.fromRGB(186, 186, 186),
-        Yellow = Color3.fromRGB(255, 215, 0),
-        Blue = Color3.fromRGB(80, 160, 255),
-        Purple = Color3.fromRGB(138, 116, 249),
-        Orange = Color3.fromRGB(255, 165, 0),
-        Pink = Color3.fromRGB(255, 105, 180),
+    local ConfigManager = {
+        Directory = settings.Directory,
+        EnableNotifications = settings.EnableNotifications,
     }
     
-    Indicators.Root = IndicatorFrame
-    
-    function Indicators.new(config)
-        config = config or {}
-        config.Name = config.Name or "Indicator"
-        config.Icon = config.Icon or "crosshairs"
-        config.Color = config.Color or "White"
-        
-        local Indicator = {
-            Visible = false,
-            Color = config.Color,
-        }
-        
-        local Item = Instance.new("Frame")
-        local UICorner = Instance.new("UICorner")
-        local Line = Instance.new("Frame")
-        local UICorner_2 = Instance.new("UICorner")
-        local UIGradient = Instance.new("UIGradient")
-        local Icon = Instance.new("TextLabel")
-        local Content = Instance.new("TextLabel")
-        
-        Item.Name = RandomString()
-        Item.Parent = IndicatorFrame
-        Item.BackgroundColor3 = Color3.fromRGB(8, 8, 13)
-        Item.BackgroundTransparency = 1
-        Item.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        Item.BorderSizePixel = 0
-        Item.ClipsDescendants = true
-        Item.Size = UDim2.new(0, 85, 0, 40)
-        Item.ZIndex = 16
-        
-        UICorner.CornerRadius = UDim.new(0, 25)
-        UICorner.Parent = Item
-        
-        Line.Parent = Item
-        Line.AnchorPoint = Vector2.new(0, 0.5)
-        Line.BackgroundColor3 = Indicators.Colors[config.Color] or Color3.fromRGB(186, 186, 186)
-        Line.BackgroundTransparency = 1
-        Line.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        Line.BorderSizePixel = 0
-        Line.Position = UDim2.new(0, 2, 0.5, 0)
-        Line.Size = UDim2.new(0, 3, 0.65, 0)
-        Line.ZIndex = 17
-        
-        UICorner_2.CornerRadius = UDim.new(0, 25)
-        UICorner_2.Parent = Line
-        
-        UIGradient.Rotation = 90
-        UIGradient.Transparency = NumberSequence.new{
-            NumberSequenceKeypoint.new(0.00, 1.00),
-            NumberSequenceKeypoint.new(0.50, 0.00),
-            NumberSequenceKeypoint.new(1.00, 1.00)
-        }
-        UIGradient.Parent = Line
-        
-        Icon.Parent = Item
-        Icon.AnchorPoint = Vector2.new(0, 0.5)
-        Icon.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        Icon.BackgroundTransparency = 1
-        Icon.Position = UDim2.new(0, 10, 0.5, 0)
-        Icon.Size = UDim2.new(0, 25, 0, 25)
-        Icon.ZIndex = 17
-        Icon.Font = Enum.Font.GothamBold
-        Icon.Text = config.Icon
-        Icon.TextColor3 = Indicators.Colors[config.Color] or Color3.fromRGB(186, 186, 186)
-        Icon.TextSize = 21
-        Icon.TextTransparency = 1
-        
-        Content.Parent = Item
-        Content.AnchorPoint = Vector2.new(0, 0.5)
-        Content.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        Content.BackgroundTransparency = 1
-        Content.Position = UDim2.new(0, 40, 0.5, 0)
-        Content.Size = UDim2.new(1, -40, 0, 25)
-        Content.ZIndex = 17
-        Content.Font = Enum.Font.GothamBold
-        Content.Text = config.Name
-        Content.TextColor3 = Indicators.Colors[config.Color] or Color3.fromRGB(186, 186, 186)
-        Content.TextSize = 20
-        Content.TextTransparency = 1
-        Content.TextXAlignment = Enum.TextXAlignment.Left
-        
-        local function UpdateSize()
-            local text = TextService:GetTextSize(Content.Text, Content.TextSize, Content.Font, Vector2.new(math.huge, math.huge))
-            Item.Size = UDim2.new(0, text.X + 60, 0, 40)
-        end
-        
-        function Indicator:SetVisible(visible)
-            Indicator.Visible = visible
-            
-            if visible then
-                Item.BackgroundTransparency = 0.2
-                Line.BackgroundTransparency = 0
-                Icon.TextTransparency = 0.25
-                Content.TextTransparency = 0.2
-            else
-                Item.BackgroundTransparency = 1
-                Line.BackgroundTransparency = 1
-                Icon.TextTransparency = 1
-                Content.TextTransparency = 1
+    function ConfigManager:GetAllFlags()
+        local flags = {}
+        for name, element in pairs(NoirUI.Flags or {}) do
+            if element and element.GetValue then
+                local value = element:GetValue()
+                flags[name] = {
+                    Type = element.Type or "Normal",
+                    Value = value
+                }
             end
         end
-        
-        function Indicator:SetColor(color)
-            Indicator.Color = color
-            local c = Indicators.Colors[color] or Color3.fromRGB(186, 186, 186)
-            Line.BackgroundColor3 = c
-            Icon.TextColor3 = c
-            Content.TextColor3 = c
-        end
-        
-        function Indicator:SetText(text)
-            Content.Text = text
-            UpdateSize()
-        end
-        
-        function Indicator:SetIcon(icon)
-            Icon.Text = icon
-        end
-        
-        UpdateSize()
-        Indicator:SetVisible(false)
-        
-        return Indicator
+        return flags
     end
     
-    return Indicators
-end
-
--- ==========================================================
--- SHADOW EFFECT (Port from Luau)
--- ==========================================================
-function NoirUI:RollingEffect(parent)
-    local gradient = Instance.new("UIGradient")
-    gradient.Transparency = NumberSequence.new{
-        NumberSequenceKeypoint.new(0.00, 0.4),
-        NumberSequenceKeypoint.new(1.00, 0.00)
-    }
-    gradient.Parent = parent
-    return gradient
-end
-
-function NoirUI:CreateShadow(parent, rollingEffect)
-    local Shadow = {}
-    
-    local strokes = {}
-    local thicknesses = {6, 5, 4, 3}
-    local gradients = {}
-    
-    for i, thick in ipairs(thicknesses) do
-        local stroke = Instance.new("UIStroke")
-        stroke.Thickness = thick
-        stroke.Transparency = 1
-        stroke.Color = Color3.fromRGB(0, 0, 0)
-        stroke.Parent = parent
-        table.insert(strokes, stroke)
+    function ConfigManager:SaveConfig(configName, author)
+        configName = configName or "config_" .. os.time()
+        author = author or Players.LocalPlayer.Name
         
-        if rollingEffect then
-            local grad = NoirUI:RollingEffect(stroke)
-            table.insert(gradients, grad)
+        local flags = self:GetAllFlags()
+        flags["__INFORMATION"] = {
+            Type = "Information",
+            Author = author,
+            Name = configName,
+            CreatedDate = os.date("%d/%m/%Y %H:%M:%S"),
+            Version = NoirUI._version
+        }
+        
+        local path = self.Directory .. "/" .. configName
+        writefile(path, HttpService:JSONEncode(flags))
+        
+        if self.EnableNotifications then
+            NoirUI:Notify("Config Manager", "Đã lưu config: " .. configName, "save", "Success", 2)
         end
+        
+        return true
     end
     
-    local rollingThread
-    
-    Shadow.Render = function(value)
-        if rollingThread then
-            task.cancel(rollingThread)
-            rollingThread = nil
-        end
+    function ConfigManager:LoadConfig(configName)
+        local path = self.Directory .. "/" .. configName
         
-        if value then
-            for _, stroke in ipairs(strokes) do
-                TweenService:Create(stroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-                    Transparency = 0.9
-                }):Play()
+        if not isfile(path) then
+            if self.EnableNotifications then
+                NoirUI:Notify("Config Manager", "Không tìm thấy: " .. configName, "alert-triangle", "Error", 2)
             end
-            
-            if rollingEffect and #gradients > 0 then
-                rollingThread = task.spawn(function()
-                    while true do
-                        task.wait(0.025)
-                        for _, grad in ipairs(gradients) do
-                            grad.Rotation = (grad.Rotation or 0) + 20
-                        end
+            return false
+        end
+        
+        local json = readfile(path)
+        local decoded = HttpService:JSONDecode(json)
+        
+        for flagName, data in pairs(decoded) do
+            if flagName ~= "__INFORMATION" then
+                local element = NoirUI.Flags and NoirUI.Flags[flagName]
+                if element and element.SetValue then
+                    if data.Value ~= nil then
+                        element:SetValue(data.Value)
                     end
-                end)
-            end
-        else
-            for _, stroke in ipairs(strokes) do
-                TweenService:Create(stroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-                    Transparency = 1
-                }):Play()
+                end
             end
         end
+        
+        if self.EnableNotifications then
+            NoirUI:Notify("Config Manager", "Đã tải config: " .. configName, "download", "Success", 2)
+        end
+        
+        return true
     end
     
-    return Shadow
+    function ConfigManager:DeleteConfig(configName)
+        local path = self.Directory .. "/" .. configName
+        
+        if isfile(path) then
+            delfile(path)
+            if self.EnableNotifications then
+                NoirUI:Notify("Config Manager", "Đã xóa config: " .. configName, "trash-2", "Element", 2)
+            end
+            return true
+        end
+        return false
+    end
+    
+    function ConfigManager:GetConfigs()
+        local configs = {}
+        local files = listfiles(self.Directory)
+        
+        for _, file in ipairs(files) do
+            local name = string.match(file, "([^/]+)$")
+            if name then
+                table.insert(configs, name)
+            end
+        end
+        
+        return configs
+    end
+    
+    function ConfigManager:GetConfigInfo(configName)
+        local path = self.Directory .. "/" .. configName
+        if not isfile(path) then return nil end
+        
+        local json = readfile(path)
+        local decoded = HttpService:JSONDecode(json)
+        return decoded["__INFORMATION"] or nil
+    end
+    
+    function ConfigManager:GetConfigCount()
+        return #listfiles(self.Directory)
+    end
+    
+    return ConfigManager
 end
 
--- ==========================================================
--- BLUR EFFECT (Port from Luau)
--- ==========================================================
+-- ============================================================
+-- 3. BLUR EFFECT (Từ CK + NL)
+-- ============================================================
 local BlurManager = {
     Enabled = false,
     Intensity = 1,
@@ -826,138 +774,9 @@ function BlurManager:Destroy()
     self.Connections = {}
 end
 
--- ==========================================================
--- CONFIG MANAGER
--- ==========================================================
-function NoirUI:CreateConfigManager(settings)
-    settings = settings or {}
-    settings.Directory = settings.Directory or "NoirUI_Configs"
-    settings.EnableNotifications = settings.EnableNotifications or true
-    
-    if not isfolder(settings.Directory) then
-        makefolder(settings.Directory)
-    end
-    
-    local ConfigManager = {
-        Directory = settings.Directory,
-        EnableNotifications = settings.EnableNotifications,
-    }
-    
-    function ConfigManager:GetAllFlags()
-        local flags = {}
-        for name, element in pairs(NoirUI.Flags or {}) do
-            if element and element.GetValue then
-                local value = element:GetValue()
-                flags[name] = {
-                    Type = element.Type or "Normal",
-                    Value = value
-                }
-            end
-        end
-        return flags
-    end
-    
-    function ConfigManager:SaveConfig(configName, author)
-        configName = configName or "config_" .. os.time()
-        author = author or LocalPlayer.Name
-        
-        local flags = self:GetAllFlags()
-        flags["__INFORMATION"] = {
-            Type = "Information",
-            Author = author,
-            Name = configName,
-            CreatedDate = os.date("%d/%m/%Y %H:%M:%S"),
-            Version = _version
-        }
-        
-        local path = self.Directory .. "/" .. configName
-        writefile(path, HttpService:JSONEncode(flags))
-        
-        if self.EnableNotifications then
-            NoirUI:Notify("Config Manager", "Đã lưu config: " .. configName, "save", "Success", 2)
-        end
-        
-        return true
-    end
-    
-    function ConfigManager:LoadConfig(configName)
-        local path = self.Directory .. "/" .. configName
-        
-        if not isfile(path) then
-            if self.EnableNotifications then
-                NoirUI:Notify("Config Manager", "Không tìm thấy: " .. configName, "alert-triangle", "Error", 2)
-            end
-            return false
-        end
-        
-        local json = readfile(path)
-        local decoded = HttpService:JSONDecode(json)
-        
-        for flagName, data in pairs(decoded) do
-            if flagName ~= "__INFORMATION" then
-                local element = NoirUI.Flags and NoirUI.Flags[flagName]
-                if element and element.SetValue then
-                    if data.Value ~= nil then
-                        element:SetValue(data.Value)
-                    end
-                end
-            end
-        end
-        
-        if self.EnableNotifications then
-            NoirUI:Notify("Config Manager", "Đã tải config: " .. configName, "download", "Success", 2)
-        end
-        
-        return true
-    end
-    
-    function ConfigManager:DeleteConfig(configName)
-        local path = self.Directory .. "/" .. configName
-        
-        if isfile(path) then
-            delfile(path)
-            if self.EnableNotifications then
-                NoirUI:Notify("Config Manager", "Đã xóa config: " .. configName, "trash-2", "Element", 2)
-            end
-            return true
-        end
-        return false
-    end
-    
-    function ConfigManager:GetConfigs()
-        local configs = {}
-        local files = listfiles(self.Directory)
-        
-        for _, file in ipairs(files) do
-            local name = file:match("([^/]+)$")
-            if name then
-                table.insert(configs, name)
-            end
-        end
-        
-        return configs
-    end
-    
-    function ConfigManager:GetConfigInfo(configName)
-        local path = self.Directory .. "/" .. configName
-        
-        if not isfile(path) then return nil end
-        
-        local json = readfile(path)
-        local decoded = HttpService:JSONDecode(json)
-        return decoded["__INFORMATION"] or nil
-    end
-    
-    function ConfigManager:GetConfigCount()
-        return #listfiles(self.Directory)
-    end
-    
-    return ConfigManager
-end
-
--- ==========================================================
--- FLAG SYSTEM API
--- ==========================================================
+-- ============================================================
+-- 4. FLAG SYSTEM (Từ CK)
+-- ============================================================
 function NoirUI:RegisterFlag(name, element)
     NoirUI.Flags[name] = element
 end
@@ -1001,9 +820,1018 @@ function NoirUI:ResetAllFlags()
     end
 end
 
--- ==========================================================
--- MUSIC PLAYER COMPLETE
--- ==========================================================
+-- ============================================================
+-- 5. SHADOW EFFECT (Từ NL)
+-- ============================================================
+function NoirUI:RollingEffect(parent)
+    local gradient = Instance.new("UIGradient")
+    gradient.Transparency = NumberSequence.new{
+        NumberSequenceKeypoint.new(0.00, 0.4),
+        NumberSequenceKeypoint.new(1.00, 0.00)
+    }
+    gradient.Parent = parent
+    return gradient
+end
+
+function NoirUI:CreateShadow(parent, rollingEffect)
+    local Shadow = {}
+    
+    local strokes = {}
+    local thicknesses = {6, 5, 4, 3}
+    local gradients = {}
+    
+    for i, thick in ipairs(thicknesses) do
+        local stroke = Instance.new("UIStroke")
+        stroke.Thickness = thick
+        stroke.Transparency = 1
+        stroke.Color = Color3.fromRGB(0, 0, 0)
+        stroke.Parent = parent
+        table.insert(strokes, stroke)
+        
+        if rollingEffect then
+            local grad = NoirUI:RollingEffect(stroke)
+            table.insert(gradients, grad)
+        end
+    end
+    
+    local rollingThread
+    
+    Shadow.Render = function(value)
+        if rollingThread then
+            task.cancel(rollingThread)
+            rollingThread = nil
+        end
+        
+        if value then
+            for _, stroke in ipairs(strokes) do
+                TweenService:Create(stroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
+                    Transparency = 0.9
+                }):Play()
+            end
+            
+            if rollingEffect and #gradients > 0 then
+                rollingThread = task.spawn(function()
+                    while true do
+                        task.wait(0.025)
+                        for _, grad in ipairs(gradients) do
+                            grad.Rotation = (grad.Rotation or 0) + 20
+                        end
+                    end
+                end)
+            end
+        else
+            for _, stroke in ipairs(strokes) do
+                TweenService:Create(stroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
+                    Transparency = 1
+                }):Play()
+            end
+        end
+    end
+    
+    return Shadow
+end
+
+-- ============================================================
+-- 6. LOGGER SYSTEM (Từ NL)
+-- ============================================================
+function NoirUI:CreateLogger()
+    if NoirUI.__LogSystem then
+        return NoirUI.__LogSystem
+    end
+    
+    local Logging = {}
+    local Log = Instance.new("Frame")
+    local UIListLayout = Instance.new("UIListLayout")
+    
+    Log.Name = "NoirLogger"
+    Log.Parent = NoirUI.ScreenGui
+    Log.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Log.BackgroundTransparency = 1
+    Log.Position = UDim2.new(0, 25, 0, 5)
+    Log.Size = UDim2.new(0, 25, 0, 25)
+    
+    UIListLayout.Parent = Log
+    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    UIListLayout.Padding = UDim.new(0, 12)
+    
+    NoirUI.__LogSystem = Logging
+    
+    function Logging.new(icon, message, duration)
+        duration = duration or 3
+        message = message or "Log"
+        icon = icon or "crosshairs"
+        
+        local LogFrame = Instance.new("Frame")
+        local UICorner = Instance.new("UICorner")
+        local UIStroke = Instance.new("UIStroke")
+        local LogContent = Instance.new("TextLabel")
+        local IconLabel = Instance.new("TextLabel")
+        local Shadow = NoirUI:CreateShadow(LogFrame, true)
+        
+        LogFrame.Name = "LogEntry"
+        LogFrame.Parent = Log
+        LogFrame.BackgroundColor3 = Color3.fromRGB(20, 22, 27)
+        LogFrame.BackgroundTransparency = 0.075
+        LogFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        LogFrame.BorderSizePixel = 0
+        LogFrame.ClipsDescendants = true
+        LogFrame.Size = UDim2.new(0, 0, 0, 20)
+        LogFrame.ZIndex = 130
+        
+        UICorner.CornerRadius = UDim.new(0, 4)
+        UICorner.Parent = LogFrame
+        
+        UIStroke.Transparency = 0.650
+        UIStroke.Color = Color3.fromRGB(45, 48, 58)
+        UIStroke.Parent = LogFrame
+        
+        LogContent.Parent = LogFrame
+        LogContent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        LogContent.BackgroundTransparency = 1
+        LogContent.Position = UDim2.new(0, 25, 0, 2)
+        LogContent.Size = UDim2.new(0, 200, 0, 15)
+        LogContent.ZIndex = 132
+        LogContent.Font = Enum.Font.GothamBold
+        LogContent.Text = message
+        LogContent.TextColor3 = Color3.fromRGB(255, 255, 255)
+        LogContent.TextSize = 12
+        LogContent.TextTransparency = 0.25
+        LogContent.TextXAlignment = Enum.TextXAlignment.Left
+        
+        IconLabel.Parent = LogFrame
+        IconLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        IconLabel.BackgroundTransparency = 1
+        IconLabel.Position = UDim2.new(0, 7, 0, 3)
+        IconLabel.Size = UDim2.new(0, 15, 0, 15)
+        IconLabel.ZIndex = 133
+        IconLabel.Font = NoirUI.BuiltInBold
+        IconLabel.Text = icon
+        IconLabel.TextColor3 = Color3.fromRGB(223, 223, 223)
+        IconLabel.TextSize = 13
+        IconLabel.TextTransparency = 0.25
+        
+        local size = TextService:GetTextSize(LogContent.Text, LogContent.TextSize, LogContent.Font, Vector2.new(math.huge, math.huge))
+        LogFrame.Size = UDim2.new(0, size.X + 35, 0, 20)
+        
+        Shadow:Render(true)
+        
+        task.delay(duration, function()
+            Shadow:Render(false)
+            TweenService:Create(LogFrame, TweenInfo.new(0.3), {
+                BackgroundTransparency = 1
+            }):Play()
+            task.wait(0.3)
+            LogFrame:Destroy()
+        end)
+    end
+    
+    return Logging
+end
+
+-- ============================================================
+-- 7. INDICATOR SYSTEM (Từ NL)
+-- ============================================================
+function NoirUI:CreateIndicator()
+    local IndicatorFrame = Instance.new("Frame")
+    local UIListLayout = Instance.new("UIListLayout")
+    
+    IndicatorFrame.Name = "NoirIndicators"
+    IndicatorFrame.Parent = NoirUI.ScreenGui
+    IndicatorFrame.AnchorPoint = Vector2.new(0, 0.5)
+    IndicatorFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    IndicatorFrame.BackgroundTransparency = 1
+    IndicatorFrame.Position = UDim2.new(0, 15, 0.5, 0)
+    IndicatorFrame.Size = UDim2.new(0, 100, 0, 100)
+    IndicatorFrame.ZIndex = 15
+    
+    UIListLayout.Parent = IndicatorFrame
+    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    UIListLayout.Padding = UDim.new(0, 10)
+    
+    local Indicators = {}
+    
+    Indicators.Colors = {
+        Red = Color3.fromRGB(255, 102, 105),
+        Green = Color3.fromRGB(135, 255, 143),
+        White = Color3.fromRGB(186, 186, 186),
+        Yellow = Color3.fromRGB(255, 215, 0),
+        Blue = Color3.fromRGB(80, 160, 255),
+        Purple = Color3.fromRGB(138, 116, 249),
+        Orange = Color3.fromRGB(255, 165, 0),
+        Pink = Color3.fromRGB(255, 105, 180),
+    }
+    
+    Indicators.Root = IndicatorFrame
+    
+    function Indicators.new(config)
+        config = config or {}
+        config.Name = config.Name or "Indicator"
+        config.Icon = config.Icon or "crosshairs"
+        config.Color = config.Color or "White"
+        
+        local Indicator = {
+            Visible = false,
+            Color = config.Color,
+        }
+        
+        local Item = Instance.new("Frame")
+        local UICorner = Instance.new("UICorner")
+        local Line = Instance.new("Frame")
+        local UICorner_2 = Instance.new("UICorner")
+        local UIGradient = Instance.new("UIGradient")
+        local Icon = Instance.new("TextLabel")
+        local Content = Instance.new("TextLabel")
+        local Shadow = NoirUI:CreateShadow(Item)
+        
+        Item.Name = "IndicatorItem"
+        Item.Parent = IndicatorFrame
+        Item.BackgroundColor3 = Color3.fromRGB(8, 8, 13)
+        Item.BackgroundTransparency = 1
+        Item.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        Item.BorderSizePixel = 0
+        Item.ClipsDescendants = true
+        Item.Size = UDim2.new(0, 85, 0, 40)
+        Item.ZIndex = 16
+        
+        UICorner.CornerRadius = UDim.new(0, 25)
+        UICorner.Parent = Item
+        
+        Line.Parent = Item
+        Line.AnchorPoint = Vector2.new(0, 0.5)
+        Line.BackgroundColor3 = Indicators.Colors[config.Color] or Color3.fromRGB(186, 186, 186)
+        Line.BackgroundTransparency = 1
+        Line.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        Line.BorderSizePixel = 0
+        Line.Position = UDim2.new(0, 2, 0.5, 0)
+        Line.Size = UDim2.new(0, 3, 0.65, 0)
+        Line.ZIndex = 17
+        
+        UICorner_2.CornerRadius = UDim.new(0, 25)
+        UICorner_2.Parent = Line
+        
+        UIGradient.Rotation = 90
+        UIGradient.Transparency = NumberSequence.new{
+            NumberSequenceKeypoint.new(0.00, 1.00),
+            NumberSequenceKeypoint.new(0.50, 0.00),
+            NumberSequenceKeypoint.new(1.00, 1.00)
+        }
+        UIGradient.Parent = Line
+        
+        Icon.Parent = Item
+        Icon.AnchorPoint = Vector2.new(0, 0.5)
+        Icon.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        Icon.BackgroundTransparency = 1
+        Icon.Position = UDim2.new(0, 10, 0.5, 0)
+        Icon.Size = UDim2.new(0, 25, 0, 25)
+        Icon.ZIndex = 17
+        Icon.Font = NoirUI.BuiltInBold
+        Icon.Text = config.Icon
+        Icon.TextColor3 = Indicators.Colors[config.Color] or Color3.fromRGB(186, 186, 186)
+        Icon.TextSize = 21
+        Icon.TextTransparency = 1
+        
+        Content.Parent = Item
+        Content.AnchorPoint = Vector2.new(0, 0.5)
+        Content.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        Content.BackgroundTransparency = 1
+        Content.Position = UDim2.new(0, 40, 0.5, 0)
+        Content.Size = UDim2.new(1, -40, 0, 25)
+        Content.ZIndex = 17
+        Content.Font = Enum.Font.GothamBold
+        Content.Text = config.Name
+        Content.TextColor3 = Indicators.Colors[config.Color] or Color3.fromRGB(186, 186, 186)
+        Content.TextSize = 20
+        Content.TextTransparency = 1
+        Content.TextXAlignment = Enum.TextXAlignment.Left
+        
+        local function UpdateSize()
+            local text = TextService:GetTextSize(Content.Text, Content.TextSize, Content.Font, Vector2.new(math.huge, math.huge))
+            Item.Size = UDim2.new(0, text.X + 60, 0, 40)
+        end
+        
+        function Indicator:SetVisible(visible)
+            Indicator.Visible = visible
+            
+            if visible then
+                Item.BackgroundTransparency = 0.2
+                Line.BackgroundTransparency = 0
+                Icon.TextTransparency = 0.25
+                Content.TextTransparency = 0.2
+                Shadow:Render(true)
+            else
+                Item.BackgroundTransparency = 1
+                Line.BackgroundTransparency = 1
+                Icon.TextTransparency = 1
+                Content.TextTransparency = 1
+                Shadow:Render(false)
+            end
+        end
+        
+        function Indicator:SetColor(color)
+            Indicator.Color = color
+            local c = Indicators.Colors[color] or Color3.fromRGB(186, 186, 186)
+            Line.BackgroundColor3 = c
+            Icon.TextColor3 = c
+            Content.TextColor3 = c
+        end
+        
+        function Indicator:SetText(text)
+            Content.Text = text
+            UpdateSize()
+        end
+        
+        function Indicator:SetIcon(icon)
+            Icon.Text = icon
+        end
+        
+        UpdateSize()
+        Indicator:SetVisible(false)
+        
+        return Indicator
+    end
+    
+    return Indicators
+end
+
+-- ============================================================
+-- 8. LOADER / SPLASH SCREEN (Từ CK)
+-- ============================================================
+function NoirUI:CreateLoader(settings)
+    settings = settings or {}
+    settings.Icon = settings.Icon or NoirUI.GlobalLogo
+    settings.Duration = settings.Duration or 3
+    settings.BackgroundColor = settings.BackgroundColor or Color3.fromRGB(0, 0, 0)
+    settings.AccentColor = settings.AccentColor or NoirUI.AccentColor
+    settings.Text = settings.Text or "Loading..."
+    settings.TextColor = settings.TextColor or Color3.fromRGB(255, 255, 255)
+    
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "NoirUI_Loader"
+    ScreenGui.Parent = NoirUI.ScreenGui or CoreGui
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.IgnoreGuiInset = true
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+    
+    local Main = Instance.new("Frame")
+    Main.Size = UDim2.new(1, 0, 1, 0)
+    Main.BackgroundColor3 = settings.BackgroundColor
+    Main.BackgroundTransparency = 0
+    Main.Parent = ScreenGui
+    
+    local Vignette = Instance.new("ImageLabel")
+    Vignette.Size = UDim2.new(1, 0, 1, 0)
+    Vignette.BackgroundTransparency = 1
+    Vignette.Image = "rbxassetid://18720640102"
+    Vignette.ImageColor3 = settings.AccentColor
+    Vignette.ImageTransparency = 0.3
+    Vignette.Parent = Main
+    
+    local Logo = Instance.new("ImageLabel")
+    Logo.Size = UDim2.new(0, 200, 0, 200)
+    Logo.Position = UDim2.new(0.5, -100, 0.5, -150)
+    Logo.AnchorPoint = Vector2.new(0.5, 0.5)
+    Logo.BackgroundTransparency = 1
+    Logo.Image = settings.Icon
+    Logo.ImageTransparency = 1
+    Logo.Parent = Main
+    
+    local Text = Instance.new("TextLabel")
+    Text.Size = UDim2.new(0, 300, 0, 30)
+    Text.Position = UDim2.new(0.5, -150, 0.5, 50)
+    Text.AnchorPoint = Vector2.new(0.5, 0.5)
+    Text.BackgroundTransparency = 1
+    Text.Text = settings.Text
+    Text.TextColor3 = settings.TextColor
+    Text.TextSize = 18
+    Text.Font = Enum.Font.GothamBold
+    Text.TextTransparency = 1
+    Text.Parent = Main
+    
+    local ProgressBg = Instance.new("Frame")
+    ProgressBg.Size = UDim2.new(0, 200, 0, 4)
+    ProgressBg.Position = UDim2.new(0.5, -100, 0.5, 100)
+    ProgressBg.AnchorPoint = Vector2.new(0.5, 0.5)
+    ProgressBg.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+    ProgressBg.BackgroundTransparency = 0.5
+    ProgressBg.Parent = Main
+    Instance.new("UICorner", ProgressBg).CornerRadius = UDim.new(1, 0)
+    
+    local ProgressFill = Instance.new("Frame")
+    ProgressFill.Size = UDim2.new(0, 0, 1, 0)
+    ProgressFill.BackgroundColor3 = settings.AccentColor
+    ProgressFill.Parent = ProgressBg
+    Instance.new("UICorner", ProgressFill).CornerRadius = UDim.new(1, 0)
+    
+    local loaderObject = {
+        ScreenGui = ScreenGui,
+        Main = Main,
+        Logo = Logo,
+        Text = Text,
+        ProgressFill = ProgressFill,
+        Done = false,
+    }
+    
+    function loaderObject:SetText(newText)
+        Text.Text = newText
+    end
+    
+    function loaderObject:SetProgress(percent)
+        TweenService:Create(ProgressFill, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
+            Size = UDim2.new(math.clamp(percent, 0, 1), 0, 1, 0)
+        }):Play()
+    end
+    
+    function loaderObject:Wait()
+        if self.Done then return end
+        
+        TweenService:Create(Logo, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            ImageTransparency = 0.1,
+            Size = UDim2.new(0, 150, 0, 150)
+        }):Play()
+        
+        task.wait(0.3)
+        
+        TweenService:Create(Text, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            TextTransparency = 0
+        }):Play()
+        
+        task.wait(0.2)
+        
+        TweenService:Create(ProgressFill, TweenInfo.new(settings.Duration, Enum.EasingStyle.Linear), {
+            Size = UDim2.new(1, 0, 1, 0)
+        }):Play()
+        
+        task.wait(settings.Duration + 0.5)
+        
+        TweenService:Create(Main, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            BackgroundTransparency = 1
+        }):Play()
+        
+        TweenService:Create(Logo, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            ImageTransparency = 1,
+            Size = UDim2.new(0, 250, 0, 250)
+        }):Play()
+        
+        TweenService:Create(Text, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            TextTransparency = 1
+        }):Play()
+        
+        TweenService:Create(Vignette, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            ImageTransparency = 1
+        }):Play()
+        
+        task.wait(0.8)
+        ScreenGui:Destroy()
+        self.Done = true
+    end
+    
+    function loaderObject:Destroy()
+        ScreenGui:Destroy()
+        self.Done = true
+    end
+    
+    return loaderObject
+end
+
+-- ============================================================
+-- 9. KEY SYSTEM / AUTH (Từ CK + NL)
+-- ============================================================
+function NoirUI:CreateKeySystem(settings)
+    settings = settings or {}
+    settings.Title = settings.Title or "Key System"
+    settings.Subtitle = settings.Subtitle or "Enter your key to continue"
+    settings.ValidKeys = settings.ValidKeys or {}
+    settings.Mode = settings.Mode or "Once"
+    settings.FileName = settings.FileName or "noir_key.txt"
+    settings.Note = settings.Note or nil
+    settings.AccentColor = settings.AccentColor or NoirUI.AccentColor
+    
+    local savedKeyValid = false
+    
+    if settings.Mode == "Once" then
+        pcall(function()
+            if isfile(settings.FileName) then
+                local saved = readfile(settings.FileName)
+                for _, key in ipairs(settings.ValidKeys) do
+                    if saved == key then
+                        savedKeyValid = true
+                        break
+                    end
+                end
+            end
+        end)
+    end
+    
+    if savedKeyValid then
+        return { Valid = true }
+    end
+    
+    local KeyGui = Instance.new("ScreenGui")
+    KeyGui.Name = "NoirUI_KeySystem"
+    KeyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    KeyGui.ResetOnSpawn = false
+    KeyGui.IgnoreGuiInset = true
+    KeyGui.DisplayOrder = 999999999
+    KeyGui.Parent = NoirUI.ScreenGui or CoreGui
+    
+    local Dialog = Instance.new("Frame")
+    Dialog.Size = UDim2.new(0, 420, 0, 220)
+    Dialog.Position = UDim2.new(0.5, -210, 0.5, -110)
+    Dialog.BackgroundColor3 = Color3.fromRGB(8, 8, 10)
+    Dialog.Parent = KeyGui
+    Instance.new("UICorner", Dialog).CornerRadius = UDim.new(0, 8)
+    Instance.new("UIStroke", Dialog).Color = Color3.fromRGB(32, 32, 40)
+    
+    local shadow = NoirUI:CreateShadow(Dialog)
+    shadow:Render(true)
+    
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, -60, 0, 28)
+    Title.Position = UDim2.new(0, 20, 0, 18)
+    Title.BackgroundTransparency = 1
+    Title.Text = settings.Title
+    Title.TextColor3 = Color3.fromRGB(245, 245, 250)
+    Title.TextSize = 16
+    Title.Font = Enum.Font.GothamBold
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = Dialog
+    
+    local Subtitle = Instance.new("TextLabel")
+    Subtitle.Size = UDim2.new(1, -60, 0, 18)
+    Subtitle.Position = UDim2.new(0, 20, 0, 44)
+    Subtitle.BackgroundTransparency = 1
+    Subtitle.Text = settings.Subtitle
+    Subtitle.TextColor3 = Color3.fromRGB(165, 165, 180)
+    Subtitle.TextSize = 12
+    Subtitle.Font = Enum.Font.Gotham
+    Subtitle.TextXAlignment = Enum.TextXAlignment.Left
+    Subtitle.Parent = Dialog
+    
+    local CloseBtn = Instance.new("TextButton")
+    CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+    CloseBtn.Position = UDim2.new(1, -38, 0, 8)
+    CloseBtn.BackgroundTransparency = 1
+    CloseBtn.Text = "×"
+    CloseBtn.TextColor3 = Color3.fromRGB(165, 165, 180)
+    CloseBtn.TextSize = 22
+    CloseBtn.Font = Enum.Font.GothamBold
+    CloseBtn.Parent = Dialog
+    
+    local KeyLabel = Instance.new("TextLabel")
+    KeyLabel.Size = UDim2.new(0.5, -30, 0, 16)
+    KeyLabel.Position = UDim2.new(0, 20, 0, 80)
+    KeyLabel.BackgroundTransparency = 1
+    KeyLabel.Text = "Key"
+    KeyLabel.TextColor3 = Color3.fromRGB(165, 165, 180)
+    KeyLabel.TextSize = 11
+    KeyLabel.Font = Enum.Font.Gotham
+    KeyLabel.TextXAlignment = Enum.TextXAlignment.Left
+    KeyLabel.Parent = Dialog
+    
+    local KeyBox = Instance.new("Frame")
+    KeyBox.Size = UDim2.new(0.52, 0, 0, 36)
+    KeyBox.Position = UDim2.new(0, 20, 0, 98)
+    KeyBox.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+    KeyBox.Parent = Dialog
+    Instance.new("UICorner", KeyBox).CornerRadius = UDim.new(0, 8)
+    Instance.new("UIStroke", KeyBox).Color = Color3.fromRGB(32, 32, 40)
+    
+    local KeyInput = Instance.new("TextBox")
+    KeyInput.Size = UDim2.new(1, -16, 1, 0)
+    KeyInput.Position = UDim2.new(0, 8, 0, 0)
+    KeyInput.BackgroundTransparency = 1
+    KeyInput.PlaceholderText = "Enter key..."
+    KeyInput.TextColor3 = Color3.fromRGB(245, 245, 250)
+    KeyInput.PlaceholderColor3 = Color3.fromRGB(165, 165, 180)
+    KeyInput.TextSize = 13
+    KeyInput.Font = Enum.Font.Gotham
+    KeyInput.ClearTextOnFocus = false
+    KeyInput.Parent = KeyBox
+    
+    if settings.Note then
+        local NoteLabel = Instance.new("TextLabel")
+        NoteLabel.Size = UDim2.new(0.44, -22, 1, -20)
+        NoteLabel.Position = UDim2.new(0.55, 12, 0, 10)
+        NoteLabel.BackgroundTransparency = 1
+        NoteLabel.Text = settings.Note
+        NoteLabel.TextColor3 = Color3.fromRGB(245, 245, 250)
+        NoteLabel.TextSize = 12
+        NoteLabel.Font = Enum.Font.Gotham
+        NoteLabel.TextXAlignment = Enum.TextXAlignment.Left
+        NoteLabel.TextYAlignment = Enum.TextYAlignment.Center
+        NoteLabel.TextWrapped = true
+        NoteLabel.Parent = Dialog
+    end
+    
+    local SubmitBtn = Instance.new("TextButton")
+    SubmitBtn.Size = UDim2.new(0.52, 0, 0, 32)
+    SubmitBtn.Position = UDim2.new(0, 20, 0, 148)
+    SubmitBtn.BackgroundColor3 = settings.AccentColor
+    SubmitBtn.Text = "Submit"
+    SubmitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SubmitBtn.TextSize = 13
+    SubmitBtn.Font = Enum.Font.GothamBold
+    SubmitBtn.Parent = Dialog
+    Instance.new("UICorner", SubmitBtn).CornerRadius = UDim.new(0, 8)
+    
+    local ErrLabel = Instance.new("TextLabel")
+    ErrLabel.Size = UDim2.new(0.52, 0, 0, 18)
+    ErrLabel.Position = UDim2.new(0, 20, 0, 183)
+    ErrLabel.BackgroundTransparency = 1
+    ErrLabel.Text = ""
+    ErrLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+    ErrLabel.TextSize = 11
+    ErrLabel.Font = Enum.Font.Gotham
+    ErrLabel.TextXAlignment = Enum.TextXAlignment.Left
+    ErrLabel.Parent = Dialog
+    
+    local keyDone = false
+    local keyAccepted = false
+    
+    local function TryKey(input)
+        local trimmed = string.match(input, "^%s*(.-)%s*$")
+        for _, key in ipairs(settings.ValidKeys) do
+            if trimmed == key then
+                return true, trimmed
+            end
+        end
+        return false
+    end
+    
+    SubmitBtn.MouseButton1Click:Connect(function()
+        local ok, trimmed = TryKey(KeyInput.Text)
+        if ok then
+            if settings.Mode == "Once" then
+                pcall(function()
+                    writefile(settings.FileName, trimmed)
+                end)
+            end
+            keyAccepted = true
+            keyDone = true
+        else
+            ErrLabel.Text = "Invalid key!"
+            KeyInput.Text = ""
+            TweenService:Create(ErrLabel, TweenInfo.new(0.2), {
+                TextTransparency = 0
+            }):Play()
+        end
+    end)
+    
+    CloseBtn.MouseButton1Click:Connect(function()
+        keyDone = true
+    end)
+    
+    KeyInput.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            SubmitBtn.MouseButton1Click:Fire()
+        end
+    end)
+    
+    repeat task.wait() until keyDone
+    
+    KeyGui:Destroy()
+    
+    return { Valid = keyAccepted }
+end
+
+-- ============================================================
+-- 10. AUTO-SAVE SYSTEM (Từ CK)
+-- ============================================================
+function NoirUI:CreateAutoSave(settings)
+    settings = settings or {}
+    settings.Interval = settings.Interval or 60
+    settings.ConfigManager = settings.ConfigManager
+    settings.ConfigName = settings.ConfigName or "autosave"
+    settings.EnableNotifications = settings.EnableNotifications or false
+    
+    if not settings.ConfigManager then
+        return nil
+    end
+    
+    local AutoSave = {
+        Enabled = true,
+        Interval = settings.Interval,
+        Thread = nil,
+        LastSave = os.time(),
+    }
+    
+    function AutoSave:Start()
+        if self.Thread then
+            task.cancel(self.Thread)
+            self.Thread = nil
+        end
+        
+        self.Enabled = true
+        
+        self.Thread = task.spawn(function()
+            while self.Enabled do
+                task.wait(self.Interval)
+                
+                if self.Enabled then
+                    local success, err = pcall(function()
+                        settings.ConfigManager:SaveConfig(settings.ConfigName, "AutoSave")
+                    end)
+                    
+                    if success and settings.EnableNotifications then
+                        NoirUI:Notify("Auto-Save", "Config saved automatically", "save", nil, 1.5)
+                    end
+                    
+                    self.LastSave = os.time()
+                end
+            end
+        end)
+    end
+    
+    function AutoSave:Stop()
+        self.Enabled = false
+        if self.Thread then
+            task.cancel(self.Thread)
+            self.Thread = nil
+        end
+    end
+    
+    function AutoSave:GetLastSave()
+        return self.LastSave
+    end
+    
+    function AutoSave:GetTimeSinceLastSave()
+        return os.time() - self.LastSave
+    end
+    
+    return AutoSave
+end
+
+-- ============================================================
+-- 11. THEME MANAGER (Mở rộng từ CK)
+-- ============================================================
+function NoirUI:RegisterThemeElement(element, property, themeKey)
+    if not NoirUI.Themes.Elements[themeKey] then
+        NoirUI.Themes.Elements[themeKey] = {}
+    end
+    table.insert(NoirUI.Themes.Elements[themeKey], {
+        Element = element,
+        Property = property
+    })
+end
+
+function NoirUI:ApplyTheme(themeName)
+    local theme = ThemePresets[themeName]
+    if not theme then return false end
+    
+    NoirUI.Themes.Current = theme
+    
+    for key, elements in pairs(NoirUI.Themes.Elements) do
+        local color = theme[key]
+        if color then
+            for _, item in ipairs(elements) do
+                if item.Element and item.Element[item.Property] ~= nil then
+                    item.Element[item.Property] = color
+                end
+            end
+        end
+    end
+    
+    NoirUI.AccentColor = theme.accent
+    
+    return true
+end
+
+function NoirUI:GetCurrentTheme()
+    return NoirUI.Themes.Current
+end
+
+function NoirUI:GetThemeList()
+    local names = {}
+    for name in pairs(ThemePresets) do
+        table.insert(names, name)
+    end
+    table.sort(names)
+    return names
+end
+
+-- ============================================================
+-- 12. CONFIRM DIALOG (Từ CK)
+-- ============================================================
+function NoirUI:CreateConfirm(settings)
+    settings = settings or {}
+    settings.Title = settings.Title or "Confirm"
+    settings.Message = settings.Message or "Are you sure?"
+    settings.ConfirmText = settings.ConfirmText or "Confirm"
+    settings.CancelText = settings.CancelText or "Cancel"
+    settings.AccentColor = settings.AccentColor or NoirUI.AccentColor
+    settings.OnConfirm = settings.OnConfirm or function() end
+    settings.OnCancel = settings.OnCancel or function() end
+    
+    if NoirUI.ActiveConfirmFrame then
+        NoirUI.ActiveConfirmFrame:Destroy()
+        NoirUI.ActiveConfirmFrame = nil
+    end
+    
+    local Overlay = Instance.new("Frame")
+    Overlay.Size = UDim2.new(1, 0, 1, 0)
+    Overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Overlay.BackgroundTransparency = 0.5
+    Overlay.Parent = NoirUI.ScreenGui or CoreGui
+    Overlay.ZIndex = 999
+    
+    local Dialog = Instance.new("Frame")
+    Dialog.Size = UDim2.new(0, 400, 0, 160)
+    Dialog.Position = UDim2.new(0.5, -200, 0.5, -80)
+    Dialog.AnchorPoint = Vector2.new(0.5, 0.5)
+    Dialog.BackgroundColor3 = Color3.fromRGB(8, 8, 10)
+    Dialog.Parent = Overlay
+    Dialog.ZIndex = 1000
+    Instance.new("UICorner", Dialog).CornerRadius = UDim.new(0, 8)
+    Instance.new("UIStroke", Dialog).Color = Color3.fromRGB(32, 32, 40)
+    
+    local shadow = NoirUI:CreateShadow(Dialog)
+    shadow:Render(true)
+    
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, -40, 0, 28)
+    Title.Position = UDim2.new(0, 20, 0, 15)
+    Title.BackgroundTransparency = 1
+    Title.Text = settings.Title
+    Title.TextColor3 = Color3.fromRGB(245, 245, 250)
+    Title.TextSize = 16
+    Title.Font = Enum.Font.GothamBold
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = Dialog
+    
+    local Message = Instance.new("TextLabel")
+    Message.Size = UDim2.new(1, -40, 0, 40)
+    Message.Position = UDim2.new(0, 20, 0, 45)
+    Message.BackgroundTransparency = 1
+    Message.Text = settings.Message
+    Message.TextColor3 = Color3.fromRGB(165, 165, 180)
+    Message.TextSize = 13
+    Message.Font = Enum.Font.Gotham
+    Message.TextXAlignment = Enum.TextXAlignment.Left
+    Message.TextYAlignment = Enum.TextYAlignment.Top
+    Message.TextWrapped = true
+    Message.Parent = Dialog
+    
+    local Buttons = Instance.new("Frame")
+    Buttons.Size = UDim2.new(1, -20, 0, 32)
+    Buttons.Position = UDim2.new(0, 10, 1, -42)
+    Buttons.BackgroundTransparency = 1
+    Buttons.Parent = Dialog
+    
+    local CancelBtn = Instance.new("TextButton")
+    CancelBtn.Size = UDim2.new(0, 100, 0, 32)
+    CancelBtn.Position = UDim2.new(1, -210, 0, 0)
+    CancelBtn.AnchorPoint = Vector2.new(1, 0)
+    CancelBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+    CancelBtn.Text = settings.CancelText
+    CancelBtn.TextColor3 = Color3.fromRGB(165, 165, 180)
+    CancelBtn.TextSize = 13
+    CancelBtn.Font = Enum.Font.GothamBold
+    CancelBtn.Parent = Buttons
+    Instance.new("UICorner", CancelBtn).CornerRadius = UDim.new(0, 4)
+    
+    local ConfirmBtn = Instance.new("TextButton")
+    ConfirmBtn.Size = UDim2.new(0, 100, 0, 32)
+    ConfirmBtn.Position = UDim2.new(1, -100, 0, 0)
+    ConfirmBtn.AnchorPoint = Vector2.new(1, 0)
+    ConfirmBtn.BackgroundColor3 = settings.AccentColor
+    ConfirmBtn.Text = settings.ConfirmText
+    ConfirmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ConfirmBtn.TextSize = 13
+    ConfirmBtn.Font = Enum.Font.GothamBold
+    ConfirmBtn.Parent = Buttons
+    Instance.new("UICorner", ConfirmBtn).CornerRadius = UDim.new(0, 4)
+    
+    local confirmed = false
+    local cancelled = false
+    
+    ConfirmBtn.MouseButton1Click:Connect(function()
+        confirmed = true
+        settings.OnConfirm()
+        Overlay:Destroy()
+        NoirUI.ActiveConfirmFrame = nil
+    end)
+    
+    CancelBtn.MouseButton1Click:Connect(function()
+        cancelled = true
+        settings.OnCancel()
+        Overlay:Destroy()
+        NoirUI.ActiveConfirmFrame = nil
+    end)
+    
+    ConfirmBtn.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            ConfirmBtn.MouseButton1Click:Fire()
+        end
+    end)
+    
+    NoirUI.ActiveConfirmFrame = Overlay
+    
+    return {
+        Dialog = Dialog,
+        Confirm = ConfirmBtn,
+        Cancel = CancelBtn,
+        Wait = function()
+            repeat task.wait() until confirmed or cancelled
+            return confirmed
+        end,
+        Destroy = function()
+            Overlay:Destroy()
+            NoirUI.ActiveConfirmFrame = nil
+        end
+    }
+end
+
+-- ============================================================
+-- 13. HOTKEY / GLOBAL KEYBIND MANAGER (Từ CK)
+-- ============================================================
+function NoirUI:RegisterHotkey(key, callback, description)
+    if not key or not callback then return end
+    
+    local keyName = typeof(key) == "EnumItem" and key.Name or tostring(key)
+    
+    if not NoirUI.Hotkeys[keyName] then
+        NoirUI.Hotkeys[keyName] = {}
+    end
+    
+    table.insert(NoirUI.Hotkeys[keyName], {
+        Callback = callback,
+        Description = description or "No description",
+        Enabled = true
+    })
+    
+    return #NoirUI.Hotkeys[keyName]
+end
+
+function NoirUI:UnregisterHotkey(key, index)
+    local keyName = typeof(key) == "EnumItem" and key.Name or tostring(key)
+    if NoirUI.Hotkeys[keyName] then
+        if index then
+            table.remove(NoirUI.Hotkeys[keyName], index)
+        else
+            NoirUI.Hotkeys[keyName] = {}
+        end
+    end
+end
+
+function NoirUI:EnableHotkey(key, index)
+    local keyName = typeof(key) == "EnumItem" and key.Name or tostring(key)
+    if NoirUI.Hotkeys[keyName] then
+        if index then            if NoirUI.Hotkeys[keyName][index] then
+                NoirUI.Hotkeys[keyName][index].Enabled = true
+            end
+        else
+            for _, hk in ipairs(NoirUI.Hotkeys[keyName]) do
+                hk.Enabled = true
+            end
+        end
+    end
+end
+
+function NoirUI:DisableHotkey(key, index)
+    local keyName = typeof(key) == "EnumItem" and key.Name or tostring(key)
+    if NoirUI.Hotkeys[keyName] then
+        if index then
+            if NoirUI.Hotkeys[keyName][index] then
+                NoirUI.Hotkeys[keyName][index].Enabled = false
+            end
+        else
+            for _, hk in ipairs(NoirUI.Hotkeys[keyName]) do
+                hk.Enabled = false
+            end
+        end
+    end
+end
+
+function NoirUI:InitHotkeyListener()
+    if NoirUI._hotkeyConnection then
+        NoirUI._hotkeyConnection:Disconnect()
+    end
+    
+    NoirUI._hotkeyConnection = UIS.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        
+        local keyName = nil
+        if input.KeyCode ~= Enum.KeyCode.Unknown then
+            keyName = input.KeyCode.Name
+        elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+            keyName = "MouseButton1"
+        elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+            keyName = "MouseButton2"
+        end
+        
+        if keyName and NoirUI.Hotkeys[keyName] then
+            for _, hk in ipairs(NoirUI.Hotkeys[keyName]) do
+                if hk.Enabled then
+                    task.spawn(hk.Callback)
+                end
+            end
+        end
+    end)
+end
+
+-- ============================================================
+-- 14. MUSIC PLAYER (Từ NL - giữ nguyên tên gọi)
+-- ============================================================
 NoirUI.Music = {
     CurrentSound = nil,
     SoundId = nil,
@@ -1192,28 +2020,311 @@ function NoirUI.Music:GetQueue()
     return self.Playlist
 end
 
--- ==========================================================
--- NOIRUI INIT
--- ==========================================================
-function NoirUI:Init()
-    self:EnableAssetCache("NoirUI_Cache")
-    self._Logger = self:CreateLogger()
-    self._Indicators = self:CreateIndicator()
+-- ============================================================
+-- 15. CONTEXT MENU (Từ NL)
+-- ============================================================
+function NoirUI:CreateContextMenu(settings)
+    settings = settings or {}
+    settings.Parent = settings.Parent or NoirUI.ScreenGui
+    settings.Items = settings.Items or {}
+    settings.Width = settings.Width or 180
+    
+    local ContextMenu = {
+        Items = {},
+        Visible = false,
+        Frame = nil,
+    }
+    
+    local Frame = Instance.new("Frame")
+    Frame.Size = UDim2.new(0, settings.Width, 0, 0)
+    Frame.Position = UDim2.new(0, 0, 0, 0)
+    Frame.BackgroundColor3 = Color3.fromRGB(20, 22, 27)
+    Frame.BackgroundTransparency = 1
+    Frame.ClipsDescendants = true
+    Frame.ZIndex = 999
+    Frame.Parent = settings.Parent
+    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 8)
+    Instance.new("UIStroke", Frame).Color = Color3.fromRGB(45, 48, 58)
+    
+    local shadow = NoirUI:CreateShadow(Frame)
+    
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0, 2)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Parent = Frame
+    
+    local items = {}
+    
+    function ContextMenu:AddItem(text, callback, icon)
+        local item = Instance.new("TextButton")
+        item.Size = UDim2.new(1, -10, 0, 28)
+        item.Position = UDim2.new(0, 5, 0, 0)
+        item.BackgroundColor3 = Color3.fromRGB(20, 22, 27)
+        item.BackgroundTransparency = 1
+        item.Text = (icon and icon .. "  " or "") .. text
+        item.TextColor3 = Color3.fromRGB(245, 245, 250)
+        item.TextSize = 13
+        item.Font = Enum.Font.Gotham
+        item.TextXAlignment = Enum.TextXAlignment.Left
+        item.AutoButtonColor = false
+        item.Parent = Frame
+        
+        Instance.new("UICorner", item).CornerRadius = UDim.new(0, 4)
+        
+        item.MouseEnter:Connect(function()
+            TweenService:Create(item, TweenInfo.new(0.15), {
+                BackgroundTransparency = 0.2
+            }):Play()
+        end)
+        
+        item.MouseLeave:Connect(function()
+            TweenService:Create(item, TweenInfo.new(0.15), {
+                BackgroundTransparency = 1
+            }):Play()
+        end)
+        
+        item.MouseButton1Click:Connect(function()
+            if callback then
+                callback()
+            end
+            ContextMenu:Hide()
+        end)
+        
+        table.insert(items, item)
+        return item
+    end
+    
+    function ContextMenu:AddDivider()
+        local divider = Instance.new("Frame")
+        divider.Size = UDim2.new(1, -10, 0, 1)
+        divider.Position = UDim2.new(0, 5, 0, 0)
+        divider.BackgroundColor3 = Color3.fromRGB(45, 48, 58)
+        divider.BackgroundTransparency = 0.5
+        divider.Parent = Frame
+        return divider
+    end
+    
+    function ContextMenu:Show(position)
+        self.Visible = true
+        
+        local contentSize = layout.AbsoluteContentSize
+        local height = contentSize.Y + 10
+        
+        local screenSize = NoirUI.ScreenGui and NoirUI.ScreenGui.AbsoluteSize or Vector2.new(1920, 1080)
+        local x = position.X
+        local y = position.Y
+        
+        if x + settings.Width > screenSize.X then
+            x = screenSize.X - settings.Width - 5
+        end
+        if y + height > screenSize.Y then
+            y = screenSize.Y - height - 5
+        end
+        
+        Frame.Position = UDim2.new(0, x, 0, y)
+        Frame.Size = UDim2.new(0, settings.Width, 0, height)
+        Frame.BackgroundTransparency = 0
+        shadow:Render(true)
+    end
+    
+    function ContextMenu:Hide()
+        self.Visible = false
+        Frame.BackgroundTransparency = 1
+        Frame.Size = UDim2.new(0, settings.Width, 0, 0)
+        shadow:Render(false)
+    end
+    
+    function ContextMenu:Destroy()
+        self:Hide()
+        Frame:Destroy()
+    end
+    
+    UIS.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+           input.UserInputType == Enum.UserInputType.Touch then
+            if self.Visible then
+                local pos = input.Position
+                local framePos = Frame.AbsolutePosition
+                local frameSize = Frame.AbsoluteSize
+                if pos.X < framePos.X or pos.X > framePos.X + frameSize.X or
+                   pos.Y < framePos.Y or pos.Y > framePos.Y + frameSize.Y then
+                    self:Hide()
+                end
+            end
+        end
+    end)
+    
+    UIS.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        if input.UserInputType == Enum.UserInputType.MouseButton2 then
+            if self.Visible then
+                self:Hide()
+            else
+                self:Show(input.Position)
+            end
+        end
+    end)
+    
+    return ContextMenu
 end
 
-NoirUI:Init()
+-- ============================================================
+-- 16. TOAST NOTIFICATION (Từ CK)
+-- ============================================================
+function NoirUI:CreateToast(settings)
+    settings = settings or {}
+    settings.Parent = settings.Parent or NoirUI.ScreenGui
+    settings.Position = settings.Position or "top-right"
+    settings.Duration = settings.Duration or 3
+    settings.Spacing = settings.Spacing or 10
+    
+    local Toasts = {}
+    local Container = Instance.new("Frame")
+    Container.Size = UDim2.new(0, 300, 0, 0)
+    Container.BackgroundTransparency = 1
+    Container.Parent = settings.Parent
+    Container.ZIndex = 1000
+    
+    if settings.Position == "top-right" then
+        Container.AnchorPoint = Vector2.new(1, 0)
+        Container.Position = UDim2.new(1, -settings.Spacing, 0, settings.Spacing)
+    elseif settings.Position == "top-left" then
+        Container.AnchorPoint = Vector2.new(0, 0)
+        Container.Position = UDim2.new(0, settings.Spacing, 0, settings.Spacing)
+    elseif settings.Position == "bottom-right" then
+        Container.AnchorPoint = Vector2.new(1, 1)
+        Container.Position = UDim2.new(1, -settings.Spacing, 1, -settings.Spacing)
+    elseif settings.Position == "bottom-left" then
+        Container.AnchorPoint = Vector2.new(0, 1)
+        Container.Position = UDim2.new(0, settings.Spacing, 1, -settings.Spacing)
+    end
+    
+    local Layout = Instance.new("UIListLayout")
+    Layout.Padding = UDim.new(0, settings.Spacing)
+    Layout.SortOrder = Enum.SortOrder.LayoutOrder
+    Layout.Parent = Container
+    
+    function Toasts:Show(message, type, duration)
+        duration = duration or settings.Duration
+        type = type or "info"
+        
+        local Toast = Instance.new("Frame")
+        Toast.Size = UDim2.new(1, 0, 0, 0)
+        Toast.BackgroundColor3 = Color3.fromRGB(20, 22, 27)
+        Toast.BackgroundTransparency = 0.9
+        Toast.ClipsDescendants = true
+        Toast.Parent = Container
+        Instance.new("UICorner", Toast).CornerRadius = UDim.new(0, 8)
+        Instance.new("UIStroke", Toast).Color = Color3.fromRGB(45, 48, 58)
+        
+        local shadow = NoirUI:CreateShadow(Toast)
+        shadow:Render(true)
+        
+        local iconMap = {
+            info = "circle-i",
+            success = "check",
+            warning = "triangle-exclamation",
+            error = "x",
+        }
+        
+        local icon = Instance.new("TextLabel")
+        icon.Size = UDim2.new(0, 24, 0, 24)
+        icon.Position = UDim2.new(0, 10, 0.5, -12)
+        icon.BackgroundTransparency = 1
+        icon.Font = NoirUI.BuiltInBold
+        icon.Text = iconMap[type] or "circle-i"
+        icon.TextColor3 = Color3.fromRGB(245, 245, 250)
+        icon.TextSize = 18
+        icon.Parent = Toast
+        
+        local msg = Instance.new("TextLabel")
+        msg.Size = UDim2.new(1, -50, 0, 0)
+        msg.Position = UDim2.new(0, 44, 0, 8)
+        msg.BackgroundTransparency = 1
+        msg.Text = message
+        msg.TextColor3 = Color3.fromRGB(245, 245, 250)
+        msg.TextSize = 13
+        msg.Font = Enum.Font.Gotham
+        msg.TextWrapped = true
+        msg.TextXAlignment = Enum.TextXAlignment.Left
+        msg.TextYAlignment = Enum.TextYAlignment.Top
+        msg.Parent = Toast
+        
+        local close = Instance.new("TextButton")
+        close.Size = UDim2.new(0, 20, 0, 20)
+        close.Position = UDim2.new(1, -25, 0.5, -10)
+        close.AnchorPoint = Vector2.new(1, 0.5)
+        close.BackgroundTransparency = 1
+        close.Text = "×"
+        close.TextColor3 = Color3.fromRGB(165, 165, 180)
+        close.TextSize = 16
+        close.Font = Enum.Font.GothamBold
+        close.Parent = Toast
+        
+        close.MouseButton1Click:Connect(function()
+            Toasts:Remove(Toast)
+        end)
+        
+        local function updateSize()
+            local textSize = TextService:GetTextSize(msg.Text, msg.TextSize, msg.Font, Vector2.new(Toast.AbsoluteSize.X - 50, math.huge))
+            local height = math.max(textSize.Y + 20, 50)
+            Toast.Size = UDim2.new(1, 0, 0, height)
+        end
+        
+        msg:GetPropertyChangedSignal("Text"):Connect(updateSize)
+        task.defer(updateSize)
+        
+        if duration > 0 then
+            task.delay(duration, function()
+                Toasts:Remove(Toast)
+            end)
+        end
+        
+        return Toast
+    end
+    
+    function Toasts:Remove(toast)
+        if not toast or not toast.Parent then return end
+        
+        TweenService:Create(toast, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 0, 0)
+        }):Play()
+        
+        task.delay(0.3, function()
+            toast:Destroy()
+        end)
+    end
+    
+    function Toasts:Clear()
+        for _, child in ipairs(Container:GetChildren()) do
+            if child:IsA("Frame") then
+                self:Remove(child)
+            end
+        end
+    end
+    
+    function Toasts:Destroy()
+        self:Clear()
+        Container:Destroy()
+    end
+    
+    return Toasts
+end
 
--- ==========================================================
--- MAIN UI
--- ==========================================================
+-- ============================================================
+-- 17. MAIN UI - CreateWindow (Giữ nguyên phần chính + thêm blur/shadow)
+-- ============================================================
 function NoirUI:CreateWindow(settings)
     local ScreenGui = Instance.new("ScreenGui", CoreGui)
     ScreenGui.Name = "NoirUI_V3_Ultimate"
     ScreenGui.ResetOnSpawn = false
+    NoirUI.ScreenGui = ScreenGui
     
     if settings.KeySystem then
-        local success = KeySystem(settings)
-        if not success then return end
+        local success = NoirUI:CreateKeySystem(settings.KeySystem)
+        if not success.Valid then return end
     end
     
     local currentTheme = settings.Theme or {}
@@ -1224,7 +2335,9 @@ function NoirUI:CreateWindow(settings)
     _currentTheme = currentTheme
     
     local ACCENT = currentTheme.accent or settings.Accent or Color3.fromRGB(138,116,249)
+    NoirUI.AccentColor = ACCENT
     
+    -- [Âm thanh]
     if settings.ClickSound then SoundSettings.ClickSoundId = settings.ClickSound end
     if settings.TabSound then SoundSettings.TabSoundId = settings.TabSound end
     if settings.ElementSound then SoundSettings.ElementSoundId = settings.ElementSound end
@@ -1260,11 +2373,17 @@ function NoirUI:CreateWindow(settings)
     SetupBackground(Main, settings.Background, Main.BackgroundColor3, 0)
     MakeDraggable(Main)
     
+    -- Blur mặc định nếu bật
+    if settings.EnableBlur then
+        local blur = BlurManager:Create(Main)
+        if settings.BlurIntensity then
+            blur:SetIntensity(settings.BlurIntensity)
+        end
+    end
+    
     local savedSize = Main.Size
 
-    -- ==========================================================
-    -- RESIZE WINDOW
-    -- ==========================================================
+    -- === RESIZE HANDLE ===
     local resizeHandle = Instance.new("ImageButton", Main)
     resizeHandle.Size = UDim2.new(0, 18, 0, 18)
     resizeHandle.Position = UDim2.new(1, 0, 1, 0)
@@ -1292,16 +2411,15 @@ function NoirUI:CreateWindow(settings)
             local new_y = math.max(sizeStart.Y.Offset + delta.Y, minSize.Y)
             Main.Size = UDim2.new(0, new_x, 0, new_y)
             savedSize = Main.Size
-        end    end)
+        end
+    end)
     UIS.InputEnded:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
             isResizing = false
         end
     end)
 
-    -- ==========================================================
-    -- FLOAT BUTTON
-    -- ==========================================================
+    -- === FLOAT BUTTON ===
     local floatSize = settings.FloatSize or 45
     local floatIconSize = settings.FloatIconSize or 24
     local floatCornerRadius = settings.FloatCornerRadius or 8
@@ -1553,7 +2671,9 @@ function NoirUI:CreateWindow(settings)
     -- Close Button
     TopImageB("x", Color3.fromRGB(255,100,100), function()
         PlaySound("Click")
-        StopAndCleanupMusic()
+        if NoirUI.Music and NoirUI.Music.CurrentSound then
+            NoirUI.Music.CurrentSound:Stop()
+        end
         ScreenGui:Destroy()
         PlaySound("Close")
     end)
@@ -1640,9 +2760,9 @@ function NoirUI:CreateWindow(settings)
         PlaySound("Open")
     end)
 
-    -- ==========================================================
-    -- NOTIFY MỚI
-    -- ==========================================================
+    -- ============================================================
+    -- NOTIFICATION
+    -- ============================================================
     function NoirUI:Notify(title, message, iconName, soundType, duration, progressColor)
         if soundType then
             PlaySound(soundType)
@@ -1651,7 +2771,7 @@ function NoirUI:CreateWindow(settings)
         end
 
         local notifyDuration = duration or 4
-        local progressColor = progressColor or (currentTheme and currentTheme.accent) or ACCENT
+        local progressColor = progressColor or ACCENT
 
         local n = Instance.new("Frame", ScreenGui)
         n.Size = UDim2.new(0, 260, 0, 75)
@@ -1661,14 +2781,12 @@ function NoirUI:CreateWindow(settings)
         n.ZIndex = 1
         n.ClipsDescendants = true
 
-        -- Bo góc 8
         local notifCorner = Instance.new("UICorner", n)
         notifCorner.CornerRadius = UDim.new(0, 8)
 
         SetupBackground(n, settings.NotificationBackground, n.BackgroundColor3, 0.1)
         CreateSpringEffect(n, 0.05)
 
-        -- Icon nếu có
         if iconName then
             local iconImg = ResolveIcon(iconName)
             if iconImg then
@@ -1682,7 +2800,6 @@ function NoirUI:CreateWindow(settings)
             end
         end
 
-        -- Title
         local tl = Instance.new("TextLabel", n)
         tl.Size = UDim2.new(1, iconName and -48 or -18, 0, 20)
         tl.Position = UDim2.new(0, iconName and 44 or 16, 0, 6)
@@ -1695,7 +2812,6 @@ function NoirUI:CreateWindow(settings)
         tl.TextXAlignment = Enum.TextXAlignment.Left
         tl.ZIndex = 2
 
-        -- Message
         local ml = Instance.new("TextLabel", n)
         ml.Size = UDim2.new(1, iconName and -48 or -28, 0, 30)
         ml.Position = UDim2.new(0, iconName and 44 or 16, 0, 26)
@@ -1710,7 +2826,6 @@ function NoirUI:CreateWindow(settings)
         ml.TextSize = 11
         ml.ZIndex = 2
 
-        -- 🟢 THANH TIẾN TRÌNH
         local progressBg = Instance.new("Frame", n)
         progressBg.Size = UDim2.new(1, -16, 0, 3)
         progressBg.Position = UDim2.new(0, 8, 1, -8)
@@ -1727,13 +2842,11 @@ function NoirUI:CreateWindow(settings)
         progressFill.ZIndex = 4
         Instance.new("UICorner", progressFill).CornerRadius = UDim.new(1, 0)
 
-        -- Animation thanh tiến trình
         TweenService:Create(progressFill, TweenInfo.new(notifyDuration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
             Size = UDim2.new(0, 0, 1, 0),
             Position = UDim2.new(1, 0, 0, 0)
         }):Play()
 
-        -- Dời các thông báo cũ lên
         for i, v in ipairs(NoirUI.Notifications) do
             TweenService:Create(v, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Position = UDim2.new(1, -280, 0.8, -(i * 85))
@@ -1742,12 +2855,10 @@ function NoirUI:CreateWindow(settings)
 
         table.insert(NoirUI.Notifications, 1, n)
 
-        -- Animation xuất hiện
         TweenService:Create(n, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
             Position = UDim2.new(1, -280, 0.8, 0)
         }):Play()
 
-        -- Đóng Notify
         task.spawn(function()
             task.wait(notifyDuration)
             if n and n.Parent then
@@ -1778,27 +2889,54 @@ function NoirUI:CreateWindow(settings)
     local Window = {}
     local allTabButtons = {}
     
-    -- ==========================================================
-    -- WINDOW ADVANCED FEATURES
-    -- ==========================================================
+    -- ============================================================
+    -- WINDOW PUBLIC API
+    -- ============================================================
+    function Window:SetAccent(color)
+        ACCENT = color
+        NoirUI.AccentColor = color
+        NoirUI:Notify("Accent", "Đã đổi màu chủ đạo", "palette", nil, 2)
+    end
+    
+    function Window:SetTheme(themeName)
+        local theme = type(themeName) == "string" and ThemePresets[themeName] or themeName
+        if not theme then return end
+        
+        Main.BackgroundColor3 = theme.bg or Main.BackgroundColor3
+        Header.BackgroundColor3 = theme.container or Header.BackgroundColor3
+        Title.TextColor3 = theme.text or Title.TextColor3
+        
+        local newAccent = theme.accent or ACCENT
+        ACCENT = newAccent
+        NoirUI.AccentColor = newAccent
+        
+        if theme.backgroundImage then
+            SetupBackground(Main, {Image = theme.backgroundImage}, Main.BackgroundColor3, 0)
+        end
+        
+        NoirUI:Notify("Theme", "Đã chuyển sang: " .. tostring(themeName), "palette", nil, 2)
+    end
+    
+    function Window:SetBackground(imageId)
+        SetupBackground(Main, {Image = imageId}, Main.BackgroundColor3, 0)
+    end
+    
     function Window:SetBlur(intensity)
         if not self._blur then
             self._blur = BlurManager:Create(Main)
         end
-        
         if intensity ~= nil then
             self._blur:SetIntensity(intensity)
         end
-        
         return self._blur
     end
-
+    
     function Window:ToggleBlur()
         if self._blur then
             self._blur:Toggle()
         end
     end
-
+    
     function Window:RemoveBlur()
         if self._blur then
             self._blur:Destroy()
@@ -1813,65 +2951,19 @@ function NoirUI:CreateWindow(settings)
         self._shadow:Render(true)
         return self._shadow
     end
-
+    
     function Window:DisableShadow()
         if self._shadow then
             self._shadow:Render(false)
         end
     end
-
+    
     function Window:ToggleShadow()
         if self._shadow then
             local current = self._shadow._visible or false
             self._shadow:Render(not current)
             self._shadow._visible = not current
         end
-    end
-    
-    function Window:CreateConfigManager(configSettings)
-        return NoirUI:CreateConfigManager(configSettings)
-    end
-    
-    function Window:GetFlag(name)
-        return NoirUI:GetFlag(name)
-    end
-    
-    function Window:GetFlagValue(name)
-        return NoirUI:GetFlagValue(name)
-    end
-    
-    function Window:SetFlagValue(name, value)
-        return NoirUI:SetFlagValue(name, value)
-    end
-
-    -- ==========================================================
-    -- WINDOW PUBLIC API
-    -- ==========================================================
-    function Window:SetAccent(color)
-        ACCENT = color
-        NoirUI:Notify("Accent", "Đã đổi màu chủ đạo", "palette", nil, 2)
-    end
-    
-    function Window:SetTheme(themeName)
-        local theme = type(themeName) == "string" and ThemePresets[themeName] or themeName
-        if not theme then return end
-        
-        Main.BackgroundColor3 = theme.bg or Main.BackgroundColor3
-        Header.BackgroundColor3 = theme.container or Header.BackgroundColor3
-        Title.TextColor3 = theme.text or Title.TextColor3
-        
-        local newAccent = theme.accent or ACCENT
-        ACCENT = newAccent
-        
-        if theme.backgroundImage then
-            SetupBackground(Main, {Image = theme.backgroundImage}, Main.BackgroundColor3, 0)
-        end
-        
-        NoirUI:Notify("Theme", "Đã chuyển sang: " .. tostring(themeName), "palette", nil, 2)
-    end
-    
-    function Window:SetBackground(imageId)
-        SetupBackground(Main, {Image = imageId}, Main.BackgroundColor3, 0)
     end
     
     function Window:Hide()
@@ -1888,9 +2980,9 @@ function NoirUI:CreateWindow(settings)
         return currentTheme
     end
 
-    -- ==========================================================
+    -- ============================================================
     -- ELEMENTS
-    -- ==========================================================
+    -- ============================================================
     function Window:CreateTabGroup(title, defaultOpen)
         local group = {}
         local isOpen = defaultOpen ~= false
@@ -3128,9 +4220,9 @@ function NoirUI:CreateWindow(settings)
             return api
         end
         
-        -- ==========================================================
+        -- ============================================================
         -- ELEMENT: CARD (7 TYPE)
-        -- ==========================================================
+        -- ============================================================
         function Tab:CreateCard(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local cardType = opt.Type or "Standard"
@@ -3177,7 +4269,6 @@ function NoirUI:CreateWindow(settings)
                 return t
             end
             
-            -- Xử lý từng loại Type
             if cardType == "Accordion" then
                 local headerBtn = Instance.new("TextButton", f)
                 headerBtn.Size = UDim2.new(1, 0, 0, 30)
@@ -3524,7 +4615,6 @@ function NoirUI:CreateWindow(settings)
                 end
                 
             else
-                -- Type 7: Standard
                 if layout == "Left" or layout == "Right" then
                     local contentWrapper = Instance.new("Frame", f)
                     contentWrapper.Size = UDim2.new(1, 0, 0, 0)
@@ -3665,139 +4755,85 @@ function NoirUI:CreateWindow(settings)
             return f
         end
         
-        -- ==========================================================
-        -- FLAG-ENABLED ELEMENTS
-        -- ==========================================================
-        function Tab:CreateToggleWithFlag(opt)
-            local flagName = opt.Flag
-            local toggle = self:CreateToggle({
-                Name = opt.Name,
-                Default = opt.Default,
-                Subtitle = opt.Subtitle,
-                Callback = opt.Callback,
-            })
-            
-            toggle._value = opt.Default or false
-            toggle.GetValue = function() return toggle._value end
-            toggle.SetValue = function(value)
-                toggle._value = value
-                if toggle._updateUI then toggle._updateUI(value) end
-                if opt.Callback then opt.Callback(value) end
-            end
-            toggle.SetDefault = function() toggle:SetValue(opt.Default or false) end
-            toggle.Type = "Toggle"
-            toggle._group = opt.Group
-            
-            if flagName then NoirUI:RegisterFlag(flagName, toggle) end
-            return toggle
-        end
-        
-        function Tab:CreateSliderWithFlag(opt)
-            local flagName = opt.Flag
-            local slider = self:CreateSlider({
-                Name = opt.Name,
-                Default = opt.Default,
-                range = opt.range or {0, 100},
-                increment = opt.increment or 1,
-                Subtitle = opt.Subtitle,
-                Callback = opt.Callback,
-            })
-            
-            slider._value = opt.Default or 0
-            slider.GetValue = function() return slider._value end
-            slider.SetValue = function(value)
-                slider._value = value
-                if slider._update then slider._update(value) end
-                if opt.Callback then opt.Callback(value) end
-            end
-            slider.SetDefault = function() slider:SetValue(opt.Default or 0) end
-            slider.Type = "Slider"
-            slider._group = opt.Group
-            
-            if flagName then NoirUI:RegisterFlag(flagName, slider) end
-            return slider
-        end
-        
-        function Tab:CreateDropdownWithFlag(opt)
-            local flagName = opt.Flag
-            local dropdown = self:CreateDropdown({
-                Name = opt.Name,
-                Default = opt.Default,
-                Options = opt.Options,
-                multi = opt.multi or false,
-                Subtitle = opt.Subtitle,
-                Callback = opt.Callback,
-            })
-            
-            dropdown._value = opt.Default or {}
-            dropdown.GetValue = function() return dropdown._value end
-            dropdown.SetValue = function(value)
-                dropdown._value = value
-                if dropdown._refresh then dropdown._refresh() end
-                if opt.Callback then opt.Callback(value) end
-            end
-            dropdown.SetDefault = function() dropdown:SetValue(opt.Default or {}) end
-            dropdown.Type = "Dropdown"
-            dropdown._group = opt.Group
-            
-            if flagName then NoirUI:RegisterFlag(flagName, dropdown) end
-            return dropdown
-        end
-        
-        function Tab:CreateColorPickerWithFlag(opt)
-            local flagName = opt.Flag
-            local colorPicker = self:CreateColorPicker({
-                Name = opt.Name,
-                Default = opt.Default or Color3.fromRGB(138, 116, 249),
-                Subtitle = opt.Subtitle,
-                Callback = opt.Callback,
-            })
-            
-            colorPicker._value = opt.Default or Color3.fromRGB(138, 116, 249)
-            colorPicker.GetValue = function() return colorPicker._value end
-            colorPicker.SetValue = function(value)
-                colorPicker._value = value
-                if colorPicker._update then colorPicker._update(value) end
-                if opt.Callback then opt.Callback(value) end
-            end
-            colorPicker.SetDefault = function() colorPicker:SetValue(opt.Default or Color3.fromRGB(138, 116, 249)) end
-            colorPicker.Type = "ColorPicker"
-            colorPicker._group = opt.Group
-            
-            if flagName then NoirUI:RegisterFlag(flagName, colorPicker) end
-            return colorPicker
-        end
-        
-        function Tab:CreateTextBoxWithFlag(opt)
-            local flagName = opt.Flag
-            local textBox = self:CreateTextBox({
-                Name = opt.Name,
-                Default = opt.Default or "",
-                Subtitle = opt.Subtitle,
-                Callback = opt.Callback,
-            })
-            
-            textBox._value = opt.Default or ""
-            textBox.GetValue = function() return textBox._value end
-            textBox.SetValue = function(value)
-                textBox._value = value
-                if textBox._update then textBox._update(value) end
-                if opt.Callback then opt.Callback(value) end
-            end
-            textBox.SetDefault = function() textBox:SetValue(opt.Default or "") end
-            textBox.Type = "TextBox"
-            textBox._group = opt.Group
-            
-            if flagName then NoirUI:RegisterFlag(flagName, textBox) end
-            return textBox
-        end
-        
         Tab._button = B
         return Tab
     end
     
     task.wait()
     return Window
+end
+
+-- ============================================================
+-- API CHUNG
+-- ============================================================
+function NoirUI:GetVersion()
+    return _version
+end
+
+function NoirUI:Destroy()
+    if NoirUI.Music and NoirUI.Music.CurrentSound then
+        NoirUI.Music.CurrentSound:Stop()
+    end
+    for _, connection in pairs(NoirUI.Connections) do
+        pcall(function() connection:Disconnect() end)
+    end
+    for _, notif in pairs(NoirUI.Notifications) do
+        pcall(function() notif:Destroy() end)
+    end
+    local gui = CoreGui:FindFirstChild("NoirUI_V3_Ultimate")
+    if gui then
+        gui:Destroy()
+    end
+    NoirUI.Notifications = {}
+    NoirUI.ActiveConfirmFrame = nil
+    NoirUI.Connections = {}
+end
+
+function NoirUI:GetThemes()
+    local names = {}
+    for name in pairs(ThemePresets) do
+        table.insert(names, name)
+    end
+    table.sort(names)
+    return names
+end
+
+function NoirUI:GetTheme(name)
+    if name then
+        return ThemePresets[name]
+    else
+        return _currentTheme or ThemePresets["kyri"]
+    end
+end
+
+-- ============================================================
+-- KHỞI TẠO HỆ THỐNG
+-- ============================================================
+function NoirUI:Init()
+    local loader = self:CreateLoader({
+        Icon = self.GlobalLogo,
+        Duration = 2,
+        Text = "Loading NoirUI..."
+    })
+    
+    loader:Wait()
+    
+    self:EnableAssetCache("NoirUI_Cache")
+    self:InitHotkeyListener()
+    self._Logger = self:CreateLogger()
+    self._Indicators = self:CreateIndicator()
+    self:ApplyTheme("Noir")
+    self._Toast = self:CreateToast({
+        Position = "top-right",
+        Duration = 3
+    })
+    
+    return {
+        Loader = loader,
+        Logger = self._Logger,
+        Indicators = self._Indicators,
+        Toast = self._Toast,
+    }
 end
 
 return NoirUI
