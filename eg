@@ -20,6 +20,65 @@ local NoirUI = { Notifications = {}, ActiveConfirmFrame = nil, CustomCommands = 
 
 local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
 
+-- === THEME PRESETS (Đã gộp vào đây) ===
+local ThemePresets = {
+	["kyri"] = {
+		bg = Color3.fromRGB(8,8,10),
+		container = Color3.fromRGB(14,14,18),
+		element = Color3.fromRGB(20,20,26),
+		hover = Color3.fromRGB(28,28,36),
+		active = Color3.fromRGB(32,32,42),
+		accent = Color3.fromRGB(138,116,249),
+		text = Color3.fromRGB(245,245,250),
+		subtext = Color3.fromRGB(165,165,180),
+		border = Color3.fromRGB(32,32,40)
+	},
+	["midnight"] = {
+		bg = Color3.fromRGB(6,8,14),
+		container = Color3.fromRGB(10,14,22),
+		element = Color3.fromRGB(16,20,32),
+		hover = Color3.fromRGB(22,28,44),
+		active = Color3.fromRGB(26,34,52),
+		accent = Color3.fromRGB(80,160,255),
+		text = Color3.fromRGB(240,245,255),
+		subtext = Color3.fromRGB(140,160,200),
+		border = Color3.fromRGB(24,32,50)
+	},
+	["rose"] = {
+		bg = Color3.fromRGB(12,8,10),
+		container = Color3.fromRGB(18,12,16),
+		element = Color3.fromRGB(26,18,22),
+		hover = Color3.fromRGB(36,24,30),
+		active = Color3.fromRGB(44,28,36),
+		accent = Color3.fromRGB(255,110,150),
+		text = Color3.fromRGB(255,245,248),
+		subtext = Color3.fromRGB(190,160,170),
+		border = Color3.fromRGB(40,26,32)
+	},
+	["forest"] = {
+		bg = Color3.fromRGB(8,12,8),
+		container = Color3.fromRGB(12,18,12),
+		element = Color3.fromRGB(18,26,18),
+		hover = Color3.fromRGB(24,34,24),
+		active = Color3.fromRGB(30,42,30),
+		accent = Color3.fromRGB(80,220,120),
+		text = Color3.fromRGB(240,250,240),
+		subtext = Color3.fromRGB(150,190,155),
+		border = Color3.fromRGB(24,38,24)
+	},
+	["slate"] = {
+		bg = Color3.fromRGB(12,12,14),
+		container = Color3.fromRGB(18,18,22),
+		element = Color3.fromRGB(26,26,32),
+		hover = Color3.fromRGB(34,34,42),
+		active = Color3.fromRGB(40,40,50),
+		accent = Color3.fromRGB(160,160,185),
+		text = Color3.fromRGB(240,240,245),
+		subtext = Color3.fromRGB(160,160,175),
+		border = Color3.fromRGB(36,36,44)
+	}
+}
+
 local function ResolveIcon(iconInput)
     if not iconInput then return nil end
     if type(iconInput) == "number" then
@@ -175,12 +234,12 @@ end
 
 function NoirUI:ToggleSound(enabled)
     SoundSettings.Enabled = enabled
-    NoirUI:Notify("🔊 Sound", "Đã " .. (enabled and "bật" or "tắt") .. " âm thanh", enabled and "volume-2" or "volume-x")
+    NoirUI:Notify({Title = "🔊 Sound", Subtitle = "Đã " .. (enabled and "bật" or "tắt") .. " âm thanh", Icon = enabled and "volume-2" or "volume-x"})
 end
 
 function NoirUI:SetVolume(volume)
     SoundSettings.Volume = math.clamp(volume, 0, 1)
-    NoirUI:Notify("🔊 Volume", "Âm lượng: " .. math.floor(volume * 100) .. "%", "volume-2")
+    NoirUI:Notify({Title = "🔊 Volume", Subtitle = "Âm lượng: " .. math.floor(volume * 100) .. "%", Icon = "volume-2"})
 end
 
 function NoirUI:Destroy()
@@ -481,11 +540,13 @@ function NoirUI:CreateWindow(settings)
     ScreenGui.Name = "NoirUI_V3_Ultimate"
     ScreenGui.ResetOnSpawn = false
     
+    -- Key System
     if settings.KeySystem then
         local success = KeySystem(settings)
         if not success then return end
     end
     
+    -- THEME XỬ LÝ (Gộp vào đây)
     local currentTheme = settings.Theme or {}
     if type(currentTheme) == "string" and ThemePresets[currentTheme] then
         currentTheme = ThemePresets[currentTheme]
@@ -523,7 +584,7 @@ function NoirUI:CreateWindow(settings)
     Main.ZIndex = 1
     
     local mainCorner = Instance.new("UICorner", Main)
-    mainCorner.CornerRadius = UDim.new(0, 8) -- Đã sửa bo góc từ 12 xuống 8
+    mainCorner.CornerRadius = UDim.new(0, 8) -- Bo góc 8
     
     SetupBackground(Main, settings.Background, Main.BackgroundColor3, 0)
     MakeDraggable(Main)
@@ -645,13 +706,13 @@ function NoirUI:CreateWindow(settings)
         end
     end)
     
-    -- Header (Đã bỏ UIStroke)
+    -- Header (Không stroke, bo góc 8)
     local Header = Instance.new("Frame", Main)
     Header.Size = UDim2.new(1, 0, 0, 40)
     Header.BackgroundColor3 = currentTheme.container or Color3.fromRGB(14,14,18)
     Header.BackgroundTransparency = 0
     local headerCorner = Instance.new("UICorner", Header)
-    headerCorner.CornerRadius = UDim.new(0, 8) -- Bo góc 8
+    headerCorner.CornerRadius = UDim.new(0, 8)
     
     local Title = Instance.new("TextLabel", Header)
     Title.Size = UDim2.new(1, -120, 1, 0)
@@ -664,7 +725,7 @@ function NoirUI:CreateWindow(settings)
     Title.TextSize = 14
     Title.TextXAlignment = "Left"
     
-    -- Search bar trên Header
+    -- Search bar
     local SearchBtn = Instance.new("ImageButton", Header)
     SearchBtn.Size = UDim2.new(0, 20, 0, 20)
     SearchBtn.Position = UDim2.new(1, -95, 0.5, 0)
@@ -723,7 +784,7 @@ function NoirUI:CreateWindow(settings)
         end
     end)
     
-    -- Header Buttons (Căn giữa)
+    -- Buttons
     local Btns = Instance.new("Frame", Header)
     Btns.Size = UDim2.new(0, 60, 1, 0)
     Btns.Position = UDim2.new(1, -20, 0, 0)
@@ -755,7 +816,7 @@ function NoirUI:CreateWindow(settings)
         end)
     end
 
-    -- Minimize Button
+    -- Minimize
     TopImageB("minus", Color3.fromRGB(255,200,50), function()
         PlaySound("Click")
         local startPos = Main.Position
@@ -775,7 +836,7 @@ function NoirUI:CreateWindow(settings)
         }):Play()
     end)
 
-    -- Close Button
+    -- Close
     TopImageB("x", Color3.fromRGB(255,100,100), function()
         PlaySound("Click")
         if NoirUI.ActiveConfirmFrame then return end
@@ -789,7 +850,7 @@ function NoirUI:CreateWindow(settings)
         local confCorner = Instance.new("UICorner", Conf)
         confCorner.CornerRadius = UDim.new(0, 8)
         AddBlurOverlay(Conf, settings.ConfirmBlur)
-        CreateScaleInEffect(Conf)
+        CreateSpringEffect(Conf)
         
         local t = Instance.new("TextLabel", Conf)
         t.Size = UDim2.new(1, 0, 0.5, 0)
@@ -850,14 +911,14 @@ function NoirUI:CreateWindow(settings)
         end)
     end)
     
-    -- Sidebar (Đã bỏ UIStroke)
+    -- Sidebar
     local Side = Instance.new("Frame", Main)
     Side.Size = UDim2.new(0, 110, 1, -50)
     Side.Position = UDim2.new(0, 5, 0, 40)
     Side.BackgroundTransparency = 1
     Side.ClipsDescendants = true
     local sideCorner = Instance.new("UICorner", Side)
-    sideCorner.CornerRadius = UDim.new(0, 8) -- Bo góc 8
+    sideCorner.CornerRadius = UDim.new(0, 8)
     if settings.SidebarBackgroundColor then
         Side.BackgroundColor3 = settings.SidebarBackgroundColor
         Side.BackgroundTransparency = settings.SidebarTransparency or 0.8
@@ -894,16 +955,16 @@ function NoirUI:CreateWindow(settings)
     Instance.new("UICorner", AI).CornerRadius = UDim.new(1,0)
     Instance.new("UIStroke", AI).Color = ACCENT
     
-    -- Content (Đã bỏ UIStroke)
+    -- Content
     local Cont = Instance.new("Frame", Main)
     Cont.Size = UDim2.new(1, -125, 1, -50)
     Cont.Position = UDim2.new(0, 120, 0, 40)
     Cont.BackgroundTransparency = 1
     Cont.ClipsDescendants = true
     local contCorner = Instance.new("UICorner", Cont)
-    contCorner.CornerRadius = UDim.new(0, 8) -- Bo góc 8
+    contCorner.CornerRadius = UDim.new(0, 8)
     
-    -- Float button toggle: ẩn float button khi mở UI
+    -- Float toggle
     TBtn.MouseButton1Click:Connect(function()
         PlaySound("Click")
         CreateClickScaleEffect(TBtn)
@@ -922,11 +983,23 @@ function NoirUI:CreateWindow(settings)
         
         PlaySound("Open")
     end)
-    
-    function NoirUI:Notify(title, message, iconName, soundType)
+
+    -- ==========================================================
+    -- NOTIFY CỦA BẠN (Đã sửa theo yêu cầu: Co giãn, có thanh chạy)
+    -- ==========================================================
+    function NoirUI:Notify(options)
+        local opts = options or {}
+        local title = opts.Title or "Thông báo"
+        local subtitle = opts.Subtitle or ""
+        local iconName = opts.Icon
+        local soundType = opts.Sound
+        local duration = opts.Dura or 4
+
         if soundType then PlaySound(soundType) else PlaySound("Notification") end
+        
         local n = Instance.new("Frame", ScreenGui)
-        n.Size = UDim2.new(0, 260, 0, 65)
+        n.Size = UDim2.new(0, 280, 0, 0) 
+        n.AutomaticSize = Enum.AutomaticSize.Y 
         n.Position = UDim2.new(1, 20, 0.8, 0)
         n.BackgroundColor3 = settings.NotificationBackgroundColor
         Instance.new("UICorner", n).CornerRadius = UDim.new(0, 8)
@@ -934,6 +1007,40 @@ function NoirUI:CreateWindow(settings)
         SetupBackground(n, settings.NotificationBackground, settings.NotificationBackgroundColor, 0.25)
         CreateSpringEffect(n)
         
+        -- Progress Bar
+        local progressBg = Instance.new("Frame", n)
+        progressBg.Size = UDim2.new(1, 0, 0, 3)
+        progressBg.Position = UDim2.new(0, 0, 1, -3)
+        progressBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        progressBg.BackgroundTransparency = 0.5
+        progressBg.ZIndex = 2
+        Instance.new("UICorner", progressBg).CornerRadius = UDim.new(0, 8)
+
+        local progressFill = Instance.new("Frame", progressBg)
+        progressFill.Size = UDim2.new(1, 0, 1, 0)
+        progressFill.BackgroundColor3 = ACCENT
+        progressFill.ZIndex = 3
+        Instance.new("UICorner", progressFill).CornerRadius = UDim.new(0, 8)
+
+        -- Close Button
+        local closeBtn = Instance.new("TextButton", n)
+        closeBtn.Size = UDim2.new(0, 20, 0, 20)
+        closeBtn.Position = UDim2.new(1, -5, 0, 5) 
+        closeBtn.AnchorPoint = Vector2.new(1, 0)
+        closeBtn.BackgroundTransparency = 1
+        closeBtn.Text = "×"
+        closeBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+        closeBtn.TextSize = 16
+        closeBtn.Font = Enum.Font.GothamBold
+        closeBtn.ZIndex = 5
+        closeBtn.MouseEnter:Connect(function()
+            TweenService:Create(closeBtn, TweenInfo.new(0.2), {TextColor3 = Color3.new(1,1,1)}):Play()
+        end)
+        closeBtn.MouseLeave:Connect(function()
+            TweenService:Create(closeBtn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(200,200,200)}):Play()
+        end)
+
+        -- Icon
         if iconName then
             local iconImg = ResolveIcon(iconName)
             if iconImg then
@@ -947,6 +1054,7 @@ function NoirUI:CreateWindow(settings)
             end
         end
         
+        -- Title
         local tl = Instance.new("TextLabel", n)
         tl.Size = UDim2.new(1, iconName and -45 or -15, 0, 20)
         tl.Position = UDim2.new(0, iconName and 40 or 15, 0, 5)
@@ -957,11 +1065,13 @@ function NoirUI:CreateWindow(settings)
         tl.Font = "GothamBold"
         tl.TextSize = 13
         tl.TextXAlignment = "Left"
+        tl.ZIndex = 2
         
+        -- Subtitle
         local ml = Instance.new("TextLabel", n)
         ml.Size = UDim2.new(1, iconName and -45 or -25, 0, 35)
         ml.Position = UDim2.new(0, iconName and 40 or 15, 0, 25)
-        ml.Text = message
+        ml.Text = subtitle
         ml.TextColor3 = Color3.new(1,1,1)
         ml.TextTransparency = 0
         ml.BackgroundTransparency = 1
@@ -970,20 +1080,48 @@ function NoirUI:CreateWindow(settings)
         ml.TextYAlignment = "Top"
         ml.Font = "Gotham"
         ml.TextSize = 11
+        ml.ZIndex = 2
         
+        ml:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+            progressBg.Position = UDim2.new(0, 0, 1, -3)
+        end)
+
+        -- Push up older ones
         for i, v in ipairs(NoirUI.Notifications) do
-            TweenService:Create(v, TweenInfo.new(0.3), {Position = UDim2.new(1, -280, 0.8, -(i * 75))}):Play()
+            TweenService:Create(v, TweenInfo.new(0.3), {Position = UDim2.new(1, -300, 0.8, -(i * 85))}):Play()
         end
         table.insert(NoirUI.Notifications, 1, n)
-        TweenService:Create(n, TweenInfo.new(0.5, Enum.EasingStyle.Back), {Position = UDim2.new(1, -280, 0.8, 0)}):Play()
-        task.delay(4, function()
-            TweenService:Create(n, TweenInfo.new(0.5), {Position = UDim2.new(1, 20, n.Position.Y.Scale, n.Position.Y.Offset), BackgroundTransparency = 1}):Play()
+        
+        TweenService:Create(n, TweenInfo.new(0.5, Enum.EasingStyle.Back), {Position = UDim2.new(1, -300, 0.8, 0)}):Play()
+        TweenService:Create(progressFill, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
+            Size = UDim2.new(0, 0, 1, 0)
+        }):Play()
+
+        local isClosed = false
+        local function closeNotification()
+            if isClosed then return end
+            isClosed = true
+            progressFill:TweenStop() 
+            TweenService:Create(n, TweenInfo.new(0.5), {
+                Position = UDim2.new(1, 20, n.Position.Y.Scale, n.Position.Y.Offset),
+                BackgroundTransparency = 1
+            }):Play()
             task.wait(0.5)
             for i, v in ipairs(NoirUI.Notifications) do
-                if v == n then table.remove(NoirUI.Notifications, i); break end
+                if v == n then
+                    table.remove(NoirUI.Notifications, i)
+                    break
+                end
             end
             n:Destroy()
+        end
+
+        n.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then closeNotification() end
         end)
+        closeBtn.MouseButton1Click:Connect(closeNotification)
+
+        task.delay(duration + 0.5, closeNotification)
     end
     
     local Window = {}
@@ -1167,8 +1305,7 @@ function NoirUI:CreateWindow(settings)
         TabContainer.BorderSizePixel = 0
         TabContainer.ClipsDescendants = true
         
-        -- Search filter
-        local searchData = {} -- Lưu trữ dữ liệu tìm kiếm
+        local searchData = {} 
         local function filterElements(searchText)
             local search = searchText:lower()
             for i, element in pairs(Tab.Elements) do
@@ -1562,7 +1699,7 @@ function NoirUI:CreateWindow(settings)
             defaultValue = math.clamp(defaultValue, min, max)
             local currentValue = defaultValue
             
-            -- ĐÃ XÓA HOÀN TOÀN NÚT +/-
+            -- Slider thuần (Không có nút +,-)
             local f = Instance.new("Frame", parent)
             f.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 70 or 50)
             f.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
