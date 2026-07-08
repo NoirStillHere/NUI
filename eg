@@ -348,7 +348,7 @@ function NoirUI:RegisterCommand(prefix, callback)
     NoirUI.CustomCommands[prefix:lower()] = callback
 end
 
--- Key System (from Kyri)
+-- Key System
 local function KeySystem(settings)
     if not settings then return true end
     local ks = settings.KeySettings or {}
@@ -577,35 +577,66 @@ function NoirUI:CreateWindow(settings)
     SetupBackground(Main, settings.Background, Main.BackgroundColor3, 0)
     MakeDraggable(Main)
     
-    -- FLOAT BUTTON (Đã sửa triệt để lỗi nền trắng xám)
+    -- Float Button
     local floatSize = settings.FloatSize or 45
     local floatIconSize = settings.FloatIconSize or 24
     local floatCornerRadius = settings.FloatCornerRadius or 8
     local TBtn = Instance.new("ImageButton", ScreenGui)
     TBtn.Size = UDim2.new(0, floatSize, 0, floatSize)
     TBtn.Position = floatDefaultPos
-    TBtn.BackgroundTransparency = 1 -- Đảm bảo trong suốt
+    TBtn.BackgroundTransparency = 1
     TBtn.Image = ""
     TBtn.ZIndex = 10
     TBtn.ClipsDescendants = true
     TBtn.AutoButtonColor = false
     TBtn.Visible = false
     
-    -- Chỉ bo tròn nút, không tạo nền màu
     local floatCorner = Instance.new("UICorner", TBtn)
     floatCorner.CornerRadius = UDim.new(0, floatCornerRadius)
-    
     local ClipGroup = Instance.new("Frame", TBtn)
     ClipGroup.Name = "ClipGroup"
     ClipGroup.Size = UDim2.new(1, 0, 1, 0)
     ClipGroup.Position = UDim2.new(0, 0, 0, 0)
-    ClipGroup.BackgroundTransparency = 1 -- Trong suốt
+    ClipGroup.BackgroundTransparency = 1
     ClipGroup.ClipsDescendants = true
     ClipGroup.ZIndex = TBtn.ZIndex
     local clipCorner = Instance.new("UICorner", ClipGroup)
     clipCorner.CornerRadius = UDim.new(0, floatCornerRadius)
     
-    -- Chỉ hiện Icon (bỏ qua phần tạo bgColor gây lỗi)
+    if settings.FloatBackground and settings.FloatBackground.Image then
+        local bgImage = Instance.new("ImageLabel", ClipGroup)
+        bgImage.Name = "BackgroundImage"
+        bgImage.Size = UDim2.new(1, 0, 1, 0)
+        bgImage.Position = UDim2.new(0, 0, 0, 0)
+        bgImage.BackgroundTransparency = 1
+        bgImage.ImageTransparency = settings.FloatBackground.Transparency or 0
+        bgImage.ScaleType = Enum.ScaleType.Crop
+        bgImage.ZIndex = 1
+        local imgValue = settings.FloatBackground.Image
+        if type(imgValue) == "number" or (type(imgValue) == "string" and imgValue:match("^%d+$")) then
+            bgImage.Image = "rbxassetid://" .. tostring(imgValue)
+        elseif type(imgValue) == "string" then
+            bgImage.Image = imgValue
+        end
+        local bgCorner = Instance.new("UICorner", bgImage)
+        bgCorner.CornerRadius = UDim.new(0, floatCornerRadius)
+        local overlay = Instance.new("Frame", ClipGroup)
+        overlay.Size = UDim2.new(1, 0, 1, 0)
+        overlay.BackgroundColor3 = Color3.fromRGB(0,0,0)
+        overlay.BackgroundTransparency = 0.4
+        overlay.ZIndex = 2
+        local overlayCorner = Instance.new("UICorner", overlay)
+        overlayCorner.CornerRadius = UDim.new(0, floatCornerRadius)
+    else
+        local bgColor = Instance.new("Frame", ClipGroup)
+        bgColor.Size = UDim2.new(1, 0, 1, 0)
+        bgColor.BackgroundColor3 = currentTheme.container or Color3.fromRGB(14,14,18)
+        bgColor.BackgroundTransparency = 0
+        bgColor.ZIndex = 1
+        local bgCorner = Instance.new("UICorner", bgColor)
+        bgCorner.CornerRadius = UDim.new(0, floatCornerRadius)
+    end
+    
     local iconValue = settings.Icon
     if iconValue then
         local iconImage = ResolveIcon(iconValue)
@@ -663,7 +694,7 @@ function NoirUI:CreateWindow(settings)
         end
     end)
     
-    -- Header (Không stroke, bo góc 8)
+    -- Header
     local Header = Instance.new("Frame", Main)
     Header.Size = UDim2.new(1, 0, 0, 40)
     Header.BackgroundColor3 = currentTheme.container or Color3.fromRGB(14,14,18)
@@ -682,7 +713,7 @@ function NoirUI:CreateWindow(settings)
     Title.TextSize = 14
     Title.TextXAlignment = "Left"
     
-    -- Search bar (Icon search)
+    -- Search bar
     local SearchBtn = Instance.new("ImageButton", Header)
     SearchBtn.Size = UDim2.new(0, 20, 0, 20)
     SearchBtn.Position = UDim2.new(1, -95, 0.5, 0)
@@ -741,7 +772,7 @@ function NoirUI:CreateWindow(settings)
         end
     end)
     
-    -- Buttons (Icon minus, icon x)
+    -- Buttons
     local Btns = Instance.new("Frame", Header)
     Btns.Size = UDim2.new(0, 60, 1, 0)
     Btns.Position = UDim2.new(1, -20, 0, 0)
@@ -1874,8 +1905,10 @@ function NoirUI:CreateWindow(settings)
             d.BackgroundTransparency = 0
             Instance.new("UICorner", d).CornerRadius = UDim.new(0, 8)
             d.LayoutOrder = GetO()
-            d.ClipsDescendants = true
             d.Name = opt.Name or ""
+            d.ClipsDescendants = false -- QUAN TRỌNG: Bỏ clip để list hiện tràn ra ngoài
+            d.ZIndex = 1
+            
             local idx = #Tab.Elements + 1
             table.insert(Tab.Elements, d)
             searchData[idx] = opt.Name or ""
@@ -1892,9 +1925,9 @@ function NoirUI:CreateWindow(settings)
             t.TextSize = 12
             t.TextXAlignment = "Left"
             t.AutoButtonColor = false
+            t.ZIndex = 2
             CreateHoverEffect(t)
             
-            -- Mũi tên dropdown Lucide (chevron-down)
             local Arrow = Instance.new("ImageLabel", t)
             Arrow.Size = UDim2.new(0, 16, 0, 16)
             Arrow.Position = UDim2.new(1, -20, 0.5, 0)
@@ -1906,14 +1939,16 @@ function NoirUI:CreateWindow(settings)
             
             if hasSubtitle then AddSubtitle(d, opt.Subtitle, 42) end
             
+            -- ================= SỬA LỖI CHE Ở ĐÂY =================
             local listFrame = Instance.new("Frame", d)
             listFrame.Size = UDim2.new(1, 0, 0, 0)
             listFrame.Position = UDim2.new(0, 0, 0, 42)
             listFrame.BackgroundColor3 = currentTheme.bg or Color3.fromRGB(8,8,10)
-            listFrame.ClipsDescendants = true
+            listFrame.ClipsDescendants = false -- Cho phép list đè lên trên mọi thứ
             listFrame.Visible = false
-            listFrame.ZIndex = 2
+            listFrame.ZIndex = 999 -- Đặt ZIndex cực cao để nó luôn nằm đè lên
             Instance.new("UICorner", listFrame).CornerRadius = UDim.new(0, 8)
+            -- =====================================================
             
             local searchBox = Instance.new("TextBox", listFrame)
             searchBox.Size = UDim2.new(1, -16, 0, 26)
@@ -1926,6 +1961,7 @@ function NoirUI:CreateWindow(settings)
             searchBox.TextSize = 13
             searchBox.TextXAlignment = "Left"
             searchBox.ClearTextOnFocus = false
+            searchBox.ZIndex = 1000
             Instance.new("UICorner", searchBox).CornerRadius = UDim.new(0, 5)
             
             local listContainer = Instance.new("ScrollingFrame", listFrame)
@@ -1937,6 +1973,7 @@ function NoirUI:CreateWindow(settings)
             listContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
             listContainer.ScrollingDirection = Enum.ScrollingDirection.Y
             listContainer.BorderSizePixel = 0
+            listContainer.ZIndex = 1000
             
             local listLayout = Instance.new("UIListLayout", listContainer)
             listLayout.Padding = UDim.new(0, 2)
@@ -1958,7 +1995,6 @@ function NoirUI:CreateWindow(settings)
                 for _, ref in ipairs(optionRefs) do
                     if ref.btn then ref.btn.Visible = true end
                 end
-                -- Đổi icon về chevron-down
                 Arrow.Image = ResolveIcon("chevron-down")
                 TweenService:Create(d, TweenInfo.new(0.2), {Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 42)}):Play()
                 TweenService:Create(listFrame, TweenInfo.new(0.2), {Size = UDim2.new(1, 0, 0, 0)}):Play()
@@ -1981,6 +2017,7 @@ function NoirUI:CreateWindow(settings)
                     optBtn.BackgroundColor3 = isSel and currentTheme.active or currentTheme.element or Color3.fromRGB(20,20,26)
                     optBtn.Text = ""
                     optBtn.AutoButtonColor = false
+                    optBtn.ZIndex = 1000
                     Instance.new("UICorner", optBtn).CornerRadius = UDim.new(0, 6)
                     
                     local optLbl = Instance.new("TextLabel", optBtn)
@@ -1992,6 +2029,7 @@ function NoirUI:CreateWindow(settings)
                     optLbl.Font = "Gotham"
                     optLbl.TextSize = 13
                     optLbl.TextXAlignment = "Left"
+                    optLbl.ZIndex = 1000
                     
                     local check = Instance.new("TextLabel", optBtn)
                     check.Size = UDim2.new(0, 20, 0, 20)
@@ -2002,6 +2040,7 @@ function NoirUI:CreateWindow(settings)
                     check.TextColor3 = ACCENT
                     check.Font = "GothamBold"
                     check.TextSize = 14
+                    check.ZIndex = 1000
                     
                     table.insert(optionRefs, {btn = optBtn, lbl = optLbl, check = check, text = option})
                     
@@ -2053,7 +2092,6 @@ function NoirUI:CreateWindow(settings)
                     local contentHeight = listLayout.AbsoluteContentSize.Y + 8
                     local maxList = math.min(contentHeight, 166)
                     listFrame.Visible = true
-                    -- Đổi icon sang chevron-up khi mở
                     Arrow.Image = ResolveIcon("chevron-up")
                     TweenService:Create(d, TweenInfo.new(0.2), {
                         Size = UDim2.new(0.95, 0, 0, 42 + 34 + maxList + 4 + (hasSubtitle and 20 or 0))
