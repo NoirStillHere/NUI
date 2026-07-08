@@ -4,7 +4,7 @@
 	Lua Scripter: NoirNF, Adono
 	Executor Compatibility Tester: Adono
 	Animation Engineer: Adono
-	Version: 1.5.1
+	Version: 1.5.3
 ]]
 
 --Core
@@ -20,7 +20,7 @@ if OldGui then OldGui:Destroy() end
 local NoirUI = { Notifications = {}, ActiveConfirmFrame = nil, CustomCommands = {}, Connections = {}, TabGroups = {} }
 
 local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
-local _version = "1.5.1"
+local _version = "1.5.3"
 
 -- === THEME PRESETS ===
 local ThemePresets = {
@@ -795,7 +795,7 @@ function NoirUI:CreateWindow(settings)
     local savedSize = Main.Size
 
     -- ==========================================================
-    -- RESIZE WINDOW (Dùng Decal ID bạn cung cấp dạng rbxthumb)
+    -- RESIZE WINDOW
     -- ==========================================================
     local resizeHandle = Instance.new("ImageButton", Main)
     resizeHandle.Size = UDim2.new(0, 18, 0, 18)
@@ -824,8 +824,7 @@ function NoirUI:CreateWindow(settings)
             local new_y = math.max(sizeStart.Y.Offset + delta.Y, minSize.Y)
             Main.Size = UDim2.new(0, new_x, 0, new_y)
             savedSize = Main.Size
-        end
-    end)
+        end    end)
     UIS.InputEnded:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
             isResizing = false
@@ -833,7 +832,7 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ==========================================================
-    -- FLOAT BUTTON
+    -- FLOAT BUTTON (Lưu vị trí và trượt thông minh)
     -- ==========================================================
     local floatSize = settings.FloatSize or 45
     local floatIconSize = settings.FloatIconSize or 24
@@ -926,6 +925,9 @@ function NoirUI:CreateWindow(settings)
         end
     end
     
+    -- Biến lưu vị trí Float Button
+    local savedFloatPos = floatDefaultPos
+
     local floatDragging = false
     local floatDragStart, floatStartPos, floatDragInput
     TBtn.InputBegan:Connect(function(input)
@@ -949,6 +951,7 @@ function NoirUI:CreateWindow(settings)
     UIS.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             floatDragging = false
+            savedFloatPos = TBtn.Position -- Lưu vị trí khi thả chuột
         end
     end)
     
@@ -1062,7 +1065,7 @@ function NoirUI:CreateWindow(settings)
         end)
     end
 
-    -- Minimize
+    -- Minimize (Trượt xuống dưới -> Float trượt lên)
     TopImageB("minus", Color3.fromRGB(255,200,50), function()
         PlaySound("Click")
         local startPos = Main.Position
@@ -1074,9 +1077,10 @@ function NoirUI:CreateWindow(settings)
         task.wait(0.4)
         Main.Visible = false
         TBtn.Visible = true
-        TBtn.Position = UDim2.new(TBtn.Position.X.Scale, TBtn.Position.X.Offset, 1, 50)
+        -- Đặt vị trí xuất phát dưới màn hình
+        TBtn.Position = UDim2.new(savedFloatPos.X.Scale, savedFloatPos.X.Offset, 1, 50)
         TweenService:Create(TBtn, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Position = floatDefaultPos
+            Position = savedFloatPos
         }):Play()
     end)
 
@@ -1141,14 +1145,24 @@ function NoirUI:CreateWindow(settings)
     local contCorner = Instance.new("UICorner", Cont)
     contCorner.CornerRadius = UDim.new(0, 8)
 
-    -- Float toggle (SỬA THÀNH TRỒI TỪ DƯỚI LÊN)
+    -- Float toggle (Float trượt xuống, Main trồi lên)
     TBtn.MouseButton1Click:Connect(function()
         PlaySound("Click")
         CreateClickScaleEffect(TBtn)
-        TBtn.Visible = false
-        Main.Visible = true
         
-        -- Chuẩn bị vị trí xuất phát từ dưới màn hình
+        -- 1. Float trượt xuống dưới
+        local floatStartPos = TBtn.Position
+        local floatTargetPos = UDim2.new(floatStartPos.X.Scale, floatStartPos.X.Offset, 1, 50)
+        TweenService:Create(TBtn, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            Position = floatTargetPos,
+            BackgroundTransparency = 1
+        }):Play()
+        task.wait(0.3)
+        TBtn.Visible = false
+        TBtn.Position = savedFloatPos -- Reset vị trí chuẩn để lần sau hiện đúng
+        
+        -- 2. Main trồi lên
+        Main.Visible = true
         Main.Size = savedSize
         Main.Position = UDim2.new(mainDefaultPos.X.Scale, mainDefaultPos.X.Offset, 1, 0)
         Main.BackgroundTransparency = 1
