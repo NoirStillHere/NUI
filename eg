@@ -809,7 +809,7 @@ function NoirUI:CreateWindow(settings)
         end)
     end
 
-    -- Minimize
+    -- Minimize (Đã sửa lỗi khung trắng)
     TopImageB("minus", Color3.fromRGB(255,200,50), function()
         PlaySound("Click")
         local startPos = Main.Position
@@ -821,7 +821,7 @@ function NoirUI:CreateWindow(settings)
         task.wait(0.4)
         Main.Visible = false
         TBtn.Visible = true
-        TBtn.BackgroundTransparency = 1
+        -- Đã xóa dòng TBtn.BackgroundTransparency = 1
         TBtn.Position = UDim2.new(TBtn.Position.X.Scale, TBtn.Position.X.Offset, 1, 50)
         TweenService:Create(TBtn, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Position = floatDefaultPos,
