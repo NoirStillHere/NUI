@@ -111,7 +111,7 @@ local function GetContrastColor(backgroundColor)
 end
 
 -- ====================================================
--- ANIMATION MỚI
+-- ANIMATION
 -- ====================================================
 local function CreateClickScaleEffect(button)
     if not button then return end
@@ -911,7 +911,7 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ==========================================================
-    -- NOTIFY MỚI CỦA BẠN (Đã sửa lỗi hết dura không đóng)
+    -- NOTIFY MỚI (Đã sửa lỗi không đóng, dùng task.delay)
     -- ==========================================================
     function NoirUI:Notify(title, message, iconName, soundType, duration, progressColor)
         if soundType then
@@ -997,7 +997,7 @@ function NoirUI:CreateWindow(settings)
         progressFill.ZIndex = 4
         Instance.new("UICorner", progressFill).CornerRadius = UDim.new(1, 0)
 
-        -- Animation thanh tiến trình (chạy từ phải sang trái)
+        -- Animation thanh tiến trình
         local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
         local tween = TweenService:Create(progressFill, tweenInfo, {
             Size = UDim2.new(0, 0, 1, 0),
@@ -1019,8 +1019,9 @@ function NoirUI:CreateWindow(settings)
             Position = UDim2.new(1, -280, 0.8, 0)
         }):Play()
 
-        -- 👉 Đóng thông báo KHI thanh tiến trình chạy xong
-        tween.Completed:Connect(function()
+        -- 👉 DÙNG TASK.DELAY THAY VÌ TWEEN.COMPLETED
+        task.delay(duration, function()
+            if not n or not n.Parent then return end -- Kiểm tra xem nó còn tồn tại không
             TweenService:Create(n, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
                 Position = UDim2.new(1, 20, n.Position.Y.Scale, n.Position.Y.Offset),
                 BackgroundTransparency = 1,
