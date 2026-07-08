@@ -4,7 +4,7 @@
 	Lua Scripter: NoirNF, Adono
 	Executor Compatibility Tester: Adono
 	Animation Engineer: Adono
-	Version: 1.5.6
+	Version: 1.5.7
 ]]
 
 --Core
@@ -20,7 +20,7 @@ if OldGui then OldGui:Destroy() end
 local NoirUI = { Notifications = {}, ActiveConfirmFrame = nil, CustomCommands = {}, Connections = {}, TabGroups = {} }
 
 local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
-local _version = "1.5.6"
+local _version = "1.5.7"
 
 -- === THEME PRESETS ===
 local ThemePresets = {
@@ -2599,13 +2599,13 @@ function NoirUI:CreateWindow(settings)
         end
         
         -- ==========================================================
-        -- ELEMENT: CARD (7 TYPE - DUY NHẤT HÀM NÀY)
+        -- ELEMENT: CARD (7 TYPE, ĐÃ THÊM LAYOUT CHO STANDARD)
         -- ==========================================================
         function Tab:CreateCard(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local cardType = opt.Type or "Standard"
+            local layout = opt.Layout or "Center" -- Chỉ dùng cho Standard: "Left", "Right", "Center"
             
-            -- Tạo khung Card chung
             local f = Instance.new("Frame", parent)
             f.Size = UDim2.new(0.95, 0, 0, 0)
             f.AutomaticSize = Enum.AutomaticSize.Y
@@ -2621,17 +2621,16 @@ function NoirUI:CreateWindow(settings)
             searchData[idx] = opt.Title or ""
             CreateSpringEffect(f, 0.05 * Tab.Count)
             
-            -- Layout padding cơ bản
             local padding = Instance.new("UIPadding", f)
             padding.PaddingTop = UDim.new(0, 12)
             padding.PaddingBottom = UDim.new(0, 12)
             padding.PaddingLeft = UDim.new(0, 14)
             padding.PaddingRight = UDim.new(0, 14)
             
-            local layout = Instance.new("UIListLayout", f)
-            layout.SortOrder = Enum.SortOrder.LayoutOrder
-            layout.Padding = UDim.new(0, 6)
-            layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            local layoutVertical = Instance.new("UIListLayout", f)
+            layoutVertical.SortOrder = Enum.SortOrder.LayoutOrder
+            layoutVertical.Padding = UDim.new(0, 6)
+            layoutVertical.HorizontalAlignment = Enum.HorizontalAlignment.Center
             
             local function createTitle(text)
                 local t = Instance.new("TextLabel", f)
@@ -3001,41 +3000,120 @@ function NoirUI:CreateWindow(settings)
                 end
                 
             else
-                -- Type 7: Standard (Mặc định)
-                createTitle(opt.Title or "Standard Card")
-                
-                if opt.Image then
-                    local img = Instance.new("ImageLabel", f)
-                    img.Size = UDim2.new(0, 50, 0, 50)
-                    img.BackgroundTransparency = 1
-                    img.Image = ResolveIcon(opt.Image) or ""
-                    img.ImageColor3 = Color3.new(1,1,1)
-                    img.ScaleType = Enum.ScaleType.Fit
-                    Instance.new("UICorner", img).CornerRadius = UDim.new(0, 8)
-                    img.LayoutOrder = 2
+                -- Type 7: Standard (Hỗ trợ Layout Left/Right/Center)
+                if layout == "Left" or layout == "Right" then
+                    -- Nếu là Layout trái/phải, dùng UIListLayout nằm ngang bên trong 1 Frame bao ngoài
+                    local contentWrapper = Instance.new("Frame", f)
+                    contentWrapper.Size = UDim2.new(1, 0, 0, 0)
+                    contentWrapper.AutomaticSize = Enum.AutomaticSize.Y
+                    contentWrapper.BackgroundTransparency = 1
+                    contentWrapper.LayoutOrder = 2
+                    contentWrapper.Name = "ContentWrapper"
+                    
+                    local wrapperLayout = Instance.new("UIListLayout", contentWrapper)
+                    wrapperLayout.FillDirection = Enum.FillDirection.Horizontal
+                    wrapperLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                    wrapperLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+                    wrapperLayout.Padding = UDim.new(0, 12)
+                    
+                    if layout == "Right" then
+                        wrapperLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+                    end
+                    
+                    local title = createTitle(opt.Title or "Standard Card")
+                    title.LayoutOrder = 1
+                    
+                    -- Ảnh (bên trái hoặc phải tùy Layout)
+                    if opt.Image then
+                        local img = Instance.new("ImageLabel", contentWrapper)
+                        img.Size = UDim2.new(0, 80, 0, 80)
+                        img.BackgroundTransparency = 1
+                        img.Image = ResolveIcon(opt.Image) or ""
+                        img.ImageColor3 = Color3.new(1,1,1)
+                        img.ScaleType = Enum.ScaleType.Fit
+                        Instance.new("UICorner", img).CornerRadius = UDim.new(0, 8)
+                        img.LayoutOrder = 2
+                        
+                        -- TextWrapper cho phần chữ
+                        local textWrapper = Instance.new("Frame", contentWrapper)
+                        textWrapper.Size = UDim2.new(1, -92, 0, 0)
+                        textWrapper.AutomaticSize = Enum.AutomaticSize.Y
+                        textWrapper.BackgroundTransparency = 1
+                        textWrapper.LayoutOrder = 3
+                        textWrapper.Name = "TextWrapper"
+                        
+                        local textWrapperLayout = Instance.new("UIListLayout", textWrapper)
+                        textWrapperLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                        textWrapperLayout.Padding = UDim.new(0, 2)
+                        
+                        if opt.Content then
+                            local content = Instance.new("TextLabel", textWrapper)
+                            content.Size = UDim2.new(1, 0, 0, 0)
+                            content.AutomaticSize = Enum.AutomaticSize.Y
+                            content.Text = opt.Content
+                            content.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
+                            content.TextTransparency = 0
+                            content.BackgroundTransparency = 1
+                            content.Font = Enum.Font.Gotham
+                            content.TextSize = 12
+                            content.TextXAlignment = Enum.TextXAlignment.Left
+                            content.TextWrapped = true
+                            content.LayoutOrder = 1
+                        end
+                    else
+                        if opt.Content then
+                            local content = Instance.new("TextLabel", contentWrapper)
+                            content.Size = UDim2.new(1, 0, 0, 0)
+                            content.AutomaticSize = Enum.AutomaticSize.Y
+                            content.Text = opt.Content
+                            content.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
+                            content.TextTransparency = 0
+                            content.BackgroundTransparency = 1
+                            content.Font = Enum.Font.Gotham
+                            content.TextSize = 12
+                            content.TextXAlignment = Enum.TextXAlignment.Left
+                            content.TextWrapped = true
+                            content.LayoutOrder = 2
+                        end
+                    end
+                else
+                    -- Center (Mặc định)
+                    createTitle(opt.Title or "Standard Card")
+                    
+                    if opt.Image then
+                        local img = Instance.new("ImageLabel", f)
+                        img.Size = UDim2.new(0, 60, 0, 60)
+                        img.BackgroundTransparency = 1
+                        img.Image = ResolveIcon(opt.Image) or ""
+                        img.ImageColor3 = Color3.new(1,1,1)
+                        img.ScaleType = Enum.ScaleType.Fit
+                        Instance.new("UICorner", img).CornerRadius = UDim.new(0, 8)
+                        img.LayoutOrder = 2
+                    end
+                    
+                    if opt.Content then
+                        local content = Instance.new("TextLabel", f)
+                        content.Size = UDim2.new(1, 0, 0, 0)
+                        content.AutomaticSize = Enum.AutomaticSize.Y
+                        content.Text = opt.Content
+                        content.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
+                        content.TextTransparency = 0
+                        content.BackgroundTransparency = 1
+                        content.Font = Enum.Font.Gotham
+                        content.TextSize = 12
+                        content.TextXAlignment = Enum.TextXAlignment.Left
+                        content.TextWrapped = true
+                        content.LayoutOrder = 3
+                    end
                 end
                 
-                if opt.Content then
-                    local content = Instance.new("TextLabel", f)
-                    content.Size = UDim2.new(1, 0, 0, 0)
-                    content.AutomaticSize = Enum.AutomaticSize.Y
-                    content.Text = opt.Content
-                    content.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
-                    content.TextTransparency = 0
-                    content.BackgroundTransparency = 1
-                    content.Font = Enum.Font.Gotham
-                    content.TextSize = 12
-                    content.TextXAlignment = Enum.TextXAlignment.Left
-                    content.TextWrapped = true
-                    content.LayoutOrder = 3
-                end
-                
+                -- Footer cho Standard (đặt bên ngoài cùng)
                 if opt.Footer then
                     local footerFrame = Instance.new("Frame", f)
                     footerFrame.Size = UDim2.new(1, 0, 0, 0)
                     footerFrame.AutomaticSize = Enum.AutomaticSize.Y
                     footerFrame.BackgroundTransparency = 1
-                    footerFrame.LayoutOrder = 4
+                    footerFrame.LayoutOrder = 10
                     
                     local footerLayout = Instance.new("UIListLayout", footerFrame)
                     footerLayout.FillDirection = Enum.FillDirection.Horizontal
