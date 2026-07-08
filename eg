@@ -821,7 +821,6 @@ function NoirUI:CreateWindow(settings)
         task.wait(0.4)
         Main.Visible = false
         TBtn.Visible = true
-        -- Đã xóa dòng TBtn.BackgroundTransparency = 1
         TBtn.Position = UDim2.new(TBtn.Position.X.Scale, TBtn.Position.X.Offset, 1, 50)
         TweenService:Create(TBtn, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Position = floatDefaultPos,
