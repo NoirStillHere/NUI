@@ -111,7 +111,7 @@ local function GetContrastColor(backgroundColor)
 end
 
 -- ====================================================
--- ANIMATION MỚI
+-- ANIMATION MỚI CỦA BẠN
 -- ====================================================
 local function CreateClickScaleEffect(button)
     if not button then return end
@@ -911,7 +911,7 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ==========================================================
-    -- NOTIFY MỚI CỦA BẠN (Đã gộp vào đây)
+    -- NOTIFY ĐÃ SỬA LỖI KHÔNG ĐÓNG (Task.delay an toàn)
     -- ==========================================================
     function NoirUI:Notify(title, message, iconName, soundType, duration, progressColor)
         if soundType then
@@ -921,7 +921,6 @@ function NoirUI:CreateWindow(settings)
         end
 
         local duration = duration or 4
-        -- Nếu không truyền progressColor, tự động lấy: theme accent -> ACCENT
         local progressColor = progressColor or (currentTheme and currentTheme.accent) or ACCENT
 
         local n = Instance.new("Frame", ScreenGui)
@@ -948,7 +947,7 @@ function NoirUI:CreateWindow(settings)
                 icon.Position = UDim2.new(0, 12, 0.5, -12)
                 icon.BackgroundTransparency = 1
                 icon.Image = iconImg
-                icon.ImageColor3 = progressColor -- Icon đồng màu với thanh tiến trình
+                icon.ImageColor3 = progressColor
                 icon.ZIndex = 2
             end
         end
@@ -1005,22 +1004,11 @@ function NoirUI:CreateWindow(settings)
             Position = UDim2.new(1, 0, 0, 0)
         }):Play()
 
-        -- Dời các thông báo cũ lên
-        for i, v in ipairs(NoirUI.Notifications) do
-            TweenService:Create(v, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Position = UDim2.new(1, -280, 0.8, -(i * 85))
-            }):Play()
-        end
-
-        table.insert(NoirUI.Notifications, 1, n)
-
-        -- Animation xuất hiện
-        TweenService:Create(n, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Position = UDim2.new(1, -280, 0.8, 0)
-        }):Play()
-
-        -- Tự động biến mất sau duration giây
-        task.delay(duration, function()
+        -- 🟢 CÁCH SỬA LỖI: Đặt task.delay Ở TRƯỚC, đảm bảo nó không bị vướng bởi các dòng code dưới đây
+        local isClosed = false
+        local function closeNotification()
+            if isClosed then return end
+            isClosed = true
             TweenService:Create(n, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
                 Position = UDim2.new(1, 20, n.Position.Y.Scale, n.Position.Y.Offset),
                 BackgroundTransparency = 1,
@@ -1034,7 +1022,22 @@ function NoirUI:CreateWindow(settings)
                 end
             end
             n:Destroy()
-        end)
+        end
+        task.delay(duration, closeNotification)
+
+        -- Dời các thông báo cũ lên
+        for i, v in ipairs(NoirUI.Notifications) do
+            TweenService:Create(v, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Position = UDim2.new(1, -280, 0.8, -(i * 85))
+            }):Play()
+        end
+
+        table.insert(NoirUI.Notifications, 1, n)
+
+        -- Animation xuất hiện
+        TweenService:Create(n, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Position = UDim2.new(1, -280, 0.8, 0)
+        }):Play()
     end
 
     local Window = {}
@@ -2114,116 +2117,4 @@ function NoirUI:CreateWindow(settings)
                         end
                     end)
                     
-                    optBtn.MouseButton1Click:Connect(function()
-                        PlaySound("Element")
-                        if isMulti then
-                            selected[option] = not selected[option]
-                            local now = selected[option] == true
-                            check.Text = now and "✓" or ""
-                            optLbl.TextColor3 = now and ACCENT or currentTheme.text or Color3.fromRGB(245,245,250)
-                            optBtn.BackgroundColor3 = now and currentTheme.active or currentTheme.element or Color3.fromRGB(20,20,26)
-                            t.Text = "  " .. opt.Name .. " : " .. getSelectedText()
-                            if opt.Callback then opt.Callback(getSelectedList()) end
-                        else
-                            for k in pairs(selected) do selected[k] = false end
-                            selected[option] = true
-                            t.Text = "  " .. opt.Name .. " : " .. option
-                            if opt.Callback then opt.Callback(option) end
-                            closeDropdown()
-                        end
-                    end)
-                end
-            end
-            
-            searchBox:GetPropertyChangedSignal("Text"):Connect(function()
-                local q = searchBox.Text:lower()
-                for _, ref in ipairs(optionRefs) do
-                    ref.btn.Visible = q == "" or ref.text:lower():find(q, 1, true) ~= nil
-                end
-            end)
-            
-            t.MouseButton1Click:Connect(function()
-                PlaySound("Element")
-                CreateClickScaleEffect(t)
-                open = not open
-                if open then
-                    if opt.RefreshOnOpen and opt.GetOptions then refreshOptions() end
-                    local contentHeight = listLayout.AbsoluteContentSize.Y + 8
-                    local maxList = math.min(contentHeight, 166)
-                    listFrame.Visible = true
-                    Arrow.Image = ResolveIcon("chevron-up")
-                    TweenService:Create(d, TweenInfo.new(0.2), {
-                        Size = UDim2.new(0.95, 0, 0, 42 + 34 + maxList + 4 + (hasSubtitle and 20 or 0))
-                    }):Play()
-                    TweenService:Create(listFrame, TweenInfo.new(0.2), {
-                        Size = UDim2.new(1, 0, 0, 34 + maxList)
-                    }):Play()
-                else
-                    closeDropdown()
-                end
-            end)
-            
-            UIS.InputBegan:Connect(function(inp, gpe)
-                if not open then return end
-                if inp.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-                local pos = inp.Position
-                local ap = d.AbsolutePosition
-                local as = d.AbsoluteSize
-                if pos.X < ap.X or pos.X > ap.X + as.X or pos.Y < ap.Y or pos.Y > ap.Y + as.Y then
-                    closeDropdown()
-                end
-            end)
-            
-            if opt.GetOptions then
-                refreshOptions()
-            elseif opt.Options then
-                refreshOptions()
-            end
-            
-            if opt.RefreshInterval and opt.GetOptions then
-                local refreshConnection = RunService.RenderStepped:Connect(function()
-                    if d and d.Parent then
-                        local newOptions = opt.GetOptions()
-                        if newOptions then
-                            local currentCount = 0
-                            for _, child in pairs(listContainer:GetChildren()) do
-                                if child:IsA("TextButton") then currentCount = currentCount + 1 end
-                            end
-                            if currentCount ~= #newOptions then refreshOptions() end
-                        end
-                    else
-                        refreshConnection:Disconnect()
-                    end
-                end)
-                table.insert(Tab.Connections, refreshConnection)
-                table.insert(NoirUI.Connections, refreshConnection)
-            end
-            
-            local api = {container = d}
-            function api:set(option)
-                if isMulti then
-                    if type(option) == "table" then
-                        for k in pairs(selected) do selected[k] = false end
-                        for _, v in ipairs(option) do selected[v] = true end
-                    end
-                else
-                    for k in pairs(selected) do selected[k] = false end
-                    selected[option] = true
-                end
-                t.Text = "  " .. opt.Name .. " : " .. getSelectedText()
-                refreshOptions()
-            end
-            function api:get() return isMulti and getSelectedList() or getSelectedText() end
-            function api:setcallback(fn) callback = fn end
-            return api
-        end
-        
-        Tab._button = B
-        return Tab
-    end
-    
-    task.wait()
-    return Window
-end
-
-return NoirUI
+                    optBtn
