@@ -4,7 +4,7 @@
 	Lua Scripter: NoirNF, Adono
 	Executor Compatibility Tester: Adono
 	Animation Engineer: Adono
-	Version: 1.5.3
+	Version: 1.5.4
 ]]
 
 --Core
@@ -20,7 +20,7 @@ if OldGui then OldGui:Destroy() end
 local NoirUI = { Notifications = {}, ActiveConfirmFrame = nil, CustomCommands = {}, Connections = {}, TabGroups = {} }
 
 local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
-local _version = "1.5.3"
+local _version = "1.5.4"
 
 -- === THEME PRESETS ===
 local ThemePresets = {
@@ -832,7 +832,7 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ==========================================================
-    -- FLOAT BUTTON (Lưu vị trí và trượt thông minh)
+    -- FLOAT BUTTON
     -- ==========================================================
     local floatSize = settings.FloatSize or 45
     local floatIconSize = settings.FloatIconSize or 24
@@ -925,7 +925,6 @@ function NoirUI:CreateWindow(settings)
         end
     end
     
-    -- Biến lưu vị trí Float Button
     local savedFloatPos = floatDefaultPos
 
     local floatDragging = false
@@ -951,7 +950,7 @@ function NoirUI:CreateWindow(settings)
     UIS.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             floatDragging = false
-            savedFloatPos = TBtn.Position -- Lưu vị trí khi thả chuột
+            savedFloatPos = TBtn.Position
         end
     end)
     
@@ -1065,7 +1064,7 @@ function NoirUI:CreateWindow(settings)
         end)
     end
 
-    -- Minimize (Trượt xuống dưới -> Float trượt lên)
+    -- Minimize
     TopImageB("minus", Color3.fromRGB(255,200,50), function()
         PlaySound("Click")
         local startPos = Main.Position
@@ -1077,7 +1076,6 @@ function NoirUI:CreateWindow(settings)
         task.wait(0.4)
         Main.Visible = false
         TBtn.Visible = true
-        -- Đặt vị trí xuất phát dưới màn hình
         TBtn.Position = UDim2.new(savedFloatPos.X.Scale, savedFloatPos.X.Offset, 1, 50)
         TweenService:Create(TBtn, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Position = savedFloatPos
@@ -1145,12 +1143,11 @@ function NoirUI:CreateWindow(settings)
     local contCorner = Instance.new("UICorner", Cont)
     contCorner.CornerRadius = UDim.new(0, 8)
 
-    -- Float toggle (Float trượt xuống, Main trồi lên)
+    -- Float toggle
     TBtn.MouseButton1Click:Connect(function()
         PlaySound("Click")
         CreateClickScaleEffect(TBtn)
         
-        -- 1. Float trượt xuống dưới
         local floatStartPos = TBtn.Position
         local floatTargetPos = UDim2.new(floatStartPos.X.Scale, floatStartPos.X.Offset, 1, 50)
         TweenService:Create(TBtn, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
@@ -1159,9 +1156,8 @@ function NoirUI:CreateWindow(settings)
         }):Play()
         task.wait(0.3)
         TBtn.Visible = false
-        TBtn.Position = savedFloatPos -- Reset vị trí chuẩn để lần sau hiện đúng
+        TBtn.Position = savedFloatPos
         
-        -- 2. Main trồi lên
         Main.Visible = true
         Main.Size = savedSize
         Main.Position = UDim2.new(mainDefaultPos.X.Scale, mainDefaultPos.X.Offset, 1, 0)
@@ -2600,6 +2596,117 @@ function NoirUI:CreateWindow(settings)
             function api:get() return isMulti and getSelectedList() or getSelectedText() end
             function api:setcallback(fn) callback = fn end
             return api
+        end
+        
+        -- ==========================================================
+        -- ELEMENT: CARD
+        -- ==========================================================
+        function Tab:CreateCard(opt)
+            local parent = Tab._currentSectionContent or ContentFrame
+            local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
+            
+            local f = Instance.new("Frame", parent)
+            f.Size = UDim2.new(0.95, 0, 0, 0)
+            f.AutomaticSize = Enum.AutomaticSize.Y
+            f.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
+            f.BackgroundTransparency = 0
+            Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
+            f.LayoutOrder = GetO()
+            f.Name = opt.Title or "Card"
+            f.ClipsDescendants = true
+            
+            local idx = #Tab.Elements + 1
+            table.insert(Tab.Elements, f)
+            searchData[idx] = opt.Title or ""
+            CreateSpringEffect(f, 0.05 * Tab.Count)
+            
+            local padding = Instance.new("UIPadding", f)
+            padding.PaddingTop = UDim.new(0, 12)
+            padding.PaddingBottom = UDim.new(0, 12)
+            padding.PaddingLeft = UDim.new(0, 14)
+            padding.PaddingRight = UDim.new(0, 14)
+            
+            local layout = Instance.new("UIListLayout", f)
+            layout.SortOrder = Enum.SortOrder.LayoutOrder
+            layout.Padding = UDim.new(0, 6)
+            
+            -- Image (nếu có)
+            if opt.Image then
+                local img = Instance.new("ImageLabel", f)
+                img.Size = UDim2.new(0, 60, 0, 60)
+                img.BackgroundTransparency = 1
+                img.Image = ResolveIcon(opt.Image) or opt.Image
+                img.ImageColor3 = Color3.new(1,1,1)
+                img.ScaleType = Enum.ScaleType.Fit
+                Instance.new("UICorner", img).CornerRadius = UDim.new(0, 8)
+                img.LayoutOrder = 1
+            end
+            
+            -- Title
+            local title = Instance.new("TextLabel", f)
+            title.Size = UDim2.new(1, 0, 0, 0)
+            title.AutomaticSize = Enum.AutomaticSize.Y
+            title.Text = opt.Title or "Card Title"
+            title.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
+            title.TextTransparency = 0
+            title.BackgroundTransparency = 1
+            title.Font = Enum.Font.GothamBold
+            title.TextSize = 15
+            title.TextXAlignment = Enum.TextXAlignment.Left
+            title.LayoutOrder = 2
+            
+            -- Content
+            if opt.Content then
+                local content = Instance.new("TextLabel", f)
+                content.Size = UDim2.new(1, 0, 0, 0)
+                content.AutomaticSize = Enum.AutomaticSize.Y
+                content.Text = opt.Content
+                content.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
+                content.TextTransparency = 0
+                content.BackgroundTransparency = 1
+                content.Font = Enum.Font.Gotham
+                content.TextSize = 12
+                content.TextXAlignment = Enum.TextXAlignment.Left
+                content.TextWrapped = true
+                content.LayoutOrder = 3
+            end
+            
+            -- Footer (Buttons)
+            if opt.Footer then
+                local footer = Instance.new("Frame", f)
+                footer.Size = UDim2.new(1, 0, 0, 0)
+                footer.AutomaticSize = Enum.AutomaticSize.Y
+                footer.BackgroundTransparency = 1
+                footer.LayoutOrder = 4
+                
+                local footerLayout = Instance.new("UIListLayout", footer)
+                footerLayout.FillDirection = Enum.FillDirection.Horizontal
+                footerLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+                footerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                footerLayout.Padding = UDim.new(0, 8)
+                
+                for _, btnData in ipairs(opt.Footer) do
+                    local btn = Instance.new("TextButton", footer)
+                    btn.Size = UDim2.new(0, 0, 0, 28)
+                    btn.AutomaticSize = Enum.AutomaticSize.X
+                    btn.BackgroundColor3 = ACCENT
+                    btn.Text = btnData.Text or "Button"
+                    btn.TextColor3 = GetContrastColor(ACCENT)
+                    btn.TextTransparency = 0
+                    btn.Font = Enum.Font.GothamBold
+                    btn.TextSize = 12
+                    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+                    btn.AutoButtonColor = false
+                    
+                    btn.MouseButton1Click:Connect(function()
+                        PlaySound("Element")
+                        CreateClickScaleEffect(btn)
+                        if btnData.Callback then btnData.Callback() end
+                    end)
+                end
+            end
+            
+            return f
         end
         
         Tab._button = B
