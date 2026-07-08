@@ -545,7 +545,7 @@ function NoirUI:GetTheme(name)
 end
 
 -- ==========================================================
--- MUSIC PLAYER COMPLETE (Đáp ứng yêu cầu của bạn)
+-- MUSIC PLAYER COMPLETE
 -- ==========================================================
 NoirUI.Music = {
     CurrentSound = nil,
@@ -557,7 +557,6 @@ NoirUI.Music = {
     Mode = "Playlist",
     History = {},
     Loaded = false,
-    SeekConnection = nil
 }
 
 local function Music_Init()
@@ -754,7 +753,6 @@ function NoirUI:CreateWindow(settings)
         currentTheme = ThemePresets[currentTheme]
     end
     
-    -- Lưu theme hiện tại vào biến toàn cục để dùng cho Notify
     _currentTheme = currentTheme
     
     local ACCENT = currentTheme.accent or settings.Accent or Color3.fromRGB(138,116,249)
@@ -794,17 +792,21 @@ function NoirUI:CreateWindow(settings)
     SetupBackground(Main, settings.Background, Main.BackgroundColor3, 0)
     MakeDraggable(Main)
     
+    -- Lưu kích thước hiện tại để dùng cho Minimize/Float
+    local savedSize = Main.Size
+
     -- ==========================================================
-    -- RESIZE WINDOW
+    -- RESIZE WINDOW (Dùng Decal ID bạn cung cấp dạng rbxthumb)
     -- ==========================================================
     local resizeHandle = Instance.new("ImageButton", Main)
-    resizeHandle.Size = UDim2.new(0, 20, 0, 20)
+    resizeHandle.Size = UDim2.new(0, 18, 0, 18)
     resizeHandle.Position = UDim2.new(1, 0, 1, 0)
     resizeHandle.AnchorPoint = Vector2.new(1, 1)
     resizeHandle.BackgroundTransparency = 1
-    resizeHandle.Image = ResolveIcon("move-diagonal-2") or ""
+    resizeHandle.Image = "rbxthumb://type=Decal&id=115443342386366&w=150&h=150"
     resizeHandle.ImageColor3 = currentTheme.subtext or Color3.fromRGB(160,160,180)
     resizeHandle.ZIndex = 100
+    resizeHandle.Name = "ResizeHandle"
 
     local isResizing = false
     local resizeStart, sizeStart
@@ -822,6 +824,7 @@ function NoirUI:CreateWindow(settings)
             local new_x = math.max(sizeStart.X.Offset + delta.X, minSize.X)
             local new_y = math.max(sizeStart.Y.Offset + delta.Y, minSize.Y)
             Main.Size = UDim2.new(0, new_x, 0, new_y)
+            savedSize = Main.Size -- Lưu lại kích thước khi resize
         end
     end)
     UIS.InputEnded:Connect(function(inp)
@@ -1060,7 +1063,7 @@ function NoirUI:CreateWindow(settings)
         end)
     end
 
-    -- Minimize
+    -- Minimize (Lưu đúng kích thước đã resize)
     TopImageB("minus", Color3.fromRGB(255,200,50), function()
         PlaySound("Click")
         local startPos = Main.Position
@@ -1139,19 +1142,19 @@ function NoirUI:CreateWindow(settings)
     local contCorner = Instance.new("UICorner", Cont)
     contCorner.CornerRadius = UDim.new(0, 8)
     
-    -- Float toggle
+    -- Float toggle (Khi mở lại, dùng savedSize để giữ kích thước)
     TBtn.MouseButton1Click:Connect(function()
         PlaySound("Click")
         CreateClickScaleEffect(TBtn)
         TBtn.Visible = false
         Main.Visible = true
         
-        Main.Size = UDim2.new(0, 520, 0, 0)
+        Main.Size = UDim2.new(0, 0, 0, 0)
         Main.Position = UDim2.new(mainDefaultPos.X.Scale, mainDefaultPos.X.Offset, 0.5, -200)
         Main.ClipsDescendants = true
         
         TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 520, 0, 400),
+            Size = savedSize, -- Dùng kích thước đã lưu
             Position = mainDefaultPos,
             BackgroundTransparency = 0
         }):Play()
@@ -1302,10 +1305,7 @@ function NoirUI:CreateWindow(settings)
     -- ==========================================================
     function Window:SetAccent(color)
         ACCENT = color
-        -- Cập nhật tất cả các phần tử dùng ACCENT (ví dụ: nút Toggle, thanh trượt, v.v.)
-        -- Để đơn giản trong phiên bản này, ta sẽ chỉ lưu màu và dùng cho các phần tử tạo sau.
-        -- Có thể mở rộng sau bằng cách quét toàn bộ UI.
-        NoirUI:Notify({Title = "Accent", Subtitle = "Đã đổi màu chủ đạo", Dura = 2})
+        NoirUI:Notify("Accent", "Đã đổi màu chủ đạo", "palette", nil, 2)
     end
     
     function Window:SetTheme(themeName)
@@ -1323,7 +1323,7 @@ function NoirUI:CreateWindow(settings)
             SetupBackground(Main, {Image = theme.backgroundImage}, Main.BackgroundColor3, 0)
         end
         
-        NoirUI:Notify({Title = "Theme", Subtitle = "Đã chuyển sang: " .. tostring(themeName), Dura = 2})
+        NoirUI:Notify("Theme", "Đã chuyển sang: " .. tostring(themeName), "palette", nil, 2)
     end
     
     function Window:SetBackground(imageId)
@@ -1349,7 +1349,7 @@ function NoirUI:CreateWindow(settings)
     end
 
     -- ==========================================================
-    -- ELEMENTS (Tabs, Sections, Buttons, etc.)
+    -- ELEMENTS
     -- ==========================================================
     function Window:CreateTabGroup(title, defaultOpen)
         local group = {}
