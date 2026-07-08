@@ -4,7 +4,7 @@
 	Lua Scripter: NoirNF, Adono
 	Executor Compatibility Tester: Adono
 	Animation Engineer: Adono
-	Version: 1.5.0
+	Version: 1.5.1
 ]]
 
 --Core
@@ -20,7 +20,7 @@ if OldGui then OldGui:Destroy() end
 local NoirUI = { Notifications = {}, ActiveConfirmFrame = nil, CustomCommands = {}, Connections = {}, TabGroups = {} }
 
 local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
-local _version = "1.5.0"
+local _version = "1.5.1"
 
 -- === THEME PRESETS ===
 local ThemePresets = {
@@ -792,7 +792,6 @@ function NoirUI:CreateWindow(settings)
     SetupBackground(Main, settings.Background, Main.BackgroundColor3, 0)
     MakeDraggable(Main)
     
-    -- Lưu kích thước hiện tại để dùng cho Minimize/Float
     local savedSize = Main.Size
 
     -- ==========================================================
@@ -824,7 +823,7 @@ function NoirUI:CreateWindow(settings)
             local new_x = math.max(sizeStart.X.Offset + delta.X, minSize.X)
             local new_y = math.max(sizeStart.Y.Offset + delta.Y, minSize.Y)
             Main.Size = UDim2.new(0, new_x, 0, new_y)
-            savedSize = Main.Size -- Lưu lại kích thước khi resize
+            savedSize = Main.Size
         end
     end)
     UIS.InputEnded:Connect(function(inp)
@@ -834,7 +833,7 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ==========================================================
-    -- FLOAT BUTTON (Đã sửa lỗi nền trắng)
+    -- FLOAT BUTTON
     -- ==========================================================
     local floatSize = settings.FloatSize or 45
     local floatIconSize = settings.FloatIconSize or 24
@@ -1063,7 +1062,7 @@ function NoirUI:CreateWindow(settings)
         end)
     end
 
-    -- Minimize (Lưu đúng kích thước đã resize)
+    -- Minimize
     TopImageB("minus", Color3.fromRGB(255,200,50), function()
         PlaySound("Click")
         local startPos = Main.Position
@@ -1141,20 +1140,21 @@ function NoirUI:CreateWindow(settings)
     Cont.ClipsDescendants = true
     local contCorner = Instance.new("UICorner", Cont)
     contCorner.CornerRadius = UDim.new(0, 8)
-    
-    -- Float toggle (Khi mở lại, dùng savedSize để giữ kích thước)
+
+    -- Float toggle (SỬA THÀNH TRỒI TỪ DƯỚI LÊN)
     TBtn.MouseButton1Click:Connect(function()
         PlaySound("Click")
         CreateClickScaleEffect(TBtn)
         TBtn.Visible = false
         Main.Visible = true
         
-        Main.Size = UDim2.new(0, 0, 0, 0)
-        Main.Position = UDim2.new(mainDefaultPos.X.Scale, mainDefaultPos.X.Offset, 0.5, -200)
+        -- Chuẩn bị vị trí xuất phát từ dưới màn hình
+        Main.Size = savedSize
+        Main.Position = UDim2.new(mainDefaultPos.X.Scale, mainDefaultPos.X.Offset, 1, 0)
+        Main.BackgroundTransparency = 1
         Main.ClipsDescendants = true
         
         TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = savedSize, -- Dùng kích thước đã lưu
             Position = mainDefaultPos,
             BackgroundTransparency = 0
         }):Play()
