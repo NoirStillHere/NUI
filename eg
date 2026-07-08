@@ -4,6 +4,7 @@
 	Lua Scripter: NoirNF, Adono
 	Executor Compatibility Tester: Adono
 	Animation Engineer: Adono
+	Version: 1.5.0
 ]]
 
 --Core
@@ -19,6 +20,7 @@ if OldGui then OldGui:Destroy() end
 local NoirUI = { Notifications = {}, ActiveConfirmFrame = nil, CustomCommands = {}, Connections = {}, TabGroups = {} }
 
 local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
+local _version = "1.5.0"
 
 -- === THEME PRESETS ===
 local ThemePresets = {
@@ -185,17 +187,6 @@ local SoundSettings = {
     SuccessSoundId = nil,
 }
 
-local BackgroundMusic = {
-    CurrentSound = nil,
-    CurrentTrackId = nil,
-    IsPlaying = false,
-    Volume = 0.3,
-    Playlist = {},
-    CurrentIndex = 1,
-    LoopMode = "single",
-    UIHidden = false,
-}
-
 local function PlaySound(soundType)
     if not SoundSettings.Enabled then return end
     local soundId = nil
@@ -219,10 +210,9 @@ local function PlaySound(soundType)
 end
 
 local function StopAndCleanupMusic()
-    if BackgroundMusic.CurrentSound then
-        BackgroundMusic.CurrentSound:Stop()
+    if NoirUI.Music and NoirUI.Music.CurrentSound then
+        NoirUI.Music.CurrentSound:Stop()
     end
-    BackgroundMusic.IsPlaying = false
 end
 
 function NoirUI:SetCustomSound(soundType, soundId)
@@ -235,23 +225,6 @@ function NoirUI:SetCustomSound(soundType, soundId)
     elseif soundType == "Error" then SoundSettings.ErrorSoundId = soundId
     elseif soundType == "Success" then SoundSettings.SuccessSoundId = soundId
     end
-end
-
-function NoirUI:Destroy()
-    StopAndCleanupMusic()
-    for _, connection in pairs(NoirUI.Connections) do
-        pcall(function() connection:Disconnect() end)
-    end
-    for _, notif in pairs(NoirUI.Notifications) do
-        pcall(function() notif:Destroy() end)
-    end
-    local gui = game.CoreGui:FindFirstChild("NoirUI_V3_Ultimate")
-    if gui then
-        gui:Destroy()
-    end
-    NoirUI.Notifications = {}
-    NoirUI.ActiveConfirmFrame = nil
-    NoirUI.Connections = {}
 end
 
 local function AddSubtitle(parent, subtitleText, yOffset)
@@ -530,6 +503,242 @@ local function KeySystem(settings)
     return true
 end
 
+-- ==========================================================
+-- API GLOBAL
+-- ==========================================================
+function NoirUI:GetVersion()
+    return _version
+end
+
+function NoirUI:Destroy()
+    StopAndCleanupMusic()
+    for _, connection in pairs(NoirUI.Connections) do
+        pcall(function() connection:Disconnect() end)
+    end
+    for _, notif in pairs(NoirUI.Notifications) do
+        pcall(function() notif:Destroy() end)
+    end
+    local gui = game.CoreGui:FindFirstChild("NoirUI_V3_Ultimate")
+    if gui then
+        gui:Destroy()
+    end
+    NoirUI.Notifications = {}
+    NoirUI.ActiveConfirmFrame = nil
+    NoirUI.Connections = {}
+end
+
+function NoirUI:GetThemes()
+    local names = {}
+    for name in pairs(ThemePresets) do
+        table.insert(names, name)
+    end
+    table.sort(names)
+    return names
+end
+
+function NoirUI:GetTheme(name)
+    if name then
+        return ThemePresets[name]
+    else
+        return _currentTheme or ThemePresets["kyri"]
+    end
+end
+
+-- ==========================================================
+-- MUSIC PLAYER COMPLETE (Đáp ứng yêu cầu của bạn)
+-- ==========================================================
+NoirUI.Music = {
+    CurrentSound = nil,
+    SoundId = nil,
+    IsPlaying = false,
+    Volume = 0.5,
+    Playlist = {},
+    CurrentIndex = 1,
+    Mode = "Playlist",
+    History = {},
+    Loaded = false,
+    SeekConnection = nil
+}
+
+local function Music_Init()
+    if NoirUI.Music.Loaded then return end
+    NoirUI.Music.CurrentSound = Instance.new("Sound")
+    NoirUI.Music.CurrentSound.Volume = NoirUI.Music.Volume
+    NoirUI.Music.CurrentSound.Parent = game:GetService("CoreGui")
+    
+    NoirUI.Music.CurrentSound.Ended:Connect(function()
+        if NoirUI.Music.IsPlaying then
+            if NoirUI.Music.Mode == "Repeat One" then
+                NoirUI.Music:Play()
+            else
+                NoirUI.Music:Next()
+            end
+        end
+    end)
+    NoirUI.Music.Loaded = true
+end
+
+local function Music_PlayTrackById(trackId)
+    local sound = NoirUI.Music.CurrentSound
+    if not sound then return end
+    sound:Stop()
+    if type(trackId) == "number" then
+        sound.SoundId = "rbxassetid://" .. tostring(trackId)
+    else
+        sound.SoundId = trackId
+    end
+    NoirUI.Music.SoundId = sound.SoundId
+    sound:Play()
+    NoirUI.Music.IsPlaying = true
+end
+
+function NoirUI.Music:LoadPlaylist(tracks)
+    self.Playlist = {}
+    for _, v in ipairs(tracks) do
+        table.insert(self.Playlist, v)
+    end
+    self.CurrentIndex = 1
+    self.History = {}
+    Music_Init()
+end
+
+function NoirUI.Music:AddTrack(trackId)
+    table.insert(self.Playlist, trackId)
+    return #self.Playlist
+end
+
+function NoirUI.Music:RemoveTrack(index)
+    table.remove(self.Playlist, index)
+    if #self.Playlist == 0 then self:Stop() end
+    if self.CurrentIndex > #self.Playlist then self.CurrentIndex = 1 end
+end
+
+function NoirUI.Music:ClearPlaylist()
+    self.Playlist = {}
+    self:Stop()
+end
+
+function NoirUI.Music:SetMode(mode)
+    if mode == "Single" or mode == "Repeat One" or mode == "Playlist" or mode == "Shuffle" then
+        self.Mode = mode
+    end
+end
+
+function NoirUI.Music:Play()
+    Music_Init()
+    if #self.Playlist == 0 then return end
+    
+    if self.CurrentSound and self.CurrentSound.IsPaused then
+        self.CurrentSound:Resume()
+        self.IsPlaying = true
+        return
+    end
+    
+    if self.SoundId and self.CurrentSound and not self.CurrentSound.IsPaused then
+        self.CurrentSound:Play()
+        self.IsPlaying = true
+        return
+    end
+    
+    self.CurrentIndex = 1
+    Music_PlayTrackById(self.Playlist[self.CurrentIndex])
+end
+
+function NoirUI.Music:Pause()
+    if self.CurrentSound and self.IsPlaying then
+        self.CurrentSound:Pause()
+        self.IsPlaying = false
+    end
+end
+
+function NoirUI.Music:Stop()
+    if self.CurrentSound then
+        self.CurrentSound:Stop()
+        self.SoundId = nil
+    end
+    self.IsPlaying = false
+end
+
+function NoirUI.Music:Next()
+    if #self.Playlist == 0 or self.Mode == "Single" then
+        self:Stop()
+        return
+    end
+    
+    local idx = self.CurrentIndex
+    
+    if self.Mode == "Repeat One" then
+        -- Keep current index
+    elseif self.Mode == "Playlist" then
+        idx = idx + 1
+        if idx > #self.Playlist then
+            self:Stop()
+            return
+        end
+    elseif self.Mode == "Shuffle" then
+        if #self.Playlist == 1 then
+            idx = 1
+        else
+            local randomIdx
+            repeat
+                randomIdx = math.random(1, #self.Playlist)
+            until randomIdx ~= self.CurrentIndex
+            idx = randomIdx
+        end
+    end
+    
+    self.CurrentIndex = idx
+    Music_PlayTrackById(self.Playlist[idx])
+end
+
+function NoirUI.Music:Previous()
+    if #self.Playlist == 0 then return end
+    if self.Mode == "Single" then
+        self:Stop()
+        return
+    end
+    
+    local idx = self.CurrentIndex - 1
+    if idx < 1 then idx = #self.Playlist end
+    self.CurrentIndex = idx
+    Music_PlayTrackById(self.Playlist[idx])
+end
+
+function NoirUI.Music:SetVolume(vol)
+    self.Volume = math.clamp(vol, 0, 1)
+    if self.CurrentSound then
+        self.CurrentSound.Volume = self.Volume
+    end
+end
+
+function NoirUI.Music:Seek(time)
+    if self.CurrentSound then
+        self.CurrentSound.TimePosition = math.clamp(time, 0, self.CurrentSound.Duration)
+    end
+end
+
+function NoirUI.Music:GetTime()
+    if not self.CurrentSound then return 0, 0 end
+    return self.CurrentSound.TimePosition, self.CurrentSound.Duration
+end
+
+function NoirUI.Music:GetModeName()
+    local names = {
+        ["Single"] = "Single",
+        ["Repeat One"] = "Repeat One",
+        ["Playlist"] = "Playlist",
+        ["Shuffle"] = "Shuffle"
+    }
+    return names[self.Mode] or "Playlist"
+end
+
+function NoirUI.Music:GetQueue()
+    return self.Playlist
+end
+
+-- ==========================================================
+-- MAIN UI
+-- ==========================================================
 function NoirUI:CreateWindow(settings)
     local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
     ScreenGui.Name = "NoirUI_V3_Ultimate"
@@ -544,6 +753,9 @@ function NoirUI:CreateWindow(settings)
     if type(currentTheme) == "string" and ThemePresets[currentTheme] then
         currentTheme = ThemePresets[currentTheme]
     end
+    
+    -- Lưu theme hiện tại vào biến toàn cục để dùng cho Notify
+    _currentTheme = currentTheme
     
     local ACCENT = currentTheme.accent or settings.Accent or Color3.fromRGB(138,116,249)
     
@@ -582,7 +794,45 @@ function NoirUI:CreateWindow(settings)
     SetupBackground(Main, settings.Background, Main.BackgroundColor3, 0)
     MakeDraggable(Main)
     
-    -- Float Button (Đã sửa lỗi nền trắng)
+    -- ==========================================================
+    -- RESIZE WINDOW
+    -- ==========================================================
+    local resizeHandle = Instance.new("ImageButton", Main)
+    resizeHandle.Size = UDim2.new(0, 20, 0, 20)
+    resizeHandle.Position = UDim2.new(1, 0, 1, 0)
+    resizeHandle.AnchorPoint = Vector2.new(1, 1)
+    resizeHandle.BackgroundTransparency = 1
+    resizeHandle.Image = ResolveIcon("move-diagonal-2") or ""
+    resizeHandle.ImageColor3 = currentTheme.subtext or Color3.fromRGB(160,160,180)
+    resizeHandle.ZIndex = 100
+
+    local isResizing = false
+    local resizeStart, sizeStart
+    local minSize = Vector2.new(300, 200)
+    resizeHandle.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            isResizing = true
+            resizeStart = inp.Position
+            sizeStart = Main.Size
+        end
+    end)
+    UIS.InputChanged:Connect(function(inp)
+        if isResizing and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+            local delta = inp.Position - resizeStart
+            local new_x = math.max(sizeStart.X.Offset + delta.X, minSize.X)
+            local new_y = math.max(sizeStart.Y.Offset + delta.Y, minSize.Y)
+            Main.Size = UDim2.new(0, new_x, 0, new_y)
+        end
+    end)
+    UIS.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            isResizing = false
+        end
+    end)
+
+    -- ==========================================================
+    -- FLOAT BUTTON (Đã sửa lỗi nền trắng)
+    -- ==========================================================
     local floatSize = settings.FloatSize or 45
     local floatIconSize = settings.FloatIconSize or 24
     local floatCornerRadius = settings.FloatCornerRadius or 8
@@ -590,7 +840,7 @@ function NoirUI:CreateWindow(settings)
     TBtn.Size = UDim2.new(0, floatSize, 0, floatSize)
     TBtn.Position = floatDefaultPos
     TBtn.BackgroundTransparency = 1
-    TBtn.BackgroundColor3 = Color3.new(0,0,0) -- Quan trọng: Đặt nền đen để không bị hiện nền trắng khi tween
+    TBtn.BackgroundColor3 = Color3.new(0,0,0)
     TBtn.Image = ""
     TBtn.ZIndex = 10
     TBtn.ClipsDescendants = true
@@ -810,7 +1060,7 @@ function NoirUI:CreateWindow(settings)
         end)
     end
 
-    -- Minimize (Đã xóa hoàn toàn lỗi tween nền trắng của TBtn)
+    -- Minimize
     TopImageB("minus", Color3.fromRGB(255,200,50), function()
         PlaySound("Click")
         local startPos = Main.Position
@@ -823,13 +1073,12 @@ function NoirUI:CreateWindow(settings)
         Main.Visible = false
         TBtn.Visible = true
         TBtn.Position = UDim2.new(TBtn.Position.X.Scale, TBtn.Position.X.Offset, 1, 50)
-        -- Chỉ Tween vị trí, không tween BackgroundTransparency để tránh lỗi nền trắng
         TweenService:Create(TBtn, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Position = floatDefaultPos
         }):Play()
     end)
 
-    -- Close Button (Hủy UI luôn, không confirm)
+    -- Close Button
     TopImageB("x", Color3.fromRGB(255,100,100), function()
         PlaySound("Click")
         StopAndCleanupMusic()
@@ -1017,10 +1266,9 @@ function NoirUI:CreateWindow(settings)
             Position = UDim2.new(1, -280, 0.8, 0)
         }):Play()
 
-        -- 👉 COROUTINE ĐÓNG NOTIFY
+        -- Đóng Notify
         task.spawn(function()
             task.wait(notifyDuration)
-
             if n and n.Parent then
                 local frameTween = TweenService:Create(n, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
                     Position = UDim2.new(1, 20, n.Position.Y.Scale, n.Position.Y.Offset),
@@ -1031,12 +1279,10 @@ function NoirUI:CreateWindow(settings)
                 local textInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
                 TweenService:Create(tl, textInfo, { TextTransparency = 1 }):Play()
                 TweenService:Create(ml, textInfo, { TextTransparency = 1 }):Play()
-                
                 TweenService:Create(progressBg, textInfo, { BackgroundTransparency = 1 }):Play()
                 TweenService:Create(progressFill, textInfo, { BackgroundTransparency = 1 }):Play()
 
                 frameTween.Completed:Wait()
-
                 for i, v in ipairs(NoirUI.Notifications) do
                     if v == n then
                         table.remove(NoirUI.Notifications, i)
@@ -1051,7 +1297,18 @@ function NoirUI:CreateWindow(settings)
     local Window = {}
     local allTabButtons = {}
     
-    function NoirUI:ApplyTheme(themeName)
+    -- ==========================================================
+    -- WINDOW PUBLIC API
+    -- ==========================================================
+    function Window:SetAccent(color)
+        ACCENT = color
+        -- Cập nhật tất cả các phần tử dùng ACCENT (ví dụ: nút Toggle, thanh trượt, v.v.)
+        -- Để đơn giản trong phiên bản này, ta sẽ chỉ lưu màu và dùng cho các phần tử tạo sau.
+        -- Có thể mở rộng sau bằng cách quét toàn bộ UI.
+        NoirUI:Notify({Title = "Accent", Subtitle = "Đã đổi màu chủ đạo", Dura = 2})
+    end
+    
+    function Window:SetTheme(themeName)
         local theme = type(themeName) == "string" and ThemePresets[themeName] or themeName
         if not theme then return end
         
@@ -1066,20 +1323,34 @@ function NoirUI:CreateWindow(settings)
             SetupBackground(Main, {Image = theme.backgroundImage}, Main.BackgroundColor3, 0)
         end
         
-        if theme.vibeSound then
-            SoundSettings.ClickSoundId = theme.vibeSound
-        end
+        NoirUI:Notify({Title = "Theme", Subtitle = "Đã chuyển sang: " .. tostring(themeName), Dura = 2})
     end
     
-    function NoirUI:GetThemes()
-        local names = {}
-        for name in pairs(ThemePresets) do
-            table.insert(names, name)
-        end
-        table.sort(names)
-        return names
+    function Window:SetBackground(imageId)
+        SetupBackground(Main, {Image = imageId}, Main.BackgroundColor3, 0)
     end
     
+    function Window:SetBlur(amount)
+        -- Logic thêm BlurOverlay nếu cần
+    end
+    
+    function Window:Hide()
+        Main.Visible = false
+        TBtn.Visible = true
+    end
+    
+    function Window:Show()
+        Main.Visible = true
+        TBtn.Visible = false
+    end
+    
+    function Window:GetTheme()
+        return currentTheme
+    end
+
+    -- ==========================================================
+    -- ELEMENTS (Tabs, Sections, Buttons, etc.)
+    -- ==========================================================
     function Window:CreateTabGroup(title, defaultOpen)
         local group = {}
         local isOpen = defaultOpen ~= false
@@ -1328,6 +1599,93 @@ function NoirUI:CreateWindow(settings)
             return l
         end
         
+        function Tab:CreateDivider()
+            local div = Instance.new("Frame", Tab._currentSectionContent or ContentFrame)
+            div.Size = UDim2.new(1, -20, 0, 1)
+            div.BackgroundColor3 = currentTheme.border or Color3.fromRGB(40,40,40)
+            div.BackgroundTransparency = 0.5
+            div.LayoutOrder = GetO()
+            div.Name = "Divider"
+            table.insert(Tab.Elements, div)
+            return div
+        end
+        
+        function Tab:CreateSpacer(height)
+            local spacer = Instance.new("Frame", Tab._currentSectionContent or ContentFrame)
+            spacer.Size = UDim2.new(1, 0, 0, height or 8)
+            spacer.BackgroundTransparency = 1
+            spacer.LayoutOrder = GetO()
+            spacer.Name = "Spacer"
+            table.insert(Tab.Elements, spacer)
+            return spacer
+        end
+        
+        function Tab:CreateProgressBar(text, maxValue)
+            maxValue = maxValue or 100
+            local current = 0
+            local parent = Tab._currentSectionContent or ContentFrame
+            
+            local f = Instance.new("Frame", parent)
+            f.Size = UDim2.new(0.95, 0, 0, 55)
+            f.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
+            f.BackgroundTransparency = 0
+            Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
+            f.LayoutOrder = GetO()
+            f.Name = "ProgressBar"
+            table.insert(Tab.Elements, f)
+            CreateSpringEffect(f, 0.05 * Tab.Count)
+            
+            local title = Instance.new("TextLabel", f)
+            title.Size = UDim2.new(1, -90, 0, 20)
+            title.Position = UDim2.new(0, 12, 0, 5)
+            title.Text = text
+            title.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
+            title.TextTransparency = 0
+            title.Font = "GothamBold"
+            title.TextSize = 13
+            title.TextXAlignment = "Left"
+            title.BackgroundTransparency = 1
+            
+            local pctLbl = Instance.new("TextLabel", f)
+            pctLbl.Size = UDim2.new(0, 60, 0, 20)
+            pctLbl.Position = UDim2.new(1, -16, 0, 5)
+            pctLbl.AnchorPoint = Vector2.new(1, 0)
+            pctLbl.Text = "0%"
+            pctLbl.TextColor3 = ACCENT
+            pctLbl.TextTransparency = 0
+            pctLbl.Font = "GothamBold"
+            pctLbl.TextSize = 13
+            pctLbl.TextXAlignment = "Right"
+            pctLbl.BackgroundTransparency = 1
+            
+            local track = Instance.new("Frame", f)
+            track.Size = UDim2.new(0.9, 0, 0, 4)
+            track.Position = UDim2.new(0.05, 0, 0.75, 0)
+            track.BackgroundColor3 = currentTheme.container or Color3.fromRGB(14,14,18)
+            Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
+            
+            local fill = Instance.new("Frame", track)
+            fill.Size = UDim2.new(0, 0, 1, 0)
+            fill.BackgroundColor3 = ACCENT
+            Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+            
+            local api = {}
+            function api:set(value, animate)
+                current = math.clamp(value, 0, maxValue)
+                local pct = current / maxValue
+                pctLbl.Text = math.floor(pct * 100) .. "%"
+                if animate then
+                    TweenService:Create(fill, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
+                        Size = UDim2.new(pct, 0, 1, 0)
+                    }):Play()
+                else
+                    fill.Size = UDim2.new(pct, 0, 1, 0)
+                end
+            end
+            function api:get() return current end
+            return api
+        end
+        
         function Tab:CreateSection(title, noLine)
             local s = Instance.new("Frame", ContentFrame)
             s.Size = UDim2.new(0.95, 0, 0, noLine and 25 or 35)
@@ -1495,7 +1853,8 @@ function NoirUI:CreateWindow(settings)
             i.TextSize = 12
             i.TextXAlignment = "Left"
             i.FocusLost:Connect(function() if opt.Callback then opt.Callback(i.Text) end end)
-            if hasSubtitle then AddSubtitle(f, opt.Subtitle, 38) end        end
+            if hasSubtitle then AddSubtitle(f, opt.Subtitle, 38) end
+        end
         
         function Tab:CreateButton(opt)
             local parent = Tab._currentSectionContent or ContentFrame
