@@ -112,12 +112,13 @@ end
 
 local function CreateClickScaleEffect(button)
     if not button then return end
+    -- Chỉ nảy riêng nút được bấm
     local origSize = button.Size
-    TweenService:Create(button, TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Size = origSize - UDim2.new(0, 2, 0, 2)
+    TweenService:Create(button, TweenInfo.new(0.05, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Size = UDim2.new(origSize.X.Scale, origSize.X.Offset - 2, origSize.Y.Scale, origSize.Y.Offset - 2)
     }):Play()
-    task.wait(0.06)
-    TweenService:Create(button, TweenInfo.new(0.12, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    task.wait(0.05)
+    TweenService:Create(button, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
         Size = origSize
     }):Play()
 end
@@ -127,12 +128,15 @@ local function CreateSpringEffect(frame, delay)
     local origSize = frame.Size
     local origPos = frame.Position
     local origTrans = frame.BackgroundTransparency
-    frame.Size = UDim2.new(origSize.X.Scale, origSize.X.Offset * 0.3, origSize.Y.Scale, origSize.Y.Offset * 0.3)
-    frame.Position = UDim2.new(origPos.X.Scale, origPos.X.Offset, origPos.Y.Scale, origPos.Y.Offset + 30)
+    
+    -- Reset về trạng thái ban đầu để khi chạy lần đầu nó nảy
+    frame.Size = UDim2.new(0, 0, 0, 0)
+    frame.Position = UDim2.new(origPos.X.Scale, origPos.X.Offset + 20, origPos.Y.Scale, origPos.Y.Offset)
     frame.BackgroundTransparency = 1
     frame.Visible = true
+    
     task.wait(delay or 0)
-    TweenService:Create(frame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
         Size = origSize,
         Position = origPos,
         BackgroundTransparency = origTrans
@@ -973,7 +977,7 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ==========================================================
-    -- NOTIFY ĐÃ BỊ XÓA (Chờ bạn tạo lại sau)
+    -- NOTIFY ĐÃ BỊ XÓA
     -- ==========================================================
     
     local Window = {}
