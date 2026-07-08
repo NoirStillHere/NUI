@@ -111,7 +111,7 @@ local function GetContrastColor(backgroundColor)
 end
 
 -- ====================================================
--- ANIMATION MỚI CỦA BẠN
+-- ANIMATION MỚI
 -- ====================================================
 local function CreateClickScaleEffect(button)
     if not button then return end
@@ -911,7 +911,7 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ==========================================================
-    -- NOTIFY ĐÃ SỬA LỖI KHÔNG ĐÓNG (Task.delay an toàn)
+    -- NOTIFY MỚI CỦA BẠN (Đã sửa lỗi hết dura không đóng)
     -- ==========================================================
     function NoirUI:Notify(title, message, iconName, soundType, duration, progressColor)
         if soundType then
@@ -999,31 +999,11 @@ function NoirUI:CreateWindow(settings)
 
         -- Animation thanh tiến trình (chạy từ phải sang trái)
         local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-        TweenService:Create(progressFill, tweenInfo, {
+        local tween = TweenService:Create(progressFill, tweenInfo, {
             Size = UDim2.new(0, 0, 1, 0),
             Position = UDim2.new(1, 0, 0, 0)
-        }):Play()
-
-        -- 🟢 CÁCH SỬA LỖI: Đặt task.delay Ở TRƯỚC, đảm bảo nó không bị vướng bởi các dòng code dưới đây
-        local isClosed = false
-        local function closeNotification()
-            if isClosed then return end
-            isClosed = true
-            TweenService:Create(n, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                Position = UDim2.new(1, 20, n.Position.Y.Scale, n.Position.Y.Offset),
-                BackgroundTransparency = 1,
-                TextTransparency = 1
-            }):Play()
-            task.wait(0.4)
-            for i, v in ipairs(NoirUI.Notifications) do
-                if v == n then
-                    table.remove(NoirUI.Notifications, i)
-                    break
-                end
-            end
-            n:Destroy()
-        end
-        task.delay(duration, closeNotification)
+        })
+        tween:Play()
 
         -- Dời các thông báo cũ lên
         for i, v in ipairs(NoirUI.Notifications) do
@@ -1038,6 +1018,23 @@ function NoirUI:CreateWindow(settings)
         TweenService:Create(n, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
             Position = UDim2.new(1, -280, 0.8, 0)
         }):Play()
+
+        -- 👉 Đóng thông báo KHI thanh tiến trình chạy xong
+        tween.Completed:Connect(function()
+            TweenService:Create(n, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                Position = UDim2.new(1, 20, n.Position.Y.Scale, n.Position.Y.Offset),
+                BackgroundTransparency = 1,
+                TextTransparency = 1
+            }):Play()
+            task.wait(0.4)
+            for i, v in ipairs(NoirUI.Notifications) do
+                if v == n then
+                    table.remove(NoirUI.Notifications, i)
+                    break
+                end
+            end
+            n:Destroy()
+        end)
     end
 
     local Window = {}
