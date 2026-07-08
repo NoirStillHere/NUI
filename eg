@@ -111,7 +111,7 @@ local function GetContrastColor(backgroundColor)
 end
 
 -- ====================================================
--- ANIMATION MỚI
+-- ANIMATION
 -- ====================================================
 local function CreateClickScaleEffect(button)
     if not button then return end
@@ -582,7 +582,7 @@ function NoirUI:CreateWindow(settings)
     SetupBackground(Main, settings.Background, Main.BackgroundColor3, 0)
     MakeDraggable(Main)
     
-    -- Float Button
+    -- Float Button (Đã sửa lỗi nền trắng)
     local floatSize = settings.FloatSize or 45
     local floatIconSize = settings.FloatIconSize or 24
     local floatCornerRadius = settings.FloatCornerRadius or 8
@@ -590,6 +590,7 @@ function NoirUI:CreateWindow(settings)
     TBtn.Size = UDim2.new(0, floatSize, 0, floatSize)
     TBtn.Position = floatDefaultPos
     TBtn.BackgroundTransparency = 1
+    TBtn.BackgroundColor3 = Color3.new(0,0,0) -- Quan trọng: Đặt nền đen để không bị hiện nền trắng khi tween
     TBtn.Image = ""
     TBtn.ZIndex = 10
     TBtn.ClipsDescendants = true
@@ -809,7 +810,7 @@ function NoirUI:CreateWindow(settings)
         end)
     end
 
-    -- Minimize (Đã sửa lỗi khung trắng)
+    -- Minimize (Đã xóa hoàn toàn lỗi tween nền trắng của TBtn)
     TopImageB("minus", Color3.fromRGB(255,200,50), function()
         PlaySound("Click")
         local startPos = Main.Position
@@ -822,9 +823,9 @@ function NoirUI:CreateWindow(settings)
         Main.Visible = false
         TBtn.Visible = true
         TBtn.Position = UDim2.new(TBtn.Position.X.Scale, TBtn.Position.X.Offset, 1, 50)
+        -- Chỉ Tween vị trí, không tween BackgroundTransparency để tránh lỗi nền trắng
         TweenService:Create(TBtn, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Position = floatDefaultPos,
-            BackgroundTransparency = 0
+            Position = floatDefaultPos
         }):Play()
     end)
 
@@ -910,7 +911,7 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ==========================================================
-    -- NOTIFY MỚI (Đã sửa lỗi đóng bằng Tween + Spawn)
+    -- NOTIFY MỚI
     -- ==========================================================
     function NoirUI:Notify(title, message, iconName, soundType, duration, progressColor)
         if soundType then
@@ -919,7 +920,7 @@ function NoirUI:CreateWindow(settings)
             PlaySound("Notification")
         end
 
-        local notifyDuration = duration or 4 -- Đổi tên biến cho rõ ràng
+        local notifyDuration = duration or 4
         local progressColor = progressColor or (currentTheme and currentTheme.accent) or ACCENT
 
         local n = Instance.new("Frame", ScreenGui)
@@ -1016,31 +1017,26 @@ function NoirUI:CreateWindow(settings)
             Position = UDim2.new(1, -280, 0.8, 0)
         }):Play()
 
-        -- 👉 COROUTINE ĐÓNG NOTIFY (Đã sửa lỗi bằng Completed:Wait)
+        -- 👉 COROUTINE ĐÓNG NOTIFY
         task.spawn(function()
             task.wait(notifyDuration)
 
             if n and n.Parent then
-                -- 1. Tween Frame nền
                 local frameTween = TweenService:Create(n, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
                     Position = UDim2.new(1, 20, n.Position.Y.Scale, n.Position.Y.Offset),
                     BackgroundTransparency = 1
                 })
                 frameTween:Play()
 
-                -- 2. Tween từng TextLabel (để fade chữ)
                 local textInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
                 TweenService:Create(tl, textInfo, { TextTransparency = 1 }):Play()
                 TweenService:Create(ml, textInfo, { TextTransparency = 1 }):Play()
                 
-                -- 3. Tween thanh tiến trình (nếu có)
                 TweenService:Create(progressBg, textInfo, { BackgroundTransparency = 1 }):Play()
                 TweenService:Create(progressFill, textInfo, { BackgroundTransparency = 1 }):Play()
 
-                -- 4. Chờ tween frame chạy xong rồi Destroy (dùng Completed:Wait thay vì task.wait)
                 frameTween.Completed:Wait()
 
-                -- Xóa khỏi mảng
                 for i, v in ipairs(NoirUI.Notifications) do
                     if v == n then
                         table.remove(NoirUI.Notifications, i)
