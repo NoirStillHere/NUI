@@ -112,13 +112,12 @@ end
 
 local function CreateClickScaleEffect(button)
     if not button then return end
-    -- Chỉ nảy riêng nút được bấm
     local origSize = button.Size
-    TweenService:Create(button, TweenInfo.new(0.05, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Size = UDim2.new(origSize.X.Scale, origSize.X.Offset - 2, origSize.Y.Scale, origSize.Y.Offset - 2)
+    TweenService:Create(button, TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Size = origSize - UDim2.new(0, 2, 0, 2)
     }):Play()
-    task.wait(0.05)
-    TweenService:Create(button, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    task.wait(0.06)
+    TweenService:Create(button, TweenInfo.new(0.12, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
         Size = origSize
     }):Play()
 end
@@ -128,15 +127,12 @@ local function CreateSpringEffect(frame, delay)
     local origSize = frame.Size
     local origPos = frame.Position
     local origTrans = frame.BackgroundTransparency
-    
-    -- Reset về trạng thái ban đầu để khi chạy lần đầu nó nảy
-    frame.Size = UDim2.new(0, 0, 0, 0)
-    frame.Position = UDim2.new(origPos.X.Scale, origPos.X.Offset + 20, origPos.Y.Scale, origPos.Y.Offset)
+    frame.Size = UDim2.new(origSize.X.Scale, origSize.X.Offset * 0.3, origSize.Y.Scale, origSize.Y.Offset * 0.3)
+    frame.Position = UDim2.new(origPos.X.Scale, origPos.X.Offset, origPos.Y.Scale, origPos.Y.Offset + 30)
     frame.BackgroundTransparency = 1
     frame.Visible = true
-    
     task.wait(delay or 0)
-    TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    TweenService:Create(frame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
         Size = origSize,
         Position = origPos,
         BackgroundTransparency = origTrans
@@ -828,79 +824,12 @@ function NoirUI:CreateWindow(settings)
         }):Play()
     end)
 
-    -- Close
+    -- Close Button (XÓA BẢNG CONFIRM, HỦY UI NGAY LẬP TỨC)
     TopImageB("x", Color3.fromRGB(255,100,100), function()
         PlaySound("Click")
-        if NoirUI.ActiveConfirmFrame then return end
-        
-        local Conf = Instance.new("Frame", ScreenGui)
-        NoirUI.ActiveConfirmFrame = Conf
-        Conf.Size = UDim2.new(0, 260, 0, 120)
-        Conf.Position = UDim2.new(0.5, -130, 0.5, -60)
-        Conf.BackgroundColor3 = settings.ConfirmBackgroundColor
-        Conf.ZIndex = 100
-        local confCorner = Instance.new("UICorner", Conf)
-        confCorner.CornerRadius = UDim.new(0, 8)
-        AddBlurOverlay(Conf, settings.ConfirmBlur)
-        CreateSpringEffect(Conf)
-        
-        local t = Instance.new("TextLabel", Conf)
-        t.Size = UDim2.new(1, 0, 0.5, 0)
-        t.BackgroundTransparency = 1
-        t.Text = "wanna leave?"
-        t.TextColor3 = currentTheme.text or Color3.new(1,1,1)
-        t.TextTransparency = 0
-        t.Font = "Gotham"
-        t.TextSize = 13
-        t.ZIndex = 101
-        
-        local cbtn = Instance.new("TextButton", Conf)
-        cbtn.Size = UDim2.new(0.4, 0, 0, 32)
-        cbtn.Position = UDim2.new(0.07, 0, 0.6, 0)
-        cbtn.BackgroundColor3 = currentTheme.element or Color3.fromRGB(35,35,35)
-        cbtn.Text = "no"
-        cbtn.TextColor3 = currentTheme.text or Color3.new(1,1,1)
-        cbtn.TextTransparency = 0
-        cbtn.ZIndex = 101
-        Instance.new("UICorner", cbtn).CornerRadius = UDim.new(0, 6)
-        cbtn.AutoButtonColor = false
-        cbtn.Font = "GothamBold"
-        CreateHoverEffect(cbtn)
-        
-        local fbtn = Instance.new("TextButton", Conf)
-        fbtn.Size = UDim2.new(0.4, 0, 0, 32)
-        fbtn.Position = UDim2.new(0.53, 0, 0.6, 0)
-        fbtn.BackgroundColor3 = ACCENT
-        fbtn.Text = "yes"
-        fbtn.TextColor3 = currentTheme.text or Color3.new(1,1,1)
-        fbtn.TextTransparency = 0
-        fbtn.ZIndex = 101
-        Instance.new("UICorner", fbtn).CornerRadius = UDim.new(0, 6)
-        fbtn.AutoButtonColor = false
-        fbtn.Font = "GothamBold"
-        CreateHoverEffect(fbtn)
-        
-        local function destroyConfirm()
-            NoirUI.ActiveConfirmFrame = nil
-            TweenService:Create(Conf, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
-            task.wait(0.3)
-            Conf:Destroy()
-        end
-        
-        cbtn.MouseButton1Click:Connect(function()
-            PlaySound("Click")
-            CreateClickScaleEffect(cbtn)
-            destroyConfirm()
-        end)
-        
-        fbtn.MouseButton1Click:Connect(function()
-            PlaySound("Click")
-            CreateClickScaleEffect(fbtn)
-            StopAndCleanupMusic()
-            ScreenGui:Destroy()
-            destroyConfirm()
-            PlaySound("Close")
-        end)
+        StopAndCleanupMusic()
+        ScreenGui:Destroy()
+        PlaySound("Close")
     end)
     
     -- Sidebar
@@ -977,7 +906,7 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ==========================================================
-    -- NOTIFY ĐÃ BỊ XÓA
+    -- NOTIFY ĐÃ BỊ XÓA (Chờ bạn tạo lại sau)
     -- ==========================================================
     
     local Window = {}
@@ -1910,7 +1839,7 @@ function NoirUI:CreateWindow(settings)
             Instance.new("UICorner", d).CornerRadius = UDim.new(0, 8)
             d.LayoutOrder = GetO()
             d.Name = opt.Name or ""
-            d.ClipsDescendants = false -- QUAN TRỌNG: Bỏ clip để list hiện tràn ra ngoài
+            d.ClipsDescendants = false
             d.ZIndex = 1
             
             local idx = #Tab.Elements + 1
@@ -1943,16 +1872,14 @@ function NoirUI:CreateWindow(settings)
             
             if hasSubtitle then AddSubtitle(d, opt.Subtitle, 42) end
             
-            -- ================= SỬA LỖI CHE Ở ĐÂY =================
             local listFrame = Instance.new("Frame", d)
             listFrame.Size = UDim2.new(1, 0, 0, 0)
             listFrame.Position = UDim2.new(0, 0, 0, 42)
             listFrame.BackgroundColor3 = currentTheme.bg or Color3.fromRGB(8,8,10)
-            listFrame.ClipsDescendants = false -- Cho phép list đè lên trên mọi thứ
+            listFrame.ClipsDescendants = false
             listFrame.Visible = false
-            listFrame.ZIndex = 999 -- Đặt ZIndex cực cao để nó luôn nằm đè lên
+            listFrame.ZIndex = 999
             Instance.new("UICorner", listFrame).CornerRadius = UDim.new(0, 8)
-            -- =====================================================
             
             local searchBox = Instance.new("TextBox", listFrame)
             searchBox.Size = UDim2.new(1, -16, 0, 26)
