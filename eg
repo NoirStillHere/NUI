@@ -577,66 +577,35 @@ function NoirUI:CreateWindow(settings)
     SetupBackground(Main, settings.Background, Main.BackgroundColor3, 0)
     MakeDraggable(Main)
     
-    -- Float Button
+    -- FLOAT BUTTON (Đã sửa triệt để lỗi nền trắng xám)
     local floatSize = settings.FloatSize or 45
     local floatIconSize = settings.FloatIconSize or 24
     local floatCornerRadius = settings.FloatCornerRadius or 8
     local TBtn = Instance.new("ImageButton", ScreenGui)
     TBtn.Size = UDim2.new(0, floatSize, 0, floatSize)
     TBtn.Position = floatDefaultPos
-    TBtn.BackgroundTransparency = 1
+    TBtn.BackgroundTransparency = 1 -- Đảm bảo trong suốt
     TBtn.Image = ""
     TBtn.ZIndex = 10
     TBtn.ClipsDescendants = true
     TBtn.AutoButtonColor = false
     TBtn.Visible = false
     
+    -- Chỉ bo tròn nút, không tạo nền màu
     local floatCorner = Instance.new("UICorner", TBtn)
     floatCorner.CornerRadius = UDim.new(0, floatCornerRadius)
+    
     local ClipGroup = Instance.new("Frame", TBtn)
     ClipGroup.Name = "ClipGroup"
     ClipGroup.Size = UDim2.new(1, 0, 1, 0)
     ClipGroup.Position = UDim2.new(0, 0, 0, 0)
-    ClipGroup.BackgroundTransparency = 1
+    ClipGroup.BackgroundTransparency = 1 -- Trong suốt
     ClipGroup.ClipsDescendants = true
     ClipGroup.ZIndex = TBtn.ZIndex
     local clipCorner = Instance.new("UICorner", ClipGroup)
     clipCorner.CornerRadius = UDim.new(0, floatCornerRadius)
     
-    if settings.FloatBackground and settings.FloatBackground.Image then
-        local bgImage = Instance.new("ImageLabel", ClipGroup)
-        bgImage.Name = "BackgroundImage"
-        bgImage.Size = UDim2.new(1, 0, 1, 0)
-        bgImage.Position = UDim2.new(0, 0, 0, 0)
-        bgImage.BackgroundTransparency = 1
-        bgImage.ImageTransparency = settings.FloatBackground.Transparency or 0
-        bgImage.ScaleType = Enum.ScaleType.Crop
-        bgImage.ZIndex = 1
-        local imgValue = settings.FloatBackground.Image
-        if type(imgValue) == "number" or (type(imgValue) == "string" and imgValue:match("^%d+$")) then
-            bgImage.Image = "rbxassetid://" .. tostring(imgValue)
-        elseif type(imgValue) == "string" then
-            bgImage.Image = imgValue
-        end
-        local bgCorner = Instance.new("UICorner", bgImage)
-        bgCorner.CornerRadius = UDim.new(0, floatCornerRadius)
-        local overlay = Instance.new("Frame", ClipGroup)
-        overlay.Size = UDim2.new(1, 0, 1, 0)
-        overlay.BackgroundColor3 = Color3.fromRGB(0,0,0)
-        overlay.BackgroundTransparency = 0.4
-        overlay.ZIndex = 2
-        local overlayCorner = Instance.new("UICorner", overlay)
-        overlayCorner.CornerRadius = UDim.new(0, floatCornerRadius)
-    else
-        local bgColor = Instance.new("Frame", ClipGroup)
-        bgColor.Size = UDim2.new(1, 0, 1, 0)
-        bgColor.BackgroundColor3 = currentTheme.container or Color3.fromRGB(14,14,18)
-        bgColor.BackgroundTransparency = 0
-        bgColor.ZIndex = 1
-        local bgCorner = Instance.new("UICorner", bgColor)
-        bgCorner.CornerRadius = UDim.new(0, floatCornerRadius)
-    end
-    
+    -- Chỉ hiện Icon (bỏ qua phần tạo bgColor gây lỗi)
     local iconValue = settings.Icon
     if iconValue then
         local iconImage = ResolveIcon(iconValue)
@@ -1036,7 +1005,6 @@ function NoirUI:CreateWindow(settings)
         titleLabel.TextSize = 11
         titleLabel.TextXAlignment = "Left"
         
-        -- Icon mũi tên Lucide (chevron-down / chevron-right)
         local arrow = Instance.new("ImageLabel", header)
         arrow.Size = UDim2.new(0, 16, 0, 16)
         arrow.Position = UDim2.new(1, -18, 0.5, 0)
@@ -1288,7 +1256,6 @@ function NoirUI:CreateWindow(settings)
             lbl.TextXAlignment = "Left"
             lbl.BackgroundTransparency = 1
             
-            -- Mũi tên collapse/expand Lucide
             local arrow = Instance.new("ImageLabel", headerBtn)
             arrow.Size = UDim2.new(0, 16, 0, 16)
             arrow.Position = UDim2.new(1, -20, 0.5, 0)
