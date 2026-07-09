@@ -6,8 +6,12 @@
 	Animation Engineer: Adono
 	Version: 2.0.1
 	Changelog: 
-	- Fix lỗi Float Button bị nhân đôi lớp đen.
-	- Tự động Glass effect cho các Element CHỈ KHI có ảnh nền.
+	- Background System v2 (Gradient, Glassmorphism, Depth)
+	- Tab Indicator bên phải
+	- Auto select tab đầu tiên
+	- Loader nâng cấp: Mặc định bo-goc (bo góc 12), thanh dời xuống, chữ dời xuống
+	- Fix lỗi Float Button bị nhân đôi lớp đen khi mở lại
+	- Tự động Glass effect khi có ảnh nền
 ]]
 
 --Core
@@ -805,7 +809,7 @@ function NoirUI.Music:GetQueue()
 end
 
 -- ==========================================================
--- LOADER SYSTEM (ĐÃ CHỈNH SỬA)
+-- LOADER SYSTEM (MẶC ĐỊNH BO-GÓC, DỜI THANH XUỐNG)
 -- ==========================================================
 function NoirUI:CreateLoader(settings)
     settings = settings or {}
@@ -817,6 +821,33 @@ function NoirUI:CreateLoader(settings)
     local textColor = settings.TextColor or theme.text or Color3.fromRGB(245,245,250)
     local accentColor = settings.AccentColor or theme.accent or Color3.fromRGB(138,116,249)
     
+    -- === XỬ LÝ SHAPE (HÌNH DÁNG ICON) ===
+    local shape = settings.Shape or "bo-goc" -- Mặc định là bo-goc
+    local iconCornerRadius = UDim.new(0, 12)
+    local iconScale = Enum.ScaleType.Fit
+    local iconSize = 120
+    
+    if shape == "tron" then
+        iconCornerRadius = UDim.new(1, 0)
+        iconScale = Enum.ScaleType.Fit
+    elseif shape == "vuong" then
+        iconCornerRadius = UDim.new(0, 0)
+        iconScale = Enum.ScaleType.Fit
+    elseif shape == "chu-nhat" then
+        iconSize = 140
+        iconCornerRadius = UDim.new(0, 0)
+        iconScale = Enum.ScaleType.Fit
+    elseif shape == "trai-tim" or shape == "tam-giac" or shape == "ngoi-sao" then
+        iconScale = Enum.ScaleType.Fit
+        iconCornerRadius = UDim.new(0, 0)
+    elseif shape == "bo-goc" then
+        iconCornerRadius = UDim.new(0, 12)
+        iconScale = Enum.ScaleType.Fit
+    else
+        iconCornerRadius = UDim.new(0, 12)
+        iconScale = Enum.ScaleType.Fit
+    end
+
     -- Tạo ScreenGui
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "NoirLoader"
@@ -863,21 +894,29 @@ function NoirUI:CreateLoader(settings)
     Icon.Size = UDim2.new(0, 750, 0, 750)
     Icon.ZIndex = 3
     Icon.ImageTransparency = 1
+    Icon.ScaleType = iconScale
     
     -- Xử lý icon
     local iconImage = ResolveIcon(iconId)
     if iconImage then
         Icon.Image = iconImage
     else
-        Icon.Image = "rbxassetid://6031094700" -- Fallback
+        Icon.Image = "rbxassetid://6031094700"
     end
 
-    -- Loading Bar (Thanh tiến trình)
+    -- Gán Shape (Bo góc) cho Icon
+    if shape ~= "tron" then
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = iconCornerRadius
+        corner.Parent = Icon
+    end
+
+    -- Loading Bar (Thanh tiến trình - Đã dời xuống 0.70)
     local ProgressBar = Instance.new("Frame")
     ProgressBar.Name = "ProgressBar"
     ProgressBar.Parent = Loader
     ProgressBar.AnchorPoint = Vector2.new(0.5, 0.5)
-    ProgressBar.Position = UDim2.new(0.5, 0, 0.60, 0) -- Đẩy thanh xuống 0.6
+    ProgressBar.Position = UDim2.new(0.5, 0, 0.70, 0) -- Dời xuống 0.70
     ProgressBar.Size = UDim2.new(0, 200, 0, 4)
     ProgressBar.BackgroundColor3 = theme.container or Color3.fromRGB(14,14,18)
     ProgressBar.BackgroundTransparency = 0.5
@@ -893,13 +932,13 @@ function NoirUI:CreateLoader(settings)
     ProgressFill.ZIndex = 8
     Instance.new("UICorner", ProgressFill).CornerRadius = UDim.new(1, 0)
 
-    -- Text Label (Dời xuống dưới thanh tiến trình)
+    -- Text Label (Dời xuống dưới thanh tiến trình 0.85)
     local TextLabel = Instance.new("TextLabel")
     TextLabel.Name = "TextLabel"
     TextLabel.Parent = Loader
     TextLabel.AnchorPoint = Vector2.new(0.5, 0.5)
     TextLabel.BackgroundTransparency = 1
-    TextLabel.Position = UDim2.new(0.5, 0, 0.75, 0) -- Đẩy chữ xuống tận 0.75 để không bị đè
+    TextLabel.Position = UDim2.new(0.5, 0, 0.85, 0) -- Dời xuống 0.85
     TextLabel.Size = UDim2.new(0, 250, 0, 20)
     TextLabel.Text = text
     TextLabel.TextColor3 = textColor
@@ -926,7 +965,7 @@ function NoirUI:CreateLoader(settings)
         -- Step 2: Animate Icon
         TweenService:Create(Icon, TweenInfo.new(0.75, Enum.EasingStyle.Quint), {
             ImageTransparency = 0.01,
-            Size = UDim2.new(0, 120, 0, 120)
+            Size = UDim2.new(0, iconSize, 0, iconSize)
         }):Play()
         
         -- Step 3: Animate Text
