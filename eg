@@ -4,7 +4,12 @@
 	Lua Scripter: NoirNF, Adono
 	Executor Compatibility Tester: Adono
 	Animation Engineer: Adono
-	Version: 1.5.7
+	Version: 2.0.0
+	Changelog: 
+	- Background System v2 (Gradient, Glassmorphism, Depth)
+	- Tab Indicator bên phải
+	- Auto select tab đầu tiên
+	- Loader nâng cấp (không spinner, chữ dời xuống dưới)
 ]]
 
 --Core
@@ -20,7 +25,7 @@ if OldGui then OldGui:Destroy() end
 local NoirUI = { Notifications = {}, ActiveConfirmFrame = nil, CustomCommands = {}, Connections = {}, TabGroups = {} }
 
 local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
-local _version = "1.5.7"
+local _version = "2.0.0"
 
 -- === THEME PRESETS ===
 local ThemePresets = {
@@ -281,12 +286,26 @@ local function MakeDraggable(frame)
     end)
 end
 
+-- ====================================================
+-- BACKGROUND SYSTEM V2.0.0 (HIỆN ĐẠI)
+-- ====================================================
 local function SetupBackground(frame, bgSetting, bgColor, defaultTransparency)
+    -- Dọn dẹp các background cũ nếu có
     local existingBg = frame:FindFirstChild("_BackgroundImage")
     if existingBg then existingBg:Destroy() end
+    local existingGradient = frame:FindFirstChild("_UIGradient")
+    if existingGradient then existingGradient:Destroy() end
+    local existingOverlay = frame:FindFirstChild("_GlassOverlay")
+    if existingOverlay then existingOverlay:Destroy() end
+
+    -- Lấy thông số bo góc
+    local frameCorner = frame:FindFirstChild("UICorner")
+    local cornerRadius = frameCorner and frameCorner.CornerRadius or UDim.new(0, 8)
+
+    -- === XỬ LÝ BACKGROUND ===
+    
+    -- 1. Nếu là Image (Cổ điển nhưng vẫn giữ để tương thích ngược)
     if bgSetting and bgSetting.Image then
-        local frameCorner = frame:FindFirstChild("UICorner")
-        local cornerRadius = frameCorner and frameCorner.CornerRadius or UDim.new(0, 8)
         local bgImage = Instance.new("ImageLabel")
         bgImage.Name = "_BackgroundImage"
         bgImage.Size = UDim2.new(1, 0, 1, 0)
@@ -296,30 +315,82 @@ local function SetupBackground(frame, bgSetting, bgColor, defaultTransparency)
         bgImage.ScaleType = Enum.ScaleType.Crop
         bgImage.ZIndex = 0
         bgImage.Parent = frame
+        
         local bgCorner = Instance.new("UICorner")
         bgCorner.CornerRadius = cornerRadius
         bgCorner.Parent = bgImage
+        
         local imgValue = bgSetting.Image
         if type(imgValue) == "number" or (type(imgValue) == "string" and imgValue:match("^%d+$")) then
             bgImage.Image = "rbxassetid://" .. tostring(imgValue)
         elseif type(imgValue) == "string" then
             bgImage.Image = imgValue
         end
-        bgImage.ZIndex = 0
-        for _, child in pairs(frame:GetChildren()) do
-            if child ~= bgImage and child:IsA("GuiObject") then
-                child.ZIndex = math.max(child.ZIndex, 1)
-            end
+        
+        -- Nếu có thêm hiệu ứng Glass (Kính mờ) cho ảnh
+        if bgSetting.GlassEffect then
+            local overlay = Instance.new("Frame")
+            overlay.Name = "_GlassOverlay"
+            overlay.Size = UDim2.new(1, 0, 1, 0)
+            overlay.BackgroundColor3 = Color3.fromRGB(0,0,0)
+            overlay.BackgroundTransparency = bgSetting.GlassOpacity or 0.4
+            overlay.ZIndex = 1
+            overlay.Parent = frame
+            Instance.new("UICorner", overlay).CornerRadius = cornerRadius
         end
+
         frame.ClipsDescendants = true
         frame.BackgroundTransparency = 1
         return true
-    else
-        frame.BackgroundTransparency = defaultTransparency or 0
-        frame.BackgroundColor3 = bgColor or Color3.fromRGB(10, 10, 10)
-        frame.ClipsDescendants = false
-        return false
     end
+
+    -- 2. Nếu là Gradient (Mới v2.0.0)
+    if bgSetting and bgSetting.Gradient then
+        -- Tạo nền base
+        frame.BackgroundColor3 = Color3.fromRGB(0,0,0) -- Mặc định đen trước khi gradient phủ
+        frame.BackgroundTransparency = 0
+        frame.ClipsDescendants = true
+        
+        local gradient = Instance.new("UIGradient")
+        gradient.Name = "_UIGradient"
+        gradient.Rotation = bgSetting.Rotation or 45
+        
+        -- Xử lý ColorSequence
+        if type(bgSetting.Gradient) == "table" then
+            local points = {}
+            for i, color in ipairs(bgSetting.Gradient) do
+                local time = (i - 1) / (math.max(#bgSetting.Gradient - 1, 1))
+                table.insert(points, ColorSequenceKeypoint.new(time, color))
+            end
+            gradient.Color = ColorSequence.new(points)
+        else
+            gradient.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, bgSetting.Gradient),
+                ColorSequenceKeypoint.new(1, Color3.new(0,0,0))
+            })
+        end
+        gradient.Parent = frame
+        
+        -- Nếu có thêm Glass Overlay
+        if bgSetting.GlassEffect then
+            local overlay = Instance.new("Frame")
+            overlay.Name = "_GlassOverlay"
+            overlay.Size = UDim2.new(1, 0, 1, 0)
+            overlay.BackgroundColor3 = Color3.fromRGB(0,0,0)
+            overlay.BackgroundTransparency = bgSetting.GlassOpacity or 0.3
+            overlay.ZIndex = 1
+            overlay.Parent = frame
+            Instance.new("UICorner", overlay).CornerRadius = cornerRadius
+        end
+        
+        return true
+    end
+
+    -- 3. Nếu là Solid Color (Mặc định)
+    frame.BackgroundTransparency = defaultTransparency or 0
+    frame.BackgroundColor3 = bgColor or Color3.fromRGB(10, 10, 10)
+    frame.ClipsDescendants = false
+    return false
 end
 
 function NoirUI:RegisterCommand(prefix, callback)
@@ -774,8 +845,7 @@ function NoirUI:CreateLoader(settings)
     Vignette.Name = "Vignette"
     Vignette.Parent = Loader
     Vignette.BackgroundTransparency = 1
-    Vignette.BorderSizePixel = 0
-    Vignette.Size = UDim2.new(1, 0, 1, 0)
+    Vignette.BorderSizePixel = 0    Vignette.Size = UDim2.new(1, 0, 1, 0)
     Vignette.Image = "rbxassetid://18720640102"
     Vignette.ImageColor3 = accentColor
     Vignette.ImageTransparency = 1
@@ -989,14 +1059,16 @@ function NoirUI:CreateWindow(settings)
     local Main = Instance.new("Frame", ScreenGui)
     Main.Size = UDim2.new(0, 520, 0, 400)
     Main.Position = mainDefaultPos
+    -- Main Background mới: Mặc định trong suốt, để hiệu ứng Gradient/Glass hiện ra
     Main.BackgroundColor3 = currentTheme.bg or settings.MainBgColor or Color3.fromRGB(8,8,10)
+    Main.BackgroundTransparency = 0.2 
     Main.Visible = true
     Main.ZIndex = 1
     
     local mainCorner = Instance.new("UICorner", Main)
     mainCorner.CornerRadius = UDim.new(0, 8)
     
-    SetupBackground(Main, settings.Background, Main.BackgroundColor3, 0)
+    SetupBackground(Main, settings.Background, Main.BackgroundColor3, 0.2)
     MakeDraggable(Main)
     
     local savedSize = Main.Size
@@ -1165,7 +1237,7 @@ function NoirUI:CreateWindow(settings)
     local Header = Instance.new("Frame", Main)
     Header.Size = UDim2.new(1, 0, 0, 40)
     Header.BackgroundColor3 = currentTheme.container or Color3.fromRGB(14,14,18)
-    Header.BackgroundTransparency = 0
+    Header.BackgroundTransparency = 0.6 -- Glass effect cho header
     local headerCorner = Instance.new("UICorner", Header)
     headerCorner.CornerRadius = UDim.new(0, 8)
     
@@ -1373,7 +1445,7 @@ function NoirUI:CreateWindow(settings)
         
         TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Position = mainDefaultPos,
-            BackgroundTransparency = 0
+            BackgroundTransparency = 0.2
         }):Play()
         
         PlaySound("Open")
