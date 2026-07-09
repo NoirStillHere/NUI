@@ -4,7 +4,7 @@
 	Lua Scripter: NoirNF, Adono
 	Executor Compatibility Tester: Adono
 	Animation Engineer: Adono
-	Version: 2.0 (Loader + Page + Dot System)
+	Version: 1.5.7
 ]]
 
 --Core
@@ -20,7 +20,7 @@ if OldGui then OldGui:Destroy() end
 local NoirUI = { Notifications = {}, ActiveConfirmFrame = nil, CustomCommands = {}, Connections = {}, TabGroups = {} }
 
 local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
-local _version = "2.0"
+local _version = "1.5.7"
 
 -- === THEME PRESETS ===
 local ThemePresets = {
@@ -736,7 +736,7 @@ function NoirUI.Music:GetQueue()
 end
 
 -- ==========================================================
--- LOADER SYSTEM (V2)
+-- LOADER SYSTEM (ĐÃ CHỈNH SỬA)
 -- ==========================================================
 function NoirUI:CreateLoader(settings)
     settings = settings or {}
@@ -860,7 +860,7 @@ function NoirUI:CreateLoader(settings)
             Size = UDim2.new(0, 120, 0, 120)
         }):Play()
         
-        -- Step 3: Animate Text (Chỉ mờ dần lên, không di chuyển)
+        -- Step 3: Animate Text
         TweenService:Create(TextLabel, TweenInfo.new(0.75, Enum.EasingStyle.Quint), {
             TextTransparency = 0
         }):Play()
@@ -1660,11 +1660,13 @@ function NoirUI:CreateWindow(settings)
         table.insert(NoirUI.TabGroups, group)
         return group
     end
-    
+
+    -- ==========================================================
+    -- CREATE TAB (ĐÃ CHỈNH SỬA AUTO SELECT VÀ INDICATOR)
+    -- ==========================================================
     function Window:CreateTab(name, icon)
-        -- Tạo nút Tab bên Sidebar
         local B = Instance.new("TextButton", TScroll)
-        B.Size = UDim2.new(1, -5, 0, 34)
+        B.Size = UDim2.new(1, -5, 0, 32)
         if settings.TabBackgroundColor then
             B.BackgroundColor3 = settings.TabBackgroundColor
         else
@@ -1676,7 +1678,18 @@ function NoirUI:CreateWindow(settings)
         Instance.new("UICorner", B).CornerRadius = UDim.new(0, 6)
         CreateHoverEffect(B)
         
-        -- Chữ tên tab
+        -- === THÊM GẠCH BÊN PHẢI ===
+        local Indicator = Instance.new("Frame")
+        Indicator.Name = "Indicator"
+        Indicator.Parent = B
+        Indicator.Size = UDim2.new(0, 3, 0, 0) -- Mặc định ẩn
+        Indicator.Position = UDim2.new(1, -4, 0.5, 0) -- Sát bên phải
+        Indicator.AnchorPoint = Vector2.new(1, 0.5)
+        Indicator.BackgroundColor3 = ACCENT
+        Indicator.BackgroundTransparency = 1
+        Indicator.ZIndex = 3
+        Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1, 0)
+        
         local BT = Instance.new("TextLabel", B)
         BT.Size = UDim2.new(1, -10, 1, 0)
         BT.Position = UDim2.new(0, icon and 35 or 8, 0, 0)
@@ -1689,7 +1702,6 @@ function NoirUI:CreateWindow(settings)
         BT.TextXAlignment = "Left"
         BT.ZIndex = 2
         
-        -- Icon tab
         if icon then
             local IC = Instance.new("ImageLabel", B)
             IC.Size = UDim2.new(0, 18, 0, 18)
@@ -1704,23 +1716,11 @@ function NoirUI:CreateWindow(settings)
             if iconImage then IC.Image = iconImage else IC.Image = "rbxassetid://6031094700" end
             IC.ImageColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
         end
-
-        -- === CHẤM BÁO TAB ĐANG CHỌN ===
-        local Dot = Instance.new("Frame", B)
-        Dot.Size = UDim2.new(0, 6, 0, 6)
-        Dot.Position = UDim2.new(0, 6, 0.5, 0)
-        Dot.AnchorPoint = Vector2.new(0, 0.5)
-        Dot.BackgroundColor3 = ACCENT
-        Dot.BackgroundTransparency = 1 -- Mặc định ẩn
-        Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0)
-        Dot.ZIndex = 3
-        Dot.Name = "DotIndicator"
         
-        -- Container chứa các Page
         local TabContainer = Instance.new("ScrollingFrame", Cont)
         TabContainer.Size = UDim2.new(1, 0, 1, 0)
         TabContainer.BackgroundTransparency = 1
-        TabContainer.Visible = false -- Mặc định ẩn hết
+        TabContainer.Visible = false
         TabContainer.ScrollBarThickness = 3
         TabContainer.ScrollBarImageColor3 = ACCENT
         TabContainer.ScrollBarImageTransparency = 0.5
@@ -1729,48 +1729,72 @@ function NoirUI:CreateWindow(settings)
         TabContainer.BorderSizePixel = 0
         TabContainer.ClipsDescendants = true
         
-        -- === UIListLayout cho TabContainer để xếp các Page dọc ===
-        local ContainerLayout = Instance.new("UIListLayout", TabContainer)
-        ContainerLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        ContainerLayout.Padding = UDim.new(0, 12)
-
+        local searchData = {} 
+        local function filterElements(searchText)
+            local search = searchText:lower()
+            for i, element in pairs(Tab.Elements) do
+                local visible = false
+                if search == "" then
+                    visible = true
+                elseif searchData[i] and searchData[i]:lower():find(search, 1, true) then
+                    visible = true
+                end
+                element.Visible = visible
+            end
+            updateCanvas()
+        end
+        
+        SearchBox.Changed:Connect(function(prop)
+            if prop == "Text" then filterElements(SearchBox.Text) end
+        end)
+        
+        local ContentFrame = Instance.new("Frame", TabContainer)
+        ContentFrame.Size = UDim2.new(1, 0, 0, 0)
+        ContentFrame.Position = UDim2.new(0, 0, 0, 0)
+        ContentFrame.BackgroundTransparency = 1
+        local ContentLayout = Instance.new("UIListLayout", ContentFrame)
+        ContentLayout.Padding = UDim.new(0, 8)
+        ContentLayout.HorizontalAlignment = "Center"
+        ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        
         local function updateCanvas()
             task.wait()
-            TabContainer.CanvasSize = UDim2.new(0, 0, 0, TabContainer.ContentFrame.AbsoluteSize.Y + 55)
+            TabContainer.CanvasSize = UDim2.new(0, 0, 0, ContentFrame.AbsoluteSize.Y + 55)
         end
-        ContainerLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas)
+        ContentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas)
         
-        -- Logic chọn tab
         local function resetAllTabs()
             for _, btn in pairs(allTabButtons) do
                 local t = btn:FindFirstChild("TextLabel")
                 if t then t.TextColor3 = currentTheme.subtext or Color3.fromRGB(150,150,150) end
                 local img = btn:FindFirstChild("ImageLabel")
                 if img then img.ImageColor3 = currentTheme.subtext or Color3.fromRGB(150,150,150) end
-                local dot = btn:FindFirstChild("DotIndicator")
-                if dot then 
-                    TweenService:Create(dot, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
+                
+                -- Ẩn gạch của tất cả tab
+                local ind = btn:FindFirstChild("Indicator")
+                if ind then
+                    ind.BackgroundTransparency = 1
+                    ind.Size = UDim2.new(0, 3, 0, 0) -- Thu gọn về 0
                 end
             end
         end
         
         local function selectThisTab()
-            -- Ẩn các tab khác
             for _, v in pairs(Cont:GetChildren()) do
                 if v:IsA("ScrollingFrame") then v.Visible = false end
             end
             TabContainer.Visible = true
-            
-            -- Cập nhật trạng thái nút
             resetAllTabs()
             BT.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
             local tabImg = B:FindFirstChild("ImageLabel")
             if tabImg then tabImg.ImageColor3 = currentTheme.text or Color3.fromRGB(245,245,250) end
             
-            -- Hiện chấm
-            local dot = B:FindFirstChild("DotIndicator")
-            if dot then
-                TweenService:Create(dot, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {BackgroundTransparency = 0}):Play()
+            -- HIỆN GẠCH CỦA TAB ĐANG CHỌN
+            local ind = B:FindFirstChild("Indicator")
+            if ind then
+                ind.BackgroundTransparency = 0
+                -- Set chiều cao bằng với nút (32px)
+                ind.Size = UDim2.new(0, 3, 0, 32) 
             end
             
             updateCanvas()
@@ -1784,68 +1808,17 @@ function NoirUI:CreateWindow(settings)
         
         table.insert(allTabButtons, B)
         
-        -- === TỰ ĐỘNG CHỌN TAB ĐẦU TIÊN ===
-        if #TScroll:GetChildren() == 1 or not TScroll:FindFirstChild("_FirstTabSelected") then
+        -- MẶC ĐỊNH AUTO CHỌN TAB ĐẦU TIÊN
+        if #allTabButtons == 1 then
+            task.wait(0.1) -- Đợi UI load layout
             selectThisTab()
-            local marker = Instance.new("BoolValue", TScroll)
-            marker.Name = "_FirstTabSelected"
         end
         
-        -- === TAB OBJECT ===
-        local Tab = { 
-            Count = 0, 
-            Elements = {}, 
-            Connections = {}, 
-            _currentSectionContent = nil, 
-            _sectionLayout = nil,
-            _currentPage = nil -- Lưu page hiện tại để add element vào
-        }
+        local Tab = { Count = 0, Elements = {}, Connections = {}, _currentSectionContent = nil, _sectionLayout = nil }
         local function GetO() Tab.Count = Tab.Count + 1; return Tab.Count end
-
-        -- === HÀM TẠO PAGE (MỚI) ===
-        function Tab:CreatePage(title)
-            local pageFrame = Instance.new("Frame", TabContainer)
-            pageFrame.Size = UDim2.new(0.95, 0, 0, 0)
-            pageFrame.AutomaticSize = Enum.AutomaticSize.Y
-            pageFrame.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
-            pageFrame.BackgroundTransparency = 0.2
-            Instance.new("UICorner", pageFrame).CornerRadius = UDim.new(0, 8)
-            pageFrame.LayoutOrder = GetO()
-            pageFrame.Name = "Page_" .. title
-            
-            -- Header của Page
-            local header = Instance.new("TextLabel", pageFrame)
-            header.Size = UDim2.new(1, -20, 0, 28)
-            header.Position = UDim2.new(0, 10, 0, 5)
-            header.BackgroundTransparency = 1
-            header.Text = title
-            header.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
-            header.Font = Enum.Font.GothamBold
-            header.TextSize = 13
-            header.TextXAlignment = Enum.TextXAlignment.Left
-            
-            -- Content bên trong Page
-            local content = Instance.new("Frame", pageFrame)
-            content.Size = UDim2.new(1, -20, 0, 0)
-            content.Position = UDim2.new(0, 10, 0, 30)
-            content.AutomaticSize = Enum.AutomaticSize.Y
-            content.BackgroundTransparency = 1
-            content.Name = "Content"
-            
-            local contentLayout = Instance.new("UIListLayout", content)
-            contentLayout.Padding = UDim.new(0, 8)
-            contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            
-            -- Set Page hiện tại để add element vào
-            Tab._currentSectionContent = content
-            Tab._sectionLayout = contentLayout
-            Tab._currentPage = pageFrame
-            
-            return pageFrame
-        end
         
         function Tab:CreateLabel(text, updateFunction)
-            local parent = Tab._currentSectionContent or ContentFrame -- Fallback cho page
+            local parent = Tab._currentSectionContent or ContentFrame
             local l = Instance.new("TextLabel", parent)
             l.Size = UDim2.new(0.95, 0, 0, 20)
             l.BackgroundTransparency = 1
@@ -1964,7 +1937,7 @@ function NoirUI:CreateWindow(settings)
         end
         
         function Tab:CreateSection(title, noLine)
-            local s = Instance.new("Frame", Tab._currentSectionContent or ContentFrame)
+            local s = Instance.new("Frame", ContentFrame)
             s.Size = UDim2.new(0.95, 0, 0, noLine and 25 or 35)
             s.BackgroundTransparency = 1
             s.LayoutOrder = GetO()
@@ -2273,7 +2246,8 @@ function NoirUI:CreateWindow(settings)
             l.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
             l.TextTransparency = 0
             l.TextXAlignment = "Left"
-            l.TextSize = 11            l.Font = "GothamMedium"
+            l.TextSize = 11
+            l.Font = "GothamMedium"
             
             local valBtn = Instance.new("TextButton", f)
             valBtn.Size = UDim2.new(0, 72, 0, 20)
@@ -2865,12 +2839,12 @@ function NoirUI:CreateWindow(settings)
         end
         
         -- ==========================================================
-        -- ELEMENT: CARD (7 TYPE, ĐÃ THÊM LAYOUT CHO STANDARD)
+        -- ELEMENT: CARD
         -- ==========================================================
         function Tab:CreateCard(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local cardType = opt.Type or "Standard"
-            local layout = opt.Layout or "Center" -- Chỉ dùng cho Standard: "Left", "Right", "Center"
+            local layout = opt.Layout or "Center" 
             
             local f = Instance.new("Frame", parent)
             f.Size = UDim2.new(0.95, 0, 0, 0)
@@ -2913,9 +2887,7 @@ function NoirUI:CreateWindow(settings)
                 return t
             end
             
-            -- Xử lý từng loại Type
             if cardType == "Accordion" then
-                -- Type 1: Mở rộng
                 local headerBtn = Instance.new("TextButton", f)
                 headerBtn.Size = UDim2.new(1, 0, 0, 30)
                 headerBtn.BackgroundTransparency = 1
@@ -2978,11 +2950,10 @@ function NoirUI:CreateWindow(settings)
                     isOpen = not isOpen
                     body.Visible = isOpen
                     arrow.Image = ResolveIcon(isOpen and "chevron-up" or "chevron-down")
-                    f.Size = UDim2.new(0.95, 0, 0, 0) -- Reset automatic size
+                    f.Size = UDim2.new(0.95, 0, 0, 0)
                 end)
                 
             elseif cardType == "Dashboard" then
-                -- Type 2: Bảng điều khiển 2 cột
                 createTitle(opt.Title or "Dashboard")
                 
                 local grid = Instance.new("Frame", f)
@@ -3041,7 +3012,6 @@ function NoirUI:CreateWindow(settings)
                 end
                 
             elseif cardType == "Carousel" then
-                -- Type 3: Lướt ảnh / tùy chọn
                 createTitle(opt.Title or "Carousel")
                 
                 local display = Instance.new("Frame", f)
@@ -3149,7 +3119,6 @@ function NoirUI:CreateWindow(settings)
                 updateCarousel(1)
                 
             elseif cardType == "Grid" then
-                -- Type 4: Lưới hình ảnh 2x2
                 createTitle(opt.Title or "Image Grid")
                 
                 local grid = Instance.new("Frame", f)
@@ -3183,7 +3152,6 @@ function NoirUI:CreateWindow(settings)
                 end
                 
             elseif cardType == "Image" then
-                -- Type 5: Card ảnh lớn
                 createTitle(opt.Title or "Image Card")
                 
                 if opt.Image then
@@ -3213,7 +3181,6 @@ function NoirUI:CreateWindow(settings)
                 end
                 
             elseif cardType == "Action" then
-                -- Type 6: Card hành động (nhiều nút ở footer)
                 createTitle(opt.Title or "Action Card")
                 
                 if opt.Content then
@@ -3266,9 +3233,7 @@ function NoirUI:CreateWindow(settings)
                 end
                 
             else
-                -- Type 7: Standard (Hỗ trợ Layout Left/Right/Center)
                 if layout == "Left" or layout == "Right" then
-                    -- Nếu là Layout trái/phải, dùng UIListLayout nằm ngang bên trong 1 Frame bao ngoài
                     local contentWrapper = Instance.new("Frame", f)
                     contentWrapper.Size = UDim2.new(1, 0, 0, 0)
                     contentWrapper.AutomaticSize = Enum.AutomaticSize.Y
@@ -3289,7 +3254,6 @@ function NoirUI:CreateWindow(settings)
                     local title = createTitle(opt.Title or "Standard Card")
                     title.LayoutOrder = 1
                     
-                    -- Ảnh (bên trái hoặc phải tùy Layout)
                     if opt.Image then
                         local img = Instance.new("ImageLabel", contentWrapper)
                         img.Size = UDim2.new(0, 80, 0, 80)
@@ -3300,7 +3264,6 @@ function NoirUI:CreateWindow(settings)
                         Instance.new("UICorner", img).CornerRadius = UDim.new(0, 8)
                         img.LayoutOrder = 2
                         
-                        -- TextWrapper cho phần chữ
                         local textWrapper = Instance.new("Frame", contentWrapper)
                         textWrapper.Size = UDim2.new(1, -92, 0, 0)
                         textWrapper.AutomaticSize = Enum.AutomaticSize.Y
@@ -3343,7 +3306,6 @@ function NoirUI:CreateWindow(settings)
                         end
                     end
                 else
-                    -- Center (Mặc định)
                     createTitle(opt.Title or "Standard Card")
                     
                     if opt.Image then
@@ -3373,7 +3335,6 @@ function NoirUI:CreateWindow(settings)
                     end
                 end
                 
-                -- Footer cho Standard (đặt bên ngoài cùng)
                 if opt.Footer then
                     local footerFrame = Instance.new("Frame", f)
                     footerFrame.Size = UDim2.new(1, 0, 0, 0)
