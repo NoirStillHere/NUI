@@ -4,15 +4,22 @@
 	Lua Scripter: NoirNF, Adono
 	Executor Compatibility Tester: Adono
 	Animation Engineer: Adono
-	Version: 2.0.2
+	Version: 2.0.5
 	Changelog: 
+	- Theme Manager mở rộng (Kết hợp bản cũ và mới)
 	- Background System v2 (Gradient, Glassmorphism, Depth)
 	- Tab Indicator bên phải
 	- Auto select tab đầu tiên
 	- Loader nâng cấp: Mặc định bo-goc (bo góc 12), thanh dời xuống, chữ dời xuống
 	- Fix lỗi Float Button bị nhân đôi lớp đen khi mở lại
 	- Tự động Glass effect khi có ảnh nền
-	- Notify v2.0.2: Auto Height dựa trên TextService, Indicator bên trái (cách lề 6px), Reset Stack thông minh khi Notify biến mất
+	- Notify v2: Auto Height, Indicator trái, Reset Stack thông minh
+	- Asset Cache: Tự động lưu ảnh vào bộ nhớ máy (getcustomasset)
+	- Flag System: Tự động đăng ký trạng thái các Toggle, Slider, Dropdown, ColorPicker, TextBox
+	- Config Manager: Lưu và Load trạng thái UI ra file JSON
+	- AutoSave: Tự động lưu Config theo thời gian (mặc định 60 giây)
+	- Hotkey System: Đăng ký phím tắt toàn cục
+	- Element Keybind: Tạo nút gán phím tắt trong UI, hỗ trợ Flag System
 ]]
 
 --Core
@@ -25,79 +32,637 @@ local HttpService = game:GetService("HttpService")
 local OldGui = game.CoreGui:FindFirstChild("NoirUI_V3_Ultimate")
 if OldGui then OldGui:Destroy() end
 
-local NoirUI = { Notifications = {}, ActiveConfirmFrame = nil, CustomCommands = {}, Connections = {}, TabGroups = {} }
-
-local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
-local _version = "2.0.2"
-
--- === THEME PRESETS ===
-local ThemePresets = {
-	["kyri"] = {
-		bg = Color3.fromRGB(8,8,10),
-		container = Color3.fromRGB(14,14,18),
-		element = Color3.fromRGB(20,20,26),
-		hover = Color3.fromRGB(28,28,36),
-		active = Color3.fromRGB(32,32,42),
-		accent = Color3.fromRGB(138,116,249),
-		text = Color3.fromRGB(245,245,250),
-		subtext = Color3.fromRGB(165,165,180),
-		border = Color3.fromRGB(32,32,40)
-	},
-	["midnight"] = {
-		bg = Color3.fromRGB(6,8,14),
-		container = Color3.fromRGB(10,14,22),
-		element = Color3.fromRGB(16,20,32),
-		hover = Color3.fromRGB(22,28,44),
-		active = Color3.fromRGB(26,34,52),
-		accent = Color3.fromRGB(80,160,255),
-		text = Color3.fromRGB(240,245,255),
-		subtext = Color3.fromRGB(140,160,200),
-		border = Color3.fromRGB(24,32,50)
-	},
-	["rose"] = {
-		bg = Color3.fromRGB(12,8,10),
-		container = Color3.fromRGB(18,12,16),
-		element = Color3.fromRGB(26,18,22),
-		hover = Color3.fromRGB(36,24,30),
-		active = Color3.fromRGB(44,28,36),
-		accent = Color3.fromRGB(255,110,150),
-		text = Color3.fromRGB(255,245,248),
-		subtext = Color3.fromRGB(190,160,170),
-		border = Color3.fromRGB(40,26,32)
-	},
-	["forest"] = {
-		bg = Color3.fromRGB(8,12,8),
-		container = Color3.fromRGB(12,18,12),
-		element = Color3.fromRGB(18,26,18),
-		hover = Color3.fromRGB(24,34,24),
-		active = Color3.fromRGB(30,42,30),
-		accent = Color3.fromRGB(80,220,120),
-		text = Color3.fromRGB(240,250,240),
-		subtext = Color3.fromRGB(150,190,155),
-		border = Color3.fromRGB(24,38,24)
-	},
-	["slate"] = {
-		bg = Color3.fromRGB(12,12,14),
-		container = Color3.fromRGB(18,18,22),
-		element = Color3.fromRGB(26,26,32),
-		hover = Color3.fromRGB(34,34,42),
-		active = Color3.fromRGB(40,40,50),
-		accent = Color3.fromRGB(160,160,185),
-		text = Color3.fromRGB(240,240,245),
-		subtext = Color3.fromRGB(160,160,175),
-		border = Color3.fromRGB(36,36,44)
-	}
+local NoirUI = { 
+    Notifications = {}, 
+    ActiveConfirmFrame = nil, 
+    CustomCommands = {}, 
+    Connections = {}, 
+    TabGroups = {}, 
+    Flags = {}, 
+    FlagGroups = {},
+    Themes = {
+        Presets = {},
+        Current = nil,
+        Elements = {},
+        AccentColor = Color3.fromRGB(138, 116, 249)
+    },
+    Hotkeys = {},
+    HotkeyConnections = {}
 }
 
+local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
+local _version = "2.0.5"
+local LocalPlayer = Players.LocalPlayer
+
+-- ==========================================================
+-- THEME PRESETS (Kết hợp bản cũ và bản mở rộng)
+-- ==========================================================
+NoirUI.Themes.Presets = {
+    ["kyri"] = {
+        bg = Color3.fromRGB(8,8,10),
+        container = Color3.fromRGB(14,14,18),
+        element = Color3.fromRGB(20,20,26),
+        hover = Color3.fromRGB(28,28,36),
+        active = Color3.fromRGB(32,32,42),
+        accent = Color3.fromRGB(138,116,249),
+        text = Color3.fromRGB(245,245,250),
+        subtext = Color3.fromRGB(165,165,180),
+        border = Color3.fromRGB(32,32,40)
+    },
+    ["midnight"] = {
+        bg = Color3.fromRGB(6,8,14),
+        container = Color3.fromRGB(10,14,22),
+        element = Color3.fromRGB(16,20,32),
+        hover = Color3.fromRGB(22,28,44),
+        active = Color3.fromRGB(26,34,52),
+        accent = Color3.fromRGB(80,160,255),
+        text = Color3.fromRGB(240,245,255),
+        subtext = Color3.fromRGB(140,160,200),
+        border = Color3.fromRGB(24,32,50)
+    },
+    ["rose"] = {
+        bg = Color3.fromRGB(12,8,10),
+        container = Color3.fromRGB(18,12,16),
+        element = Color3.fromRGB(26,18,22),
+        hover = Color3.fromRGB(36,24,30),
+        active = Color3.fromRGB(44,28,36),
+        accent = Color3.fromRGB(255,110,150),
+        text = Color3.fromRGB(255,245,248),
+        subtext = Color3.fromRGB(190,160,170),
+        border = Color3.fromRGB(40,26,32)
+    },
+    ["forest"] = {
+        bg = Color3.fromRGB(8,12,8),
+        container = Color3.fromRGB(12,18,12),
+        element = Color3.fromRGB(18,26,18),
+        hover = Color3.fromRGB(24,34,24),
+        active = Color3.fromRGB(30,42,30),
+        accent = Color3.fromRGB(80,220,120),
+        text = Color3.fromRGB(240,250,240),
+        subtext = Color3.fromRGB(150,190,155),
+        border = Color3.fromRGB(24,38,24)
+    },
+    ["slate"] = {
+        bg = Color3.fromRGB(12,12,14),
+        container = Color3.fromRGB(18,18,22),
+        element = Color3.fromRGB(26,26,32),
+        hover = Color3.fromRGB(34,34,42),
+        active = Color3.fromRGB(40,40,50),
+        accent = Color3.fromRGB(160,160,185),
+        text = Color3.fromRGB(240,240,245),
+        subtext = Color3.fromRGB(160,160,175),
+        border = Color3.fromRGB(36,36,44)
+    },
+    ["Cyber"] = {
+        bg = Color3.fromRGB(6, 6, 10),
+        container = Color3.fromRGB(12, 12, 18),
+        element = Color3.fromRGB(18, 18, 26),
+        hover = Color3.fromRGB(28, 28, 38),
+        active = Color3.fromRGB(34, 34, 46),
+        accent = Color3.fromRGB(0, 229, 255),
+        text = Color3.fromRGB(245, 245, 250),
+        subtext = Color3.fromRGB(165, 200, 220),
+        border = Color3.fromRGB(28, 28, 40)
+    },
+    ["Sunset"] = {
+        bg = Color3.fromRGB(12, 6, 8),
+        container = Color3.fromRGB(18, 10, 12),
+        element = Color3.fromRGB(26, 16, 18),
+        hover = Color3.fromRGB(36, 24, 26),
+        active = Color3.fromRGB(44, 30, 32),
+        accent = Color3.fromRGB(255, 150, 50),
+        text = Color3.fromRGB(255, 248, 245),
+        subtext = Color3.fromRGB(210, 180, 170),
+        border = Color3.fromRGB(40, 28, 30)
+    },
+    ["Ocean"] = {
+        bg = Color3.fromRGB(6, 10, 14),
+        container = Color3.fromRGB(10, 16, 22),
+        element = Color3.fromRGB(16, 22, 30),
+        hover = Color3.fromRGB(24, 32, 42),
+        active = Color3.fromRGB(30, 38, 50),
+        accent = Color3.fromRGB(60, 200, 230),
+        text = Color3.fromRGB(240, 248, 255),
+        subtext = Color3.fromRGB(150, 190, 210),
+        border = Color3.fromRGB(24, 34, 46)
+    },
+    ["Noir"] = {
+        bg = Color3.fromRGB(8, 8, 10),
+        container = Color3.fromRGB(14, 14, 18),
+        element = Color3.fromRGB(20, 20, 26),
+        hover = Color3.fromRGB(28, 28, 36),
+        active = Color3.fromRGB(32, 32, 42),
+        accent = Color3.fromRGB(138, 116, 249),
+        text = Color3.fromRGB(245, 245, 250),
+        subtext = Color3.fromRGB(165, 165, 180),
+        border = Color3.fromRGB(32, 32, 40)
+    }
+}
+
+-- ==========================================================
+-- THEME MANAGER API (Mở rộng từ CK)
+-- ==========================================================
+function NoirUI:RegisterThemeElement(element, property, themeKey)
+    if not element or not property or not themeKey then return end
+    if not NoirUI.Themes.Elements[themeKey] then
+        NoirUI.Themes.Elements[themeKey] = {}
+    end
+    table.insert(NoirUI.Themes.Elements[themeKey], {
+        Element = element,
+        Property = property
+    })
+end
+
+function NoirUI:ApplyTheme(themeName)
+    local theme = NoirUI.Themes.Presets[themeName]
+    if not theme then return false end
+    
+    NoirUI.Themes.Current = theme
+    NoirUI.Themes.AccentColor = theme.accent
+    
+    for key, elements in pairs(NoirUI.Themes.Elements) do
+        local color = theme[key]
+        if color then
+            for _, item in ipairs(elements) do
+                if item.Element and item.Element[item.Property] ~= nil then
+                    item.Element[item.Property] = color
+                end
+            end
+        end
+    end
+    
+    return true
+end
+
+function NoirUI:GetCurrentTheme()
+    return NoirUI.Themes.Current
+end
+
+function NoirUI:GetThemeList()
+    local names = {}
+    for name in pairs(NoirUI.Themes.Presets) do
+        table.insert(names, name)
+    end
+    table.sort(names)
+    return names
+end
+
+-- ==========================================================
+-- HOTKEY & KEYBIND SYSTEM (Mới thêm)
+-- ==========================================================
+function NoirUI:RegisterHotkey(key, callback, description)
+    if not key or not callback then return end
+    local keyName = typeof(key) == "EnumItem" and key.Name or tostring(key)
+    if not NoirUI.Hotkeys[keyName] then NoirUI.Hotkeys[keyName] = {} end
+    table.insert(NoirUI.Hotkeys[keyName], {
+        Callback = callback,
+        Description = description or "No description",
+        Enabled = true
+    })
+    return #NoirUI.Hotkeys[keyName]
+end
+
+function NoirUI:UnregisterHotkey(key, index)
+    local keyName = typeof(key) == "EnumItem" and key.Name or tostring(key)
+    if NoirUI.Hotkeys[keyName] then
+        if index then table.remove(NoirUI.Hotkeys[keyName], index)
+        else NoirUI.Hotkeys[keyName] = {} end
+    end
+end
+
+function NoirUI:EnableHotkey(key, index)
+    local keyName = typeof(key) == "EnumItem" and key.Name or tostring(key)
+    if NoirUI.Hotkeys[keyName] then
+        if index then
+            if NoirUI.Hotkeys[keyName][index] then NoirUI.Hotkeys[keyName][index].Enabled = true end
+        else
+            for _, hk in ipairs(NoirUI.Hotkeys[keyName]) do hk.Enabled = true end
+        end
+    end
+end
+
+function NoirUI:DisableHotkey(key, index)
+    local keyName = typeof(key) == "EnumItem" and key.Name or tostring(key)
+    if NoirUI.Hotkeys[keyName] then
+        if index then
+            if NoirUI.Hotkeys[keyName][index] then NoirUI.Hotkeys[keyName][index].Enabled = false end
+        else
+            for _, hk in ipairs(NoirUI.Hotkeys[keyName]) do hk.Enabled = false end
+        end
+    end
+end
+
+function NoirUI:InitHotkeyListener()
+    if NoirUI._hotkeyConnection then NoirUI._hotkeyConnection:Disconnect() end
+    NoirUI._hotkeyConnection = UIS.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        local keyName = nil
+        if input.KeyCode ~= Enum.KeyCode.Unknown then
+            keyName = input.KeyCode.Name
+        elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+            keyName = "MouseButton1"
+        elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+            keyName = "MouseButton2"
+        end
+        if keyName and NoirUI.Hotkeys[keyName] then
+            for _, hk in ipairs(NoirUI.Hotkeys[keyName]) do
+                if hk.Enabled then task.spawn(hk.Callback) end
+            end
+        end
+    end)
+end
+
+-- Khởi động listener mặc định
+task.defer(function() NoirUI:InitHotkeyListener() end)
+
+-- ==========================================================
+-- ASSET CACHE SYSTEM
+-- ==========================================================
+local AssetCache = {
+    Directory = "NoirUI_Cache",
+    Assets = {},
+    Enabled = false,
+}
+
+function AssetCache:SetDirectory(directory)
+    self.Directory = directory
+    if not isfolder(directory) then
+        makefolder(directory)
+    end
+end
+
+function AssetCache:Hash(str)
+    if type(str) ~= "string" then return "unknown" end
+    local hash = #str
+    string.gsub(str, '.', function(char)
+        hash = hash + char:byte()
+    end)
+    return "cache_" .. tostring(hash)
+end
+
+function AssetCache:GetAsset(id)
+    if not self.Enabled then return id end
+    
+    if type(id) == "string" and id:match("^rbxthumb://") then
+        return self:CacheThumbnail(id)
+    end
+    
+    local numericId = nil
+    if type(id) == "number" then
+        numericId = id
+    elseif type(id) == "string" then
+        numericId = id:match("%d+")
+    end
+    
+    if not numericId then return id end
+    
+    local hash = self:Hash(tostring(numericId))
+    local cachePath = self.Directory .. "/" .. hash .. ".png"
+    
+    if isfile(cachePath) then
+        local asset = nil
+        pcall(function()
+            asset = getcustomasset and getcustomasset(cachePath) or getsynasset and getsynasset(cachePath)
+        end)
+        if asset then return asset end
+    end
+    
+    local success, result = pcall(function()
+        local endpoint = string.format(
+            "https://thumbnails.roblox.com/v1/assets?assetIds=%s&size=150x150&format=Png",
+            numericId
+        )
+        local json = game:HttpGet(endpoint)
+        local decoded = HttpService:JSONDecode(json)
+        
+        if decoded and decoded.data and decoded.data[1] and decoded.data[1].imageUrl then
+            local imageData = game:HttpGet(decoded.data[1].imageUrl)
+            writefile(cachePath, imageData)
+            
+            local asset = nil
+            pcall(function()
+                asset = getcustomasset and getcustomasset(cachePath) or getsynasset and getsynasset(cachePath)
+            end)
+            return asset or id
+        end
+        return id
+    end)
+    
+    return success and result or id
+end
+
+function AssetCache:CacheThumbnail(thumbUrl)
+    local id = thumbUrl:match("id=(%d+)")
+    if not id then return thumbUrl end
+    
+    local hash = self:Hash("thumb_" .. id)
+    local cachePath = self.Directory .. "/" .. hash .. ".png"
+    
+    if isfile(cachePath) then
+        local asset = nil
+        pcall(function()
+            asset = getcustomasset and getcustomasset(cachePath) or getsynasset and getsynasset(cachePath)
+        end)
+        if asset then return asset end
+    end
+    
+    local success, result = pcall(function()
+        local imageData = game:HttpGet(thumbUrl)
+        writefile(cachePath, imageData)
+        
+        local asset = nil
+        pcall(function()
+            asset = getcustomasset and getcustomasset(cachePath) or getsynasset and getsynasset(cachePath)
+        end)
+        return asset or thumbUrl
+    end)
+    
+    return success and result or thumbUrl
+end
+
+function AssetCache:Preload(ids)
+    if type(ids) == "string" then ids = {ids} end
+    for _, id in ipairs(ids) do
+        task.spawn(function() self:GetAsset(id) end)
+    end
+end
+
+function AssetCache:Clear()
+    if isfolder(self.Directory) then
+        local files = listfiles(self.Directory)
+        for _, file in ipairs(files) do
+            delfile(file)
+        end
+    end
+end
+
+function NoirUI:EnableAssetCache(directory)
+    AssetCache:SetDirectory(directory or "NoirUI_Cache")
+    AssetCache.Enabled = true
+    NoirUI._AssetCache = AssetCache
+    print("✅ NoirUI Asset Cache đã được bật!")
+end
+
+-- ==========================================================
+-- CONFIG MANAGER & FLAG SYSTEM
+-- ==========================================================
+function NoirUI:CreateConfigManager(settings)
+    settings = settings or {}
+    settings.Directory = settings.Directory or "NoirUI_Configs"
+    settings.EnableNotifications = settings.EnableNotifications or true
+    
+    if not isfolder(settings.Directory) then
+        makefolder(settings.Directory)
+    end
+    
+    local ConfigManager = {
+        Directory = settings.Directory,
+        EnableNotifications = settings.EnableNotifications,
+    }
+    
+    function ConfigManager:GetAllFlags()
+        local flags = {}
+        for name, element in pairs(NoirUI.Flags or {}) do
+            if element and element.GetValue then
+                local value = element:GetValue()
+                flags[name] = {
+                    Type = element.Type or "Normal",
+                    Value = value
+                }
+            end
+        end
+        return flags
+    end
+    
+    function ConfigManager:SaveConfig(configName, author)
+        configName = configName or "config_" .. os.time()
+        author = author or LocalPlayer.Name
+        
+        local flags = self:GetAllFlags()
+        flags["__INFORMATION"] = {
+            Type = "Information",
+            Author = author,
+            Name = configName,
+            CreatedDate = os.date("%d/%m/%Y %H:%M:%S"),
+            Version = NoirUI._version or "1.0"
+        }
+        
+        local path = self.Directory .. "/" .. configName
+        writefile(path, HttpService:JSONEncode(flags))
+        
+        if self.EnableNotifications then
+            NoirUI:Notify("Config Manager", "Đã lưu config: " .. configName, "save", "Success", 2)
+        end
+        
+        return true
+    end
+    
+    function ConfigManager:LoadConfig(configName)
+        local path = self.Directory .. "/" .. configName
+        
+        if not isfile(path) then
+            if self.EnableNotifications then
+                NoirUI:Notify("Config Manager", "Không tìm thấy: " .. configName, "alert-triangle", "Error", 2)
+            end
+            return false
+        end
+        
+        local json = readfile(path)
+        local decoded = HttpService:JSONDecode(json)
+        
+        for flagName, data in pairs(decoded) do
+            if flagName ~= "__INFORMATION" then
+                local element = NoirUI.Flags and NoirUI.Flags[flagName]
+                if element and element.SetValue then
+                    if data.Value ~= nil then
+                        element:SetValue(data.Value)
+                    end
+                end
+            end
+        end
+        
+        if self.EnableNotifications then
+            NoirUI:Notify("Config Manager", "Đã tải config: " .. configName, "download", "Success", 2)
+        end
+        
+        return true
+    end
+    
+    function ConfigManager:DeleteConfig(configName)
+        local path = self.Directory .. "/" .. configName
+        
+        if isfile(path) then
+            delfile(path)
+            if self.EnableNotifications then
+                NoirUI:Notify("Config Manager", "Đã xóa config: " .. configName, "trash-2", "Element", 2)
+            end
+            return true
+        end
+        return false
+    end
+    
+    function ConfigManager:GetConfigs()
+        local configs = {}
+        local files = listfiles(self.Directory)
+        
+        for _, file in ipairs(files) do
+            local name = file:match("([^/]+)$")
+            if name then
+                table.insert(configs, name)
+            end
+        end
+        
+        return configs
+    end
+    
+    function ConfigManager:GetConfigInfo(configName)
+        local path = self.Directory .. "/" .. configName
+        if not isfile(path) then return nil end
+        
+        local json = readfile(path)
+        local decoded = HttpService:JSONDecode(json)
+        return decoded["__INFORMATION"] or nil
+    end
+    
+    function ConfigManager:GetConfigCount()
+        return #listfiles(self.Directory)
+    end
+    
+    return ConfigManager
+end
+
+function NoirUI:RegisterFlag(name, element)
+    NoirUI.Flags[name] = element
+end
+
+function NoirUI:GetFlag(name)
+    return NoirUI.Flags[name]
+end
+
+function NoirUI:GetFlagValue(name)
+    local flag = NoirUI.Flags[name]
+    return flag and flag.GetValue and flag:GetValue()
+end
+
+function NoirUI:SetFlagValue(name, value)
+    local flag = NoirUI.Flags[name]
+    if flag and flag.SetValue then
+        flag:SetValue(value)
+        return true
+    end
+    return false
+end
+
+function NoirUI:GetAllFlags()
+    local flags = {}
+    for name, element in pairs(NoirUI.Flags) do
+        if element and element.GetValue then
+            flags[name] = {
+                Type = element.Type or "Normal",
+                Value = element:GetValue()
+            }
+        end
+    end
+    return flags
+end
+
+function NoirUI:ResetAllFlags()
+    for name, element in pairs(NoirUI.Flags) do
+        if element.SetDefault then
+            element:SetDefault()
+        end
+    end
+end
+
+-- ==========================================================
+-- AUTO-SAVE SYSTEM
+-- ==========================================================
+function NoirUI:CreateAutoSave(settings)
+    settings = settings or {}
+    settings.Interval = settings.Interval or 60
+    settings.ConfigManager = settings.ConfigManager
+    settings.ConfigName = settings.ConfigName or "autosave"
+    settings.EnableNotifications = settings.EnableNotifications or false
+    
+    if not settings.ConfigManager then
+        return nil
+    end
+    
+    local AutoSave = {
+        Enabled = true,
+        Interval = settings.Interval,
+        Thread = nil,
+        LastSave = os.time(),
+    }
+    
+    function AutoSave:Start()
+        if self.Thread then
+            task.cancel(self.Thread)
+            self.Thread = nil
+        end
+        
+        self.Enabled = true
+        
+        self.Thread = task.spawn(function()
+            while self.Enabled do
+                task.wait(self.Interval)
+                
+                if self.Enabled then
+                    local success, err = pcall(function()
+                        settings.ConfigManager:SaveConfig(settings.ConfigName, "AutoSave")
+                    end)
+                    
+                    if success and settings.EnableNotifications then
+                        NoirUI:Notify("Auto-Save", "Config saved automatically", "save", nil, 1.5)
+                    end
+                    
+                    self.LastSave = os.time()
+                end
+            end
+        end)
+    end
+    
+    function AutoSave:Stop()
+        self.Enabled = false
+        if self.Thread then
+            task.cancel(self.Thread)
+            self.Thread = nil
+        end
+    end
+    
+    function AutoSave:GetLastSave()
+        return self.LastSave
+    end
+    
+    function AutoSave:GetTimeSinceLastSave()
+        return os.time() - self.LastSave
+    end
+    
+    return AutoSave
+end
+
+-- ==========================================================
+-- RESOLVE ICON & UTILITIES
+-- ==========================================================
 local function ResolveIcon(iconInput)
     if not iconInput then return nil end
+    
     if type(iconInput) == "number" then
-        return "rbxassetid://" .. tostring(iconInput)
+        local url = "rbxassetid://" .. tostring(iconInput)
+        if AssetCache.Enabled then
+            return AssetCache:GetAsset(iconInput)
+        end
+        return url
     end
+    
     if type(iconInput) == "string" then
         if iconInput:match("^rbxassetid://") or iconInput:match("^http") or iconInput:match("^rbxthumb://") then
+            if AssetCache.Enabled then
+                return AssetCache:GetAsset(iconInput)
+            end
             return iconInput
         end
+        
         local iconName = iconInput:lower()
         if LucideIcons[iconName] then
             return LucideIcons[iconName]
@@ -293,7 +858,6 @@ end
 -- BACKGROUND SYSTEM V2.0.0 (HIỆN ĐẠI)
 -- ====================================================
 local function SetupBackground(frame, bgSetting, bgColor, defaultTransparency)
-    -- Dọn dẹp các background cũ nếu có
     local existingBg = frame:FindFirstChild("_BackgroundImage")
     if existingBg then existingBg:Destroy() end
     local existingGradient = frame:FindFirstChild("_UIGradient")
@@ -301,13 +865,9 @@ local function SetupBackground(frame, bgSetting, bgColor, defaultTransparency)
     local existingOverlay = frame:FindFirstChild("_GlassOverlay")
     if existingOverlay then existingOverlay:Destroy() end
 
-    -- Lấy thông số bo góc
     local frameCorner = frame:FindFirstChild("UICorner")
     local cornerRadius = frameCorner and frameCorner.CornerRadius or UDim.new(0, 8)
 
-    -- === XỬ LÝ BACKGROUND ===
-    
-    -- 1. Nếu là Image (Cổ điển nhưng vẫn giữ để tương thích ngược)
     if bgSetting and bgSetting.Image then
         local bgImage = Instance.new("ImageLabel")
         bgImage.Name = "_BackgroundImage"
@@ -330,7 +890,6 @@ local function SetupBackground(frame, bgSetting, bgColor, defaultTransparency)
             bgImage.Image = imgValue
         end
         
-        -- Nếu có thêm hiệu ứng Glass (Kính mờ) cho ảnh
         if bgSetting.GlassEffect then
             local overlay = Instance.new("Frame")
             overlay.Name = "_GlassOverlay"
@@ -347,10 +906,8 @@ local function SetupBackground(frame, bgSetting, bgColor, defaultTransparency)
         return true
     end
 
-    -- 2. Nếu là Gradient (Mới v2.0.0)
     if bgSetting and bgSetting.Gradient then
-        -- Tạo nền base
-        frame.BackgroundColor3 = Color3.fromRGB(0,0,0) -- Mặc định đen trước khi gradient phủ
+        frame.BackgroundColor3 = Color3.fromRGB(0,0,0)
         frame.BackgroundTransparency = 0
         frame.ClipsDescendants = true
         
@@ -358,7 +915,6 @@ local function SetupBackground(frame, bgSetting, bgColor, defaultTransparency)
         gradient.Name = "_UIGradient"
         gradient.Rotation = bgSetting.Rotation or 45
         
-        -- Xử lý ColorSequence
         if type(bgSetting.Gradient) == "table" then
             local points = {}
             for i, color in ipairs(bgSetting.Gradient) do
@@ -374,7 +930,6 @@ local function SetupBackground(frame, bgSetting, bgColor, defaultTransparency)
         end
         gradient.Parent = frame
         
-        -- Nếu có thêm Glass Overlay
         if bgSetting.GlassEffect then
             local overlay = Instance.new("Frame")
             overlay.Name = "_GlassOverlay"
@@ -389,7 +944,6 @@ local function SetupBackground(frame, bgSetting, bgColor, defaultTransparency)
         return true
     end
 
-    -- 3. Nếu là Solid Color (Mặc định)
     frame.BackgroundTransparency = defaultTransparency or 0
     frame.BackgroundColor3 = bgColor or Color3.fromRGB(10, 10, 10)
     frame.ClipsDescendants = false
@@ -603,7 +1157,7 @@ end
 
 function NoirUI:GetThemes()
     local names = {}
-    for name in pairs(ThemePresets) do
+    for name in pairs(NoirUI.Themes.Presets) do
         table.insert(names, name)
     end
     table.sort(names)
@@ -612,9 +1166,9 @@ end
 
 function NoirUI:GetTheme(name)
     if name then
-        return ThemePresets[name]
+        return NoirUI.Themes.Presets[name]
     else
-        return _currentTheme or ThemePresets["kyri"]
+        return NoirUI.Themes.Current or NoirUI.Themes.Presets["kyri"]
     end
 end
 
@@ -810,20 +1364,19 @@ function NoirUI.Music:GetQueue()
 end
 
 -- ==========================================================
--- LOADER SYSTEM (MẶC ĐỊNH BO-GÓC, DỜI THANH XUỐNG)
+-- LOADER SYSTEM
 -- ==========================================================
 function NoirUI:CreateLoader(settings)
     settings = settings or {}
     local iconId = settings.Icon or "rbxassetid://6031094700"
     local duration = settings.Duration or 3.5
-    local theme = settings.Theme or _currentTheme or ThemePresets["kyri"]
+    local theme = settings.Theme or _currentTheme or NoirUI.Themes.Presets["kyri"]
     local onComplete = settings.OnComplete or nil
     local text = settings.Text or "Loading..."
     local textColor = settings.TextColor or theme.text or Color3.fromRGB(245,245,250)
     local accentColor = settings.AccentColor or theme.accent or Color3.fromRGB(138,116,249)
     
-    -- === XỬ LÝ SHAPE (HÌNH DÁNG ICON) ===
-    local shape = settings.Shape or "bo-goc" -- Mặc định là bo-goc
+    local shape = settings.Shape or "bo-goc"
     local iconCornerRadius = UDim.new(0, 12)
     local iconScale = Enum.ScaleType.Fit
     local iconSize = 120
@@ -849,7 +1402,6 @@ function NoirUI:CreateLoader(settings)
         iconScale = Enum.ScaleType.Fit
     end
 
-    -- Tạo ScreenGui
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "NoirLoader"
     ScreenGui.Parent = game:GetService("CoreGui")
@@ -858,7 +1410,6 @@ function NoirUI:CreateLoader(settings)
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
     ScreenGui.DisplayOrder = 999999999
     
-    -- Loader Frame chính
     local Loader = Instance.new("Frame")
     Loader.Name = "Loader"
     Loader.Parent = ScreenGui
@@ -870,7 +1421,6 @@ function NoirUI:CreateLoader(settings)
     Loader.Size = UDim2.new(1, 0, 1, 0)
     Loader.ZIndex = 1
     
-    -- Vignette (hiệu ứng viền)
     local Vignette = Instance.new("ImageLabel")
     Vignette.Name = "Vignette"
     Vignette.Parent = Loader
@@ -884,7 +1434,6 @@ function NoirUI:CreateLoader(settings)
     Vignette.Position = UDim2.fromScale(0.5, 0.5)
     Vignette.ZIndex = 2
     
-    -- Icon chính
     local Icon = Instance.new("ImageLabel")
     Icon.Name = "Icon"
     Icon.Parent = Loader
@@ -897,7 +1446,6 @@ function NoirUI:CreateLoader(settings)
     Icon.ImageTransparency = 1
     Icon.ScaleType = iconScale
     
-    -- Xử lý icon
     local iconImage = ResolveIcon(iconId)
     if iconImage then
         Icon.Image = iconImage
@@ -905,19 +1453,17 @@ function NoirUI:CreateLoader(settings)
         Icon.Image = "rbxassetid://6031094700"
     end
 
-    -- Gán Shape (Bo góc) cho Icon
     if shape ~= "tron" then
         local corner = Instance.new("UICorner")
         corner.CornerRadius = iconCornerRadius
         corner.Parent = Icon
     end
 
-    -- Loading Bar (Thanh tiến trình - Đã dời xuống 0.70)
     local ProgressBar = Instance.new("Frame")
     ProgressBar.Name = "ProgressBar"
     ProgressBar.Parent = Loader
     ProgressBar.AnchorPoint = Vector2.new(0.5, 0.5)
-    ProgressBar.Position = UDim2.new(0.5, 0, 0.70, 0) -- Dời xuống 0.70
+    ProgressBar.Position = UDim2.new(0.5, 0, 0.70, 0)
     ProgressBar.Size = UDim2.new(0, 200, 0, 4)
     ProgressBar.BackgroundColor3 = theme.container or Color3.fromRGB(14,14,18)
     ProgressBar.BackgroundTransparency = 0.5
@@ -933,13 +1479,12 @@ function NoirUI:CreateLoader(settings)
     ProgressFill.ZIndex = 8
     Instance.new("UICorner", ProgressFill).CornerRadius = UDim.new(1, 0)
 
-    -- Text Label (Dời xuống dưới thanh tiến trình 0.85)
     local TextLabel = Instance.new("TextLabel")
     TextLabel.Name = "TextLabel"
     TextLabel.Parent = Loader
     TextLabel.AnchorPoint = Vector2.new(0.5, 0.5)
     TextLabel.BackgroundTransparency = 1
-    TextLabel.Position = UDim2.new(0.5, 0, 0.85, 0) -- Dời xuống 0.85
+    TextLabel.Position = UDim2.new(0.5, 0, 0.85, 0)
     TextLabel.Size = UDim2.new(0, 250, 0, 20)
     TextLabel.Text = text
     TextLabel.TextColor3 = textColor
@@ -950,75 +1495,59 @@ function NoirUI:CreateLoader(settings)
     TextLabel.TextYAlignment = Enum.TextYAlignment.Center
     TextLabel.ZIndex = 4
     
-    -- BindableEvent để thông báo hoàn thành
     local Event = Instance.new("BindableEvent")
     Event.Name = "LoaderEvent"
     Event.Parent = ScreenGui
     
-    -- === ANIMATION SEQUENCE ===
-    
-    -- Step 1: Fade in Loader background
     TweenService:Create(Loader, TweenInfo.new(0.55, Enum.EasingStyle.Quint), {
         BackgroundTransparency = 0.3
     }):Play()
     
     task.delay(0.5, function()
-        -- Step 2: Animate Icon
         TweenService:Create(Icon, TweenInfo.new(0.75, Enum.EasingStyle.Quint), {
             ImageTransparency = 0.01,
             Size = UDim2.new(0, iconSize, 0, iconSize)
         }):Play()
         
-        -- Step 3: Animate Text
         TweenService:Create(TextLabel, TweenInfo.new(0.75, Enum.EasingStyle.Quint), {
             TextTransparency = 0
         }):Play()
         
-        -- Step 4: Animate Progress Bar
         TweenService:Create(ProgressFill, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
             Size = UDim2.new(1, 0, 1, 0)
         }):Play()
         
         task.delay(0.25, function()
-            -- Step 5: Fade in Vignette
             TweenService:Create(Vignette, TweenInfo.new(5), {
                 ImageTransparency = 0.15
             }):Play()
             
-            -- Wait for specified duration
             task.wait(duration)
             
-            -- Step 6: Complete sequence
-            -- Expand Vignette
             TweenService:Create(Vignette, TweenInfo.new(3, Enum.EasingStyle.Quint, Enum.EasingDirection.InOut), {
                 Size = UDim2.new(2, 0, 2, 0)
             }):Play()
             
-            -- Fade out Icon
             TweenService:Create(Icon, TweenInfo.new(0.75, Enum.EasingStyle.Quint, Enum.EasingDirection.InOut), {
                 ImageTransparency = 1,
                 Size = UDim2.new(0, 200, 0, 200)
             }):Play()
             
-            -- Fade out Text
             TweenService:Create(TextLabel, TweenInfo.new(0.75, Enum.EasingStyle.Quint, Enum.EasingDirection.InOut), {
                 TextTransparency = 1
             }):Play()
             
-            -- Fade out Loader background
             TweenService:Create(Loader, TweenInfo.new(1.5, Enum.EasingStyle.Quint, Enum.EasingDirection.InOut), {
                 BackgroundTransparency = 1
             }):Play()
             
             task.delay(0.1, function()
-                -- Fade out Vignette
                 TweenService:Create(Vignette, TweenInfo.new(1, Enum.EasingStyle.Quint, Enum.EasingDirection.InOut), {
                     ImageTransparency = 1
                 }):Play()
                 
                 task.wait(0.2)
                 
-                -- Fire event and cleanup
                 task.delay(3, function()
                     Event:Fire()
                     if onComplete then onComplete() end
@@ -1032,7 +1561,6 @@ function NoirUI:CreateLoader(settings)
         end)
     end)
     
-    -- === API ===
     return {
         yield = function()
             return Event.Event:Wait()
@@ -1065,14 +1593,15 @@ function NoirUI:CreateWindow(settings)
     end
     
     local currentTheme = settings.Theme or {}
-    if type(currentTheme) == "string" and ThemePresets[currentTheme] then
-        currentTheme = ThemePresets[currentTheme]
+    if type(currentTheme) == "string" and NoirUI.Themes.Presets[currentTheme] then
+        currentTheme = NoirUI.Themes.Presets[currentTheme]
+        NoirUI.Themes.Current = currentTheme
     end
     
     _currentTheme = currentTheme
     
     local ACCENT = currentTheme.accent or settings.Accent or Color3.fromRGB(138,116,249)
-    local HAS_BG_IMAGE = settings.Background and settings.Background.Image ~= nil -- Kiểm tra có ảnh nền không
+    local HAS_BG_IMAGE = settings.Background and settings.Background.Image ~= nil
     
     if settings.ClickSound then SoundSettings.ClickSoundId = settings.ClickSound end
     if settings.TabSound then SoundSettings.TabSoundId = settings.TabSound end
@@ -1100,7 +1629,7 @@ function NoirUI:CreateWindow(settings)
     Main.Size = UDim2.new(0, 520, 0, 400)
     Main.Position = mainDefaultPos
     Main.BackgroundColor3 = currentTheme.bg or settings.MainBgColor or Color3.fromRGB(8,8,10)
-    Main.BackgroundTransparency = HAS_BG_IMAGE and 1 or 0 -- Nếu có ảnh thì main frame sẽ transparent để lộ background
+    Main.BackgroundTransparency = HAS_BG_IMAGE and 1 or 0
     Main.Visible = true
     Main.ZIndex = 1
     
@@ -1276,7 +1805,6 @@ function NoirUI:CreateWindow(settings)
     local Header = Instance.new("Frame", Main)
     Header.Size = UDim2.new(1, 0, 0, 40)
     Header.BackgroundColor3 = currentTheme.container or Color3.fromRGB(14,14,18)
-    -- Nếu có ảnh nền -> Mờ header (0.7), nếu không -> Đặc (0)
     Header.BackgroundTransparency = HAS_BG_IMAGE and 0.7 or 0
     local headerCorner = Instance.new("UICorner", Header)
     headerCorner.CornerRadius = UDim.new(0, 8)
@@ -1413,7 +1941,7 @@ function NoirUI:CreateWindow(settings)
     local Side = Instance.new("Frame", Main)
     Side.Size = UDim2.new(0, 110, 1, -50)
     Side.Position = UDim2.new(0, 5, 0, 40)
-    Side.BackgroundTransparency = HAS_BG_IMAGE and 0.8 or 1 -- Nếu có ảnh nền thì mờ (0.8), còn không thì transparent (1)
+    Side.BackgroundTransparency = HAS_BG_IMAGE and 0.8 or 1
     Side.ClipsDescendants = true
     local sideCorner = Instance.new("UICorner", Side)
     sideCorner.CornerRadius = UDim.new(0, 8)
@@ -1480,7 +2008,7 @@ function NoirUI:CreateWindow(settings)
         Main.Visible = true
         Main.Size = savedSize
         Main.Position = UDim2.new(mainDefaultPos.X.Scale, mainDefaultPos.X.Offset, 1, 0)
-        Main.BackgroundTransparency = HAS_BG_IMAGE and 1 or 0 -- Set lại đúng trạng thái ban đầu
+        Main.BackgroundTransparency = HAS_BG_IMAGE and 1 or 0
         Main.ClipsDescendants = true
         
         TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -1492,7 +2020,7 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ==========================================================
-    -- NOTIFY V2.0.2 (AUTO HEIGHT + SMART STACK RESET)
+    -- NOTIFY V2.0.2
     -- ==========================================================
     function NoirUI:Notify(title, message, iconName, soundType, duration, progressColor)
         if soundType then
@@ -1505,7 +2033,6 @@ function NoirUI:CreateWindow(settings)
         local progressColor = progressColor or (currentTheme and currentTheme.accent) or ACCENT
         local accentColor = progressColor
         
-        -- === 1. CẤU HÌNH CỐT LÕI ===
         local WIDTH = settings.NotificationWidth or 260
         local PADDING_LEFT = 16
         local PADDING_TOP = 8
@@ -1518,7 +2045,6 @@ function NoirUI:CreateWindow(settings)
         local INDICATOR_WIDTH = 4
         local INDICATOR_EDGE_GAP = 6
 
-        -- === 2. TÍNH TOÁN KHOẢNG TRỐNG CHO ICON ===
         local textStartX = PADDING_LEFT
         local iconSize = 0
         local iconObj = nil
@@ -1531,8 +2057,7 @@ function NoirUI:CreateWindow(settings)
             end
         end
 
-        -- === 3. TEXT SERVICE: TỰ ĐỘNG XUỐNG DÒNG & TĂNG Y ===
-        local availableTextWidth = WIDTH - textStartX - 16 -- 16 là padding bên phải
+        local availableTextWidth = WIDTH - textStartX - 16
         local textService = game:GetService("TextService")
         
         local textSizeResult = textService:GetTextSize(
@@ -1542,13 +2067,10 @@ function NoirUI:CreateWindow(settings)
             Vector2.new(availableTextWidth, 1000)
         )
         
-        -- Công thức Auto Height: Tối thiểu 16px cho 1 dòng. Nhiều dòng thì tăng lên.
         local messageHeight = math.max(16, textSizeResult.Y + 2) 
 
-        -- === 4. TÍNH TỔNG CHIỀU CAO NOTIFY ===
         local totalHeight = PADDING_TOP + TITLE_HEIGHT + GAP_TITLE_MSG + messageHeight + GAP_MSG_BAR + PROGRESS_HEIGHT + PADDING_BOTTOM
 
-        -- === TẠO GIAO DIỆN ===
         local n = Instance.new("Frame", ScreenGui)
         n.Size = UDim2.new(0, WIDTH, 0, totalHeight)
         n.Position = UDim2.new(1, 20, 0.8, 0)
@@ -1564,7 +2086,6 @@ function NoirUI:CreateWindow(settings)
         SetupBackground(n, settings.NotificationBackground, n.BackgroundColor3, 0.1)
         CreateSpringEffect(n, 0.05)
 
-        -- === INDICATOR ===
         local Indicator = Instance.new("Frame", n)
         Indicator.Name = "Indicator"
         Indicator.Position = UDim2.new(0, INDICATOR_EDGE_GAP, 0, INDICATOR_EDGE_GAP)
@@ -1574,7 +2095,6 @@ function NoirUI:CreateWindow(settings)
         Indicator.ZIndex = 0
         Instance.new("UICorner", Indicator).CornerRadius = UDim.new(0, 8)
 
-        -- === ICON ===
         if iconName then
             local iconImg = ResolveIcon(iconName)
             if iconImg then
@@ -1590,7 +2110,6 @@ function NoirUI:CreateWindow(settings)
             end
         end
 
-        -- === TITLE ===
         local tl = Instance.new("TextLabel", n)
         tl.Size = UDim2.new(1, -(textStartX + 16), 0, TITLE_HEIGHT)
         tl.Position = UDim2.new(0, textStartX, 0, PADDING_TOP)
@@ -1603,7 +2122,6 @@ function NoirUI:CreateWindow(settings)
         tl.TextXAlignment = Enum.TextXAlignment.Left
         tl.ZIndex = 2
 
-        -- === MESSAGE (TỰ ĐỘNG CO DÃN Y Ở ĐÂY) ===
         local ml = Instance.new("TextLabel", n)
         ml.Size = UDim2.new(1, -(textStartX + 16), 0, messageHeight)
         ml.Position = UDim2.new(0, textStartX, 0, PADDING_TOP + TITLE_HEIGHT + GAP_TITLE_MSG)
@@ -1611,14 +2129,13 @@ function NoirUI:CreateWindow(settings)
         ml.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
         ml.BackgroundTransparency = 1
         ml.BorderSizePixel = 0
-        ml.TextWrapped = true -- BẮT BUỘC: Tự động xuống dòng
+        ml.TextWrapped = true
         ml.TextXAlignment = Enum.TextXAlignment.Left
         ml.TextYAlignment = Enum.TextYAlignment.Top
         ml.Font = Enum.Font.Gotham
         ml.TextSize = TEXT_SIZE
         ml.ZIndex = 2
 
-        -- === PROGRESS BAR ===
         local progressBg = Instance.new("Frame", n)
         progressBg.Size = UDim2.new(1, -16, 0, PROGRESS_HEIGHT)
         progressBg.Position = UDim2.new(0, 8, 1, -(PADDING_BOTTOM + 2))
@@ -1641,11 +2158,9 @@ function NoirUI:CreateWindow(settings)
             Position = UDim2.new(1, 0, 0, 0)
         }):Play()
 
-        -- === STACK THÔNG MINH ===
         local stackGap = 10
         local currentStackOffset = 0
         
-        -- Đẩy các thông báo cũ lên
         for i, v in ipairs(NoirUI.Notifications) do
             local actualHeight = v.AbsoluteSize.Y
             if actualHeight == 0 then actualHeight = totalHeight end
@@ -1658,13 +2173,11 @@ function NoirUI:CreateWindow(settings)
 
         table.insert(NoirUI.Notifications, 1, n)
 
-        -- Animation xuất hiện
         local rightMargin = 20
         TweenService:Create(n, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
             Position = UDim2.new(1, -(WIDTH + rightMargin), 0.8, 0)
         }):Play()
 
-        -- === TỰ ĐỘNG ĐÓNG VÀ RESET STACK ===
         task.spawn(function()
             task.wait(notifyDuration)
             if n and n.Parent then
@@ -1685,12 +2198,10 @@ function NoirUI:CreateWindow(settings)
 
                 frameTween.Completed:Wait()
                 
-                -- Xóa khỏi danh sách
                 for i, v in ipairs(NoirUI.Notifications) do
                     if v == n then table.remove(NoirUI.Notifications, i) break end
                 end
                 
-                -- RESET TOÀN BỘ STACK (Dồn các thông báo còn lại xuống dưới)
                 local resetOffset = 0
                 for i, v in ipairs(NoirUI.Notifications) do
                     local h = v.AbsoluteSize.Y
@@ -1717,15 +2228,15 @@ function NoirUI:CreateWindow(settings)
     end
     
     function Window:SetTheme(themeName)
-        local theme = type(themeName) == "string" and ThemePresets[themeName] or themeName
+        local theme = type(themeName) == "string" and NoirUI.Themes.Presets[themeName] or themeName
         if not theme then return end
+        
+        NoirUI:ApplyTheme(themeName)
+        ACCENT = theme.accent
         
         Main.BackgroundColor3 = theme.bg or Main.BackgroundColor3
         Header.BackgroundColor3 = theme.container or Header.BackgroundColor3
         Title.TextColor3 = theme.text or Title.TextColor3
-        
-        local newAccent = theme.accent or ACCENT
-        ACCENT = newAccent
         
         if theme.backgroundImage then
             SetupBackground(Main, {Image = theme.backgroundImage}, Main.BackgroundColor3, 0)
@@ -1738,9 +2249,7 @@ function NoirUI:CreateWindow(settings)
         SetupBackground(Main, {Image = imageId}, Main.BackgroundColor3, 0)
     end
     
-    function Window:SetBlur(amount)
-        -- Logic thêm BlurOverlay nếu cần
-    end
+    function Window:SetBlur(amount) end
     
     function Window:Hide()
         Main.Visible = false
@@ -1853,7 +2362,7 @@ function NoirUI:CreateWindow(settings)
     end
 
     -- ==========================================================
-    -- CREATE TAB (ĐÃ CHỈNH SỬA AUTO SELECT VÀ INDICATOR)
+    -- CREATE TAB (AUTO SELECT + INDICATOR)
     -- ==========================================================
     function Window:CreateTab(name, icon)
         local B = Instance.new("TextButton", TScroll)
@@ -1863,19 +2372,17 @@ function NoirUI:CreateWindow(settings)
         else
             B.BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26)
         end
-        -- Nếu có ảnh nền -> Mờ tab button (0.5), nếu không -> Đặc (0)
         B.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
         B.Text = ""
         B.AutoButtonColor = false
         Instance.new("UICorner", B).CornerRadius = UDim.new(0, 6)
         CreateHoverEffect(B)
         
-        -- === THÊM GẠCH BÊN PHẢI ===
         local Indicator = Instance.new("Frame")
         Indicator.Name = "Indicator"
         Indicator.Parent = B
-        Indicator.Size = UDim2.new(0, 3, 0, 0) -- Mặc định ẩn
-        Indicator.Position = UDim2.new(1, -4, 0.5, 0) -- Sát bên phải
+        Indicator.Size = UDim2.new(0, 3, 0, 0)
+        Indicator.Position = UDim2.new(1, -4, 0.5, 0)
         Indicator.AnchorPoint = Vector2.new(1, 0.5)
         Indicator.BackgroundColor3 = ACCENT
         Indicator.BackgroundTransparency = 1
@@ -1962,11 +2469,10 @@ function NoirUI:CreateWindow(settings)
                 local img = btn:FindFirstChild("ImageLabel")
                 if img then img.ImageColor3 = currentTheme.subtext or Color3.fromRGB(150,150,150) end
                 
-                -- Ẩn gạch của tất cả tab
                 local ind = btn:FindFirstChild("Indicator")
                 if ind then
                     ind.BackgroundTransparency = 1
-                    ind.Size = UDim2.new(0, 3, 0, 0) -- Thu gọn về 0
+                    ind.Size = UDim2.new(0, 3, 0, 0)
                 end
             end
         end
@@ -1981,11 +2487,9 @@ function NoirUI:CreateWindow(settings)
             local tabImg = B:FindFirstChild("ImageLabel")
             if tabImg then tabImg.ImageColor3 = currentTheme.text or Color3.fromRGB(245,245,250) end
             
-            -- HIỆN GẠCH CỦA TAB ĐANG CHỌN
             local ind = B:FindFirstChild("Indicator")
             if ind then
                 ind.BackgroundTransparency = 0
-                -- Set chiều cao bằng với nút (32px)
                 ind.Size = UDim2.new(0, 3, 0, 32) 
             end
             
@@ -2000,9 +2504,8 @@ function NoirUI:CreateWindow(settings)
         
         table.insert(allTabButtons, B)
         
-        -- MẶC ĐỊNH AUTO CHỌN TAB ĐẦU TIÊN
         if #allTabButtons == 1 then
-            task.wait(0.1) -- Đợi UI load layout
+            task.wait(0.1)
             selectThisTab()
         end
         
@@ -2248,7 +2751,8 @@ function NoirUI:CreateWindow(settings)
             title.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
             title.TextTransparency = 0
             title.Font = "GothamBold"
-            title.TextSize = 13            title.BackgroundTransparency = 1
+            title.TextSize = 13
+            title.BackgroundTransparency = 1
             title.TextXAlignment = "Left"
             
             local content = Instance.new("TextLabel", f)
@@ -2403,6 +2907,27 @@ function NoirUI:CreateWindow(settings)
                 }):Play()
                 if opt.Callback then opt.Callback(s) end
             end)
+            
+            -- === FLAG SYSTEM: Register Toggle ===
+            if opt.FlagName then
+                local flagData = {
+                    Type = "Toggle",
+                    GetValue = function() return s end,
+                    SetValue = function(value)
+                        s = value
+                        t.TextColor3 = s and currentTheme.text or currentTheme.subtext
+                        bx.BackgroundColor3 = s and ACCENT or currentTheme.container
+                        knob.Position = s and UDim2.new(1, -3, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
+                        knob.AnchorPoint = Vector2.new(s and 1 or 0, 0.5)
+                        if opt.Callback then opt.Callback(s) end
+                    end,
+                    SetDefault = function()
+                        local def = opt.Default or false
+                        flagData:SetValue(def)
+                    end
+                }
+                NoirUI:RegisterFlag(opt.FlagName, flagData)
+            end
         end
         
         function Tab:CreateSlider(opt)
@@ -2560,6 +3085,28 @@ function NoirUI:CreateWindow(settings)
                 valInp.Visible = false
                 valBtn.Visible = true
             end)
+            
+            -- === FLAG SYSTEM: Register Slider ===
+            if opt.FlagName then
+                local flagData = {
+                    Type = "Slider",
+                    GetValue = function() return currentValue end,
+                    SetValue = function(value)
+                        currentValue = math.clamp(value, min, max)
+                        local newPercent = (currentValue - min) / (max - min)
+                        fill.Size = UDim2.new(newPercent, 0, 1, 0)
+                        handle.Position = UDim2.new(newPercent, 0, 0.5, 0)
+                        l.Text = opt.Name .. ": " .. currentValue
+                        valBtn.Text = tostring(currentValue)
+                        if opt.Callback then opt.Callback(currentValue) end
+                    end,
+                    SetDefault = function()
+                        local def = opt.Default or min
+                        flagData:SetValue(def)
+                    end
+                }
+                NoirUI:RegisterFlag(opt.FlagName, flagData)
+            end
         end
         
         function Tab:CreateColorPicker(opt)
@@ -2897,7 +3444,8 @@ function NoirUI:CreateWindow(settings)
                     optLbl.Text = option
                     optLbl.TextColor3 = isSel and ACCENT or currentTheme.text or Color3.fromRGB(245,245,250)
                     optLbl.Font = "Gotham"
-                    optLbl.TextSize = 13                    optLbl.TextXAlignment = "Left"
+                    optLbl.TextSize = 13
+                    optLbl.TextXAlignment = "Left"
                     optLbl.ZIndex = 1000
                     
                     local check = Instance.new("TextLabel", optBtn)
@@ -3009,6 +3557,34 @@ function NoirUI:CreateWindow(settings)
                 table.insert(NoirUI.Connections, refreshConnection)
             end
             
+            -- === FLAG SYSTEM: Register Dropdown ===
+            if opt.FlagName then
+                local flagData = {
+                    Type = "Dropdown",
+                    GetValue = function() return isMulti and getSelectedList() or getSelectedText() end,
+                    SetValue = function(option)
+                        if isMulti then
+                            for k in pairs(selected) do selected[k] = false end
+                            if type(option) == "table" then
+                                for _, v in ipairs(option) do selected[v] = true end
+                            else
+                                selected[option] = true
+                            end
+                        else
+                            for k in pairs(selected) do selected[k] = false end
+                            selected[option] = true
+                        end
+                        t.Text = "  " .. opt.Name .. " : " .. getSelectedText()
+                        refreshOptions()
+                    end,
+                    SetDefault = function()
+                        local def = opt.Default or (opt.Options and opt.Options[1] or "none")
+                        flagData:SetValue(def)
+                    end
+                }
+                NoirUI:RegisterFlag(opt.FlagName, flagData)
+            end
+            
             local api = {container = d}
             function api:set(option)
                 if isMulti then
@@ -3029,8 +3605,117 @@ function NoirUI:CreateWindow(settings)
         end
         
         -- ==========================================================
-        -- ELEMENT: CARD
+        -- ELEMENT: KEYBIND (Mới thêm)
         -- ==========================================================
+        function Tab:CreateKeybind(opt)
+            local parent = Tab._currentSectionContent or ContentFrame
+            local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
+            local keybindText = opt.Default or "None"
+            local isListening = false
+            
+            local f = Instance.new("Frame", parent)
+            f.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
+            f.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
+            f.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
+            Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
+            f.LayoutOrder = GetO()
+            f.Name = opt.Name or ""
+            local idx = #Tab.Elements + 1
+            table.insert(Tab.Elements, f)
+            searchData[idx] = opt.Name or ""
+            CreateSpringEffect(f, 0.05 * Tab.Count)
+            
+            local t = Instance.new("TextLabel", f)
+            t.Size = UDim2.new(1, -70, 0, 35)
+            t.Position = UDim2.new(0, 12, 0, 0)
+            t.BackgroundTransparency = 1
+            t.Text = opt.Name
+            t.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
+            t.TextTransparency = 0
+            t.Font = "GothamMedium"
+            t.TextSize = 12
+            t.TextXAlignment = "Left"
+            t.TextYAlignment = "Center"
+            
+            local kb = Instance.new("TextButton", f)
+            kb.Size = UDim2.new(0, 50, 0, 26)
+            kb.Position = UDim2.new(1, -10, 0.5, 0)
+            kb.AnchorPoint = Vector2.new(1, 0.5)
+            kb.BackgroundColor3 = currentTheme.container or Color3.fromRGB(14,14,18)
+            kb.BackgroundTransparency = 0.3
+            kb.Text = keybindText
+            kb.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
+            kb.TextSize = 12
+            kb.Font = Enum.Font.GothamBold
+            kb.ZIndex = 2
+            Instance.new("UICorner", kb).CornerRadius = UDim.new(0, 6)
+            
+            if hasSubtitle then AddSubtitle(f, opt.Subtitle, 38) end
+            
+            local function updateKeybindDisplay()
+                if isListening then
+                    kb.Text = "..."
+                else
+                    kb.Text = keybindText
+                end
+            end
+            
+            kb.MouseButton1Click:Connect(function()
+                if isListening then return end
+                PlaySound("Element")
+                isListening = true
+                updateKeybindDisplay()
+                
+                local connection = UIS.InputBegan:Connect(function(input, gameProcessed)
+                    if gameProcessed then return end
+                    
+                    local newKey = nil
+                    if input.KeyCode ~= Enum.KeyCode.Unknown then
+                        newKey = input.KeyCode.Name
+                    elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        newKey = "MouseButton1"
+                    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+                        newKey = "MouseButton2"
+                    end
+                    
+                    if newKey then
+                        keybindText = newKey
+                        updateKeybindDisplay()
+                        isListening = false
+                        connection:Disconnect()
+                        
+                        if opt.Callback then opt.Callback(newKey) end
+                    end
+                end)
+                
+                -- Auto timeout after 5 seconds
+                task.delay(5, function()
+                    if isListening then
+                        isListening = false
+                        connection:Disconnect()
+                        updateKeybindDisplay()
+                    end
+                end)
+            end)
+            
+            -- === FLAG SYSTEM: Register Keybind ===
+            if opt.FlagName then
+                local flagData = {
+                    Type = "Keybind",
+                    GetValue = function() return keybindText end,
+                    SetValue = function(value)
+                        keybindText = value
+                        updateKeybindDisplay()
+                    end,
+                    SetDefault = function()
+                        local def = opt.Default or "None"
+                        flagData:SetValue(def)
+                    end
+                }
+                NoirUI:RegisterFlag(opt.FlagName, flagData)
+            end
+        end
+        
         function Tab:CreateCard(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local cardType = opt.Type or "Standard"
