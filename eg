@@ -4,12 +4,10 @@
 	Lua Scripter: NoirNF, Adono
 	Executor Compatibility Tester: Adono
 	Animation Engineer: Adono
-	Version: 2.0.0
+	Version: 2.0.1
 	Changelog: 
-	- Background System v2 (Gradient, Glassmorphism, Depth)
-	- Tab Indicator bên phải
-	- Auto select tab đầu tiên
-	- Loader nâng cấp (không spinner, chữ dời xuống dưới)
+	- Fix lỗi Float Button bị nhân đôi lớp đen.
+	- Tự động Glass effect cho các Element CHỈ KHI có ảnh nền.
 ]]
 
 --Core
@@ -25,7 +23,7 @@ if OldGui then OldGui:Destroy() end
 local NoirUI = { Notifications = {}, ActiveConfirmFrame = nil, CustomCommands = {}, Connections = {}, TabGroups = {} }
 
 local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
-local _version = "2.0.0"
+local _version = "2.0.1"
 
 -- === THEME PRESETS ===
 local ThemePresets = {
@@ -845,7 +843,8 @@ function NoirUI:CreateLoader(settings)
     Vignette.Name = "Vignette"
     Vignette.Parent = Loader
     Vignette.BackgroundTransparency = 1
-    Vignette.BorderSizePixel = 0    Vignette.Size = UDim2.new(1, 0, 1, 0)
+    Vignette.BorderSizePixel = 0
+    Vignette.Size = UDim2.new(1, 0, 1, 0)
     Vignette.Image = "rbxassetid://18720640102"
     Vignette.ImageColor3 = accentColor
     Vignette.ImageTransparency = 1
@@ -1033,6 +1032,7 @@ function NoirUI:CreateWindow(settings)
     _currentTheme = currentTheme
     
     local ACCENT = currentTheme.accent or settings.Accent or Color3.fromRGB(138,116,249)
+    local HAS_BG_IMAGE = settings.Background and settings.Background.Image ~= nil -- Kiểm tra có ảnh nền không
     
     if settings.ClickSound then SoundSettings.ClickSoundId = settings.ClickSound end
     if settings.TabSound then SoundSettings.TabSoundId = settings.TabSound end
@@ -1059,16 +1059,15 @@ function NoirUI:CreateWindow(settings)
     local Main = Instance.new("Frame", ScreenGui)
     Main.Size = UDim2.new(0, 520, 0, 400)
     Main.Position = mainDefaultPos
-    -- Main Background mới: Mặc định trong suốt, để hiệu ứng Gradient/Glass hiện ra
     Main.BackgroundColor3 = currentTheme.bg or settings.MainBgColor or Color3.fromRGB(8,8,10)
-    Main.BackgroundTransparency = 0.2 
+    Main.BackgroundTransparency = HAS_BG_IMAGE and 1 or 0 -- Nếu có ảnh thì main frame sẽ transparent để lộ background
     Main.Visible = true
     Main.ZIndex = 1
     
     local mainCorner = Instance.new("UICorner", Main)
     mainCorner.CornerRadius = UDim.new(0, 8)
     
-    SetupBackground(Main, settings.Background, Main.BackgroundColor3, 0.2)
+    SetupBackground(Main, settings.Background, Main.BackgroundColor3, HAS_BG_IMAGE and 1 or 0)
     MakeDraggable(Main)
     
     local savedSize = Main.Size
@@ -1237,7 +1236,8 @@ function NoirUI:CreateWindow(settings)
     local Header = Instance.new("Frame", Main)
     Header.Size = UDim2.new(1, 0, 0, 40)
     Header.BackgroundColor3 = currentTheme.container or Color3.fromRGB(14,14,18)
-    Header.BackgroundTransparency = 0.6 -- Glass effect cho header
+    -- Nếu có ảnh nền -> Mờ header (0.7), nếu không -> Đặc (0)
+    Header.BackgroundTransparency = HAS_BG_IMAGE and 0.7 or 0
     local headerCorner = Instance.new("UICorner", Header)
     headerCorner.CornerRadius = UDim.new(0, 8)
     
@@ -1373,7 +1373,7 @@ function NoirUI:CreateWindow(settings)
     local Side = Instance.new("Frame", Main)
     Side.Size = UDim2.new(0, 110, 1, -50)
     Side.Position = UDim2.new(0, 5, 0, 40)
-    Side.BackgroundTransparency = 1
+    Side.BackgroundTransparency = HAS_BG_IMAGE and 0.8 or 1 -- Nếu có ảnh nền thì mờ (0.8), còn không thì transparent (1)
     Side.ClipsDescendants = true
     local sideCorner = Instance.new("UICorner", Side)
     sideCorner.CornerRadius = UDim.new(0, 8)
@@ -1422,7 +1422,7 @@ function NoirUI:CreateWindow(settings)
     local contCorner = Instance.new("UICorner", Cont)
     contCorner.CornerRadius = UDim.new(0, 8)
 
-    -- Float toggle
+    -- Float toggle (ĐÃ SỬA LỖI NHÂN ĐÔI GLASS)
     TBtn.MouseButton1Click:Connect(function()
         PlaySound("Click")
         CreateClickScaleEffect(TBtn)
@@ -1440,12 +1440,12 @@ function NoirUI:CreateWindow(settings)
         Main.Visible = true
         Main.Size = savedSize
         Main.Position = UDim2.new(mainDefaultPos.X.Scale, mainDefaultPos.X.Offset, 1, 0)
-        Main.BackgroundTransparency = 1
+        Main.BackgroundTransparency = HAS_BG_IMAGE and 1 or 0 -- Set lại đúng trạng thái ban đầu
         Main.ClipsDescendants = true
         
         TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Position = mainDefaultPos,
-            BackgroundTransparency = 0.2
+            BackgroundTransparency = HAS_BG_IMAGE and 1 or 0
         }):Play()
         
         PlaySound("Open")
@@ -1744,7 +1744,8 @@ function NoirUI:CreateWindow(settings)
         else
             B.BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26)
         end
-        B.BackgroundTransparency = 0.7
+        -- Nếu có ảnh nền -> Mờ tab button (0.5), nếu không -> Đặc (0)
+        B.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
         B.Text = ""
         B.AutoButtonColor = false
         Instance.new("UICorner", B).CornerRadius = UDim.new(0, 6)
@@ -1950,7 +1951,7 @@ function NoirUI:CreateWindow(settings)
             local f = Instance.new("Frame", parent)
             f.Size = UDim2.new(0.95, 0, 0, 55)
             f.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
-            f.BackgroundTransparency = 0
+            f.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
             Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
             f.LayoutOrder = GetO()
             f.Name = "ProgressBar"
@@ -2112,7 +2113,7 @@ function NoirUI:CreateWindow(settings)
             local f = Instance.new("Frame", parent)
             f.Size = UDim2.new(0.95, 0, 0, 65)
             f.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
-            f.BackgroundTransparency = 0
+            f.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
             Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
             f.LayoutOrder = GetO()
             f.Name = opt.Title or ""
@@ -2153,7 +2154,7 @@ function NoirUI:CreateWindow(settings)
             local f = Instance.new("Frame", parent)
             f.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
             f.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
-            f.BackgroundTransparency = 0
+            f.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
             Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
             f.LayoutOrder = GetO()
             f.Name = opt.Name or ""
@@ -2184,7 +2185,7 @@ function NoirUI:CreateWindow(settings)
             local b = Instance.new("TextButton", parent)
             b.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
             b.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
-            b.BackgroundTransparency = 0
+            b.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
             b.Text = opt.Name
             b.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
             b.TextTransparency = 0
@@ -2236,7 +2237,7 @@ function NoirUI:CreateWindow(settings)
             local t = Instance.new("TextButton", parent)
             t.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
             t.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
-            t.BackgroundTransparency = 0
+            t.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
             t.Text = "  " .. opt.Name
             t.TextColor3 = s and currentTheme.text or currentTheme.subtext or Color3.fromRGB(245,245,250)
             t.TextTransparency = 0
@@ -2301,7 +2302,7 @@ function NoirUI:CreateWindow(settings)
             local f = Instance.new("Frame", parent)
             f.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 70 or 50)
             f.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
-            f.BackgroundTransparency = 0
+            f.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
             Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
             f.LayoutOrder = GetO()
             f.Name = opt.Name or ""
@@ -2453,7 +2454,7 @@ function NoirUI:CreateWindow(settings)
             local f = Instance.new("Frame", parent)
             f.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
             f.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
-            f.BackgroundTransparency = 0
+            f.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
             Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
             f.LayoutOrder = GetO()
             f.ClipsDescendants = true
@@ -2655,7 +2656,7 @@ function NoirUI:CreateWindow(settings)
             local d = Instance.new("Frame", parent)
             d.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 42)
             d.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
-            d.BackgroundTransparency = 0
+            d.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
             Instance.new("UICorner", d).CornerRadius = UDim.new(0, 8)
             d.LayoutOrder = GetO()
             d.Name = opt.Name or ""
@@ -2922,7 +2923,7 @@ function NoirUI:CreateWindow(settings)
             f.Size = UDim2.new(0.95, 0, 0, 0)
             f.AutomaticSize = Enum.AutomaticSize.Y
             f.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
-            f.BackgroundTransparency = 0
+            f.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
             Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
             f.LayoutOrder = GetO()
             f.Name = opt.Title or "Card"
