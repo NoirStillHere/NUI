@@ -4,9 +4,9 @@
 	Lua Scripter: NoirNF, Adono
 	Executor Compatibility Tester: Adono
 	Animation Engineer: Adono
-	Version: 2.0.3
+	Version: 2.0.4
 	Changelog: 
-	- Notify mới: Fix lỗi dồn nén và tự động co giãn kích thước theo nội dung.
+	- Notify mới: Fix triệt để layout theo góp ý (Width cố định 340, padding, render đúng, thanh dính đáy).
 	- Loader nâng cấp: Mặc định bo-goc (bo góc 12), thanh dời xuống 0.70, chữ dời xuống 0.85.
 	- Background System v2 (Gradient, Glassmorphism, Depth)
 	- Tab Indicator bên phải
@@ -28,7 +28,7 @@ if OldGui then OldGui:Destroy() end
 local NoirUI = { Notifications = {}, ActiveConfirmFrame = nil, CustomCommands = {}, Connections = {}, TabGroups = {} }
 
 local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
-local _version = "2.0.3"
+local _version = "2.0.4"
 
 -- === THEME PRESETS ===
 local ThemePresets = {
@@ -1492,7 +1492,7 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ==========================================================
-    -- NOTIFY MỚI (FIX LỖI CO GIÃN VÀ HIỂN THỊ)
+    -- NOTIFY MỚI (FIX TRIỆT ĐỂ THEO GÓP Ý)
     -- ==========================================================
     function NoirUI:Notify(title, message, iconName, soundType, duration, progressColor)
         if soundType then
@@ -1503,15 +1503,16 @@ function NoirUI:CreateWindow(settings)
 
         local notifyDuration = duration or 4
         local progressColor = progressColor or (currentTheme and currentTheme.accent) or ACCENT
+        local NOTIFY_WIDTH = 340 -- Cố định chiều rộng
 
-        -- Tạo thông báo với kích thước tự động
+        -- Tạo thông báo với kích thước tự động theo chiều dọc
         local n = Instance.new("Frame")
-        n.Size = UDim2.new(0, 0, 0, 0)
+        n.Size = UDim2.fromOffset(NOTIFY_WIDTH, 0)
         n.AutomaticSize = Enum.AutomaticSize.Y
         n.Position = UDim2.new(1, 20, 0.8, 0) 
         n.BackgroundColor3 = currentTheme.container or settings.NotificationBackgroundColor or Color3.fromRGB(14,14,18)
         n.BackgroundTransparency = 0.1
-        n.ZIndex = 999999999 -- Quan trọng: Đảm bảo luôn nằm trên cùng
+        n.ZIndex = 999999999
         n.ClipsDescendants = true
         n.BorderSizePixel = 0
         n.Parent = ScreenGui
@@ -1523,20 +1524,27 @@ function NoirUI:CreateWindow(settings)
         SetupBackground(n, settings.NotificationBackground, n.BackgroundColor3, 0.1)
         CreateSpringEffect(n, 0.05)
 
-        -- === Layout chính bên trong ===
-        local Layout = Instance.new("UIListLayout", n)
+        -- === Wrapper Content (Để UIListLayout không làm hỏng vị trí thanh tiến trình) ===
+        local Wrapper = Instance.new("Frame", n)
+        Wrapper.Size = UDim2.new(1, 0, 0, 0)
+        Wrapper.AutomaticSize = Enum.AutomaticSize.Y
+        Wrapper.BackgroundTransparency = 1
+        Wrapper.ClipsDescendants = true
+
+        local Layout = Instance.new("UIListLayout", Wrapper)
         Layout.SortOrder = Enum.SortOrder.LayoutOrder
         Layout.Padding = UDim.new(0, 6)
 
-        local Padding = Instance.new("UIPadding", n)
+        local Padding = Instance.new("UIPadding", Wrapper)
         Padding.PaddingTop = UDim.new(0, 10)
         Padding.PaddingBottom = UDim.new(0, 10)
         Padding.PaddingLeft = UDim.new(0, 12)
         Padding.PaddingRight = UDim.new(0, 12)
 
         -- === Header (Icon + Title) ===
-        local Header = Instance.new("Frame", n)
-        Header.Size = UDim2.new(1, 0, 0, 20)
+        local Header = Instance.new("Frame", Wrapper)
+        Header.Size = UDim2.new(1, 0, 0, 0)
+        Header.AutomaticSize = Enum.AutomaticSize.Y
         Header.BackgroundTransparency = 1
         Header.LayoutOrder = 1
 
@@ -1562,7 +1570,7 @@ function NoirUI:CreateWindow(settings)
         -- Title
         local tl = Instance.new("TextLabel", Header)
         tl.Size = UDim2.new(0, 0, 1, 0)
-        tl.AutomaticSize = Enum.AutomaticSize.X -- Tự co chiều rộng tiêu đề
+        tl.AutomaticSize = Enum.AutomaticSize.X
         tl.Text = title
         tl.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
         tl.BackgroundTransparency = 1
@@ -1571,9 +1579,9 @@ function NoirUI:CreateWindow(settings)
         tl.TextXAlignment = Enum.TextXAlignment.Left
         tl.LayoutOrder = 2
 
-        -- === Message (Nội dung dài - Tự co giãn chiều rộng và cao) ===
-        local ml = Instance.new("TextLabel", n)
-        ml.Size = UDim2.new(1, 0, 0, 0)
+        -- === Message (Nội dung dài - Fix Padding) ===
+        local ml = Instance.new("TextLabel", Wrapper)
+        ml.Size = UDim2.new(1, -24, 0, 0) -- Trừ đi padding 2 bên (12+12)
         ml.AutomaticSize = Enum.AutomaticSize.Y
         ml.Text = message
         ml.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
@@ -1585,14 +1593,13 @@ function NoirUI:CreateWindow(settings)
         ml.TextSize = 11
         ml.LayoutOrder = 2
         
-        -- === Thanh tiến trình (Luôn dính đáy) ===
-        local progressBg = Instance.new("Frame", n)
-        progressBg.Size = UDim2.new(1, 0, 0, 2) -- Mỏng hơn
+        -- === Thanh tiến trình (Dùng Wrapper để né UIListLayout) ===
+        local progressBg = Instance.new("Frame", n) -- Đặt trực tiếp vào n (phía ngoài Wrapper)
+        progressBg.Size = UDim2.new(1, 0, 0, 2)
         progressBg.Position = UDim2.new(0, 0, 1, 0)
         progressBg.AnchorPoint = Vector2.new(0, 1)
         progressBg.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
         progressBg.BackgroundTransparency = 0.5
-        progressBg.LayoutOrder = 999
         progressBg.ZIndex = 3
         Instance.new("UICorner", progressBg).CornerRadius = UDim.new(1, 0)
 
@@ -1610,16 +1617,19 @@ function NoirUI:CreateWindow(settings)
             Position = UDim2.new(1, 0, 0, 0)
         }):Play()
 
-        -- === Xử lý vị trí và khoảng cách giữa các Notify ===
+        -- === Xử lý vị trí và khoảng cách (Dùng Heartbeat để render chuẩn) ===
         table.insert(NoirUI.Notifications, 1, n)
 
-        -- Dời các thông báo cũ lên trên (Tính toán dựa trên chiều cao thực tế)
-        task.wait(0.05) -- Đợi UI render xong chiều cao thực tế
+        -- Đợi Roblox render xong chiều cao thực tế
+        RunService.Heartbeat:Wait()
+        RunService.Heartbeat:Wait()
+
+        -- Dời các thông báo cũ lên trên
+        local xOffset = NOTIFY_WIDTH + 20 -- Offset cố định để thẳng hàng
         for i, v in ipairs(NoirUI.Notifications) do
             if v and v.Parent then
                 local height = v.AbsoluteSize.Y
-                if height == 0 then height = 80 end -- Fallback nếu chưa kịp render
-                local xOffset = v.AbsoluteSize.X + 20 -- Khoảng cách lề phải
+                if height == 0 then height = 80 end -- Fallback an toàn
                 TweenService:Create(v, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     Position = UDim2.new(1, -xOffset, 0.8, -(i - 1) * (height + 10))
                 }):Play()
@@ -1627,9 +1637,8 @@ function NoirUI:CreateWindow(settings)
         end
 
         -- Animation xuất hiện cho Notify mới nhất
-        local xPos = n.AbsoluteSize.X + 20
         TweenService:Create(n, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Position = UDim2.new(1, -xPos, 0.8, 0)
+            Position = UDim2.new(1, -xOffset, 0.8, 0)
         }):Play()
 
         -- === Tự động đóng sau thời gian ===
