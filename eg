@@ -9,10 +9,10 @@
 	- Background System v2 (Gradient, Glassmorphism, Depth)
 	- Tab Indicator bên phải
 	- Auto select tab đầu tiên
-	- Loader mặc định bo-goc (12px)
+	- Loader nâng cấp: Mặc định bo-goc (bo góc 12), thanh dời xuống, chữ dời xuống
 	- Fix lỗi Float Button bị nhân đôi lớp đen khi mở lại
 	- Tự động Glass effect khi có ảnh nền
-	- Notify System v2 (Auto Height + Indicator + Smart Stack)
+	- Notify v2.0.2: Auto Height dựa trên TextService, Indicator bên trái (cách lề 6px), Reset Stack thông minh khi Notify biến mất
 ]]
 
 --Core
@@ -1492,7 +1492,7 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ==========================================================
-    -- NOTIFY V2.0.2 (PRODUCTION-READY - HOÀN THIỆN)
+    -- NOTIFY V2.0.2 (AUTO HEIGHT + SMART STACK RESET)
     -- ==========================================================
     function NoirUI:Notify(title, message, iconName, soundType, duration, progressColor)
         if soundType then
@@ -1504,104 +1504,95 @@ function NoirUI:CreateWindow(settings)
         local notifyDuration = duration or 4
         local progressColor = progressColor or (currentTheme and currentTheme.accent) or ACCENT
         local accentColor = progressColor
-
-        -- === CẤU HÌNH LẤY TỪ SETTINGS (Không Hardcode) ===
+        
+        -- === 1. CẤU HÌNH CỐT LÕI ===
         local WIDTH = settings.NotificationWidth or 260
-        local GAP = settings.NotificationGap or 10
-        local RIGHT_MARGIN = settings.RightMargin or 20
-        local INDICATOR_WIDTH = settings.IndicatorWidth or 4
-        local INDICATOR_MARGIN = settings.IndicatorMargin or 8 -- Cách lề trên/dưới
-
-        local PADDING_LEFT = settings.NotificationPadding or 16
-        local PADDING_RIGHT = settings.NotificationPadding or 16
-        local PADDING_TOP = settings.NotificationPadding or 8
-        local PADDING_BOTTOM = settings.NotificationPadding or 8
-
+        local PADDING_LEFT = 16
+        local PADDING_TOP = 8
+        local PADDING_BOTTOM = 8
         local TITLE_HEIGHT = 20
         local TEXT_SIZE = 11
         local PROGRESS_HEIGHT = 3
         local GAP_TITLE_MSG = 4
         local GAP_MSG_BAR = 6
-        local ICON_SIZE = 24
+        local INDICATOR_WIDTH = 4
+        local INDICATOR_EDGE_GAP = 6
 
-        -- === HÀM NỘI BỘ: CẬP NHẬT STACK (Dùng chung cho tạo và xóa) ===
-        local function UpdateNotificationStack()
-            local currentOffset = 0
-            -- Duyệt từng Notify một (Từ dưới lên trên hoặc từ cũ nhất đến mới nhất)
-            -- Mảng NoirUI.Notifications được tổ chức: [1] là mới nhất, [#] là cũ nhất.
-            -- Chúng ta dùng vòng lặp ipairs để duyệt từ 1 đến hết.
-            for i, v in ipairs(NoirUI.Notifications) do
-                local actualHeight = v.AbsoluteSize.Y
-                
-                -- CHỐT LỖI: Nếu chiều cao = 0 (chưa render xong), chờ render xong rồi mới tính stack
-                if actualHeight <= 0 then
-                    return
-                end
-
-                currentOffset = currentOffset + actualHeight + GAP
-                
-                TweenService:Create(v, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    Position = UDim2.new(1, -(WIDTH + RIGHT_MARGIN), 0.8, -(currentOffset))
-                }):Play()
-            end
-        end
-
-        -- === TẠO GIAO DIỆN NOTIFY ===
-        local n = Instance.new("Frame", ScreenGui)
-        n.Name = "NotifyFrame"
-        n.BackgroundColor3 = currentTheme.container or settings.NotificationBackgroundColor or Color3.fromRGB(14,14,18)
-        n.BackgroundTransparency = 0.1
-        n.BorderSizePixel = 0
-        n.ZIndex = 1
-        n.ClipsDescendants = true
-
-        -- Bo góc 8
-        Instance.new("UICorner", n).CornerRadius = UDim.new(0, 8)
-        SetupBackground(n, settings.NotificationBackground, n.BackgroundColor3, 0.1)
-        CreateSpringEffect(n, 0.05)
-
-        -- === INDICATOR (Dùng biến margin đã config, co dãn đều) ===
-        local Indicator = Instance.new("Frame", n)
-        Indicator.Name = "Indicator"
-        Indicator.Position = UDim2.new(0, INDICATOR_MARGIN, 0, INDICATOR_MARGIN)
-        Indicator.Size = UDim2.new(0, INDICATOR_WIDTH, 1, -(INDICATOR_MARGIN * 2))
-        Indicator.BackgroundColor3 = accentColor
-        Indicator.BackgroundTransparency = 0
-        Indicator.ZIndex = 0
-        Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1, 0)
-
-        -- === ICON (Lưu biến để fade riêng) ===
-        local Icon = nil
+        -- === 2. TÍNH TOÁN KHOẢNG TRỐNG CHO ICON ===
+        local textStartX = PADDING_LEFT
+        local iconSize = 0
+        local iconObj = nil
+        
         if iconName then
             local iconImg = ResolveIcon(iconName)
             if iconImg then
-                Icon = Instance.new("ImageLabel", n)
-                Icon.Size = UDim2.new(0, ICON_SIZE, 0, ICON_SIZE)
-                Icon.Position = UDim2.new(0, PADDING_LEFT, 0, PADDING_TOP) -- Thẳng hàng với Title
-                Icon.BackgroundTransparency = 1
-                Icon.Image = iconImg
-                Icon.ImageColor3 = progressColor
-                Icon.ZIndex = 2
-                Icon.BorderSizePixel = 0
+                iconSize = 24
+                textStartX = PADDING_LEFT + iconSize + 6
             end
         end
 
-        -- === TEXT (ĐƯỢC TÍNH TOÁN THEO TEXT SERVICE) ===
-        local textStartX = PADDING_LEFT + (Icon and ICON_SIZE + 6 or 0)
-        local availableTextWidth = WIDTH - textStartX - PADDING_RIGHT
-
+        -- === 3. TEXT SERVICE: TỰ ĐỘNG XUỐNG DÒNG & TĂNG Y ===
+        local availableTextWidth = WIDTH - textStartX - 16 -- 16 là padding bên phải
         local textService = game:GetService("TextService")
+        
         local textSizeResult = textService:GetTextSize(
             message,
             TEXT_SIZE,
             Enum.Font.Gotham,
             Vector2.new(availableTextWidth, 1000)
         )
-        local messageHeight = math.max(16, textSizeResult.Y + 2)
+        
+        -- Công thức Auto Height: Tối thiểu 16px cho 1 dòng. Nhiều dòng thì tăng lên.
+        local messageHeight = math.max(16, textSizeResult.Y + 2) 
 
-        -- Title
+        -- === 4. TÍNH TỔNG CHIỀU CAO NOTIFY ===
+        local totalHeight = PADDING_TOP + TITLE_HEIGHT + GAP_TITLE_MSG + messageHeight + GAP_MSG_BAR + PROGRESS_HEIGHT + PADDING_BOTTOM
+
+        -- === TẠO GIAO DIỆN ===
+        local n = Instance.new("Frame", ScreenGui)
+        n.Size = UDim2.new(0, WIDTH, 0, totalHeight)
+        n.Position = UDim2.new(1, 20, 0.8, 0)
+        n.BackgroundColor3 = currentTheme.container or settings.NotificationBackgroundColor or Color3.fromRGB(14,14,18)
+        n.BackgroundTransparency = 0.1
+        n.BorderSizePixel = 0 
+        n.ZIndex = 1
+        n.ClipsDescendants = true
+
+        local notifCorner = Instance.new("UICorner", n)
+        notifCorner.CornerRadius = UDim.new(0, 8)
+
+        SetupBackground(n, settings.NotificationBackground, n.BackgroundColor3, 0.1)
+        CreateSpringEffect(n, 0.05)
+
+        -- === INDICATOR ===
+        local Indicator = Instance.new("Frame", n)
+        Indicator.Name = "Indicator"
+        Indicator.Position = UDim2.new(0, INDICATOR_EDGE_GAP, 0, INDICATOR_EDGE_GAP)
+        Indicator.Size = UDim2.new(0, INDICATOR_WIDTH, 1, -(INDICATOR_EDGE_GAP * 2))
+        Indicator.BackgroundColor3 = accentColor
+        Indicator.BackgroundTransparency = 0
+        Indicator.ZIndex = 0
+        Instance.new("UICorner", Indicator).CornerRadius = UDim.new(0, 8)
+
+        -- === ICON ===
+        if iconName then
+            local iconImg = ResolveIcon(iconName)
+            if iconImg then
+                local centerY = PADDING_TOP + (TITLE_HEIGHT + GAP_TITLE_MSG + messageHeight) / 2 - 12 
+                iconObj = Instance.new("ImageLabel", n)
+                iconObj.Size = UDim2.new(0, 24, 0, 24)
+                iconObj.Position = UDim2.new(0, PADDING_LEFT, 0, centerY)
+                iconObj.BackgroundTransparency = 1
+                iconObj.Image = iconImg
+                iconObj.ImageColor3 = progressColor
+                iconObj.ZIndex = 2
+                iconObj.BorderSizePixel = 0
+            end
+        end
+
+        -- === TITLE ===
         local tl = Instance.new("TextLabel", n)
-        tl.Size = UDim2.new(1, -(textStartX + PADDING_RIGHT), 0, TITLE_HEIGHT)
+        tl.Size = UDim2.new(1, -(textStartX + 16), 0, TITLE_HEIGHT)
         tl.Position = UDim2.new(0, textStartX, 0, PADDING_TOP)
         tl.Text = title
         tl.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
@@ -1612,25 +1603,25 @@ function NoirUI:CreateWindow(settings)
         tl.TextXAlignment = Enum.TextXAlignment.Left
         tl.ZIndex = 2
 
-        -- Message
+        -- === MESSAGE (TỰ ĐỘNG CO DÃN Y Ở ĐÂY) ===
         local ml = Instance.new("TextLabel", n)
-        ml.Size = UDim2.new(1, -(textStartX + PADDING_RIGHT), 0, messageHeight)
+        ml.Size = UDim2.new(1, -(textStartX + 16), 0, messageHeight)
         ml.Position = UDim2.new(0, textStartX, 0, PADDING_TOP + TITLE_HEIGHT + GAP_TITLE_MSG)
         ml.Text = message
         ml.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
         ml.BackgroundTransparency = 1
         ml.BorderSizePixel = 0
-        ml.TextWrapped = true
+        ml.TextWrapped = true -- BẮT BUỘC: Tự động xuống dòng
         ml.TextXAlignment = Enum.TextXAlignment.Left
         ml.TextYAlignment = Enum.TextYAlignment.Top
         ml.Font = Enum.Font.Gotham
         ml.TextSize = TEXT_SIZE
         ml.ZIndex = 2
 
-        -- === THANH TIẾN TRÌNH ===
+        -- === PROGRESS BAR ===
         local progressBg = Instance.new("Frame", n)
-        progressBg.Size = UDim2.new(1, -PADDING_LEFT - PADDING_RIGHT, 0, PROGRESS_HEIGHT)
-        progressBg.Position = UDim2.new(0, PADDING_LEFT, 1, -(PADDING_BOTTOM + 2))
+        progressBg.Size = UDim2.new(1, -16, 0, PROGRESS_HEIGHT)
+        progressBg.Position = UDim2.new(0, 8, 1, -(PADDING_BOTTOM + 2))
         progressBg.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
         progressBg.BackgroundTransparency = 0.5
         progressBg.ZIndex = 3
@@ -1645,40 +1636,41 @@ function NoirUI:CreateWindow(settings)
         progressFill.BorderSizePixel = 0
         Instance.new("UICorner", progressFill).CornerRadius = UDim.new(1, 0)
 
-        -- Animation thanh tiến trình
         TweenService:Create(progressFill, TweenInfo.new(notifyDuration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
             Size = UDim2.new(0, 0, 1, 0),
             Position = UDim2.new(1, 0, 0, 0)
         }):Play()
 
-        -- === SET KÍCH THƯỚC & THÊM VÀO STACK (Delayed) ===
-        local totalHeight = PADDING_TOP + TITLE_HEIGHT + GAP_TITLE_MSG + messageHeight + GAP_MSG_BAR + PROGRESS_HEIGHT + PADDING_BOTTOM
-        n.Size = UDim2.new(0, WIDTH, 0, totalHeight)
+        -- === STACK THÔNG MINH ===
+        local stackGap = 10
+        local currentStackOffset = 0
         
+        -- Đẩy các thông báo cũ lên
+        for i, v in ipairs(NoirUI.Notifications) do
+            local actualHeight = v.AbsoluteSize.Y
+            if actualHeight == 0 then actualHeight = totalHeight end
+            currentStackOffset = currentStackOffset + actualHeight + stackGap
+            
+            TweenService:Create(v, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Position = UDim2.new(1, -(WIDTH + 20), 0.8, -(currentStackOffset))
+            }):Play()
+        end
+
+        table.insert(NoirUI.Notifications, 1, n)
+
         -- Animation xuất hiện
-        local rightMargin = RIGHT_MARGIN
+        local rightMargin = 20
         TweenService:Create(n, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
             Position = UDim2.new(1, -(WIDTH + rightMargin), 0.8, 0)
         }):Play()
 
-        table.insert(NoirUI.Notifications, 1, n)
-
-        -- === SỬA LỖI STACK: CHỜ NOTIFY RENDER XONG MỚI UPDATE ===
-        task.spawn(function()
-            repeat
-                task.wait()
-            until n.AbsoluteSize.Y > 0
-            UpdateNotificationStack()
-        end)
-
-        -- === ĐÓNG NOTIFY & DỌN DẸP ===
+        -- === TỰ ĐỘNG ĐÓNG VÀ RESET STACK ===
         task.spawn(function()
             task.wait(notifyDuration)
             if n and n.Parent then
-                -- Fade out
                 local tweenInfoOut = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
                 local frameTween = TweenService:Create(n, tweenInfoOut, {
-                    Position = UDim2.new(1, rightMargin, n.Position.Y.Scale, n.Position.Y.Offset),
+                    Position = UDim2.new(1, 20, n.Position.Y.Scale, n.Position.Y.Offset),
                     BackgroundTransparency = 1
                 })
                 frameTween:Play()
@@ -1689,22 +1681,25 @@ function NoirUI:CreateWindow(settings)
                 TweenService:Create(progressBg, tweenInfoOut, { BackgroundTransparency = 1 }):Play()
                 TweenService:Create(progressFill, tweenInfoOut, { BackgroundTransparency = 1 }):Play()
                 
-                if Icon then
-                    TweenService:Create(Icon, tweenInfoOut, { ImageTransparency = 1 }):Play()
-                end
+                if iconObj then TweenService:Create(iconObj, tweenInfoOut, { ImageTransparency = 1 }):Play() end
 
                 frameTween.Completed:Wait()
                 
-                -- Xóa khỏi bộ nhớ
+                -- Xóa khỏi danh sách
                 for i, v in ipairs(NoirUI.Notifications) do
-                    if v == n then
-                        table.remove(NoirUI.Notifications, i)
-                        break
-                    end
+                    if v == n then table.remove(NoirUI.Notifications, i) break end
                 end
                 
-                -- Reset lại Stack
-                UpdateNotificationStack()
+                -- RESET TOÀN BỘ STACK (Dồn các thông báo còn lại xuống dưới)
+                local resetOffset = 0
+                for i, v in ipairs(NoirUI.Notifications) do
+                    local h = v.AbsoluteSize.Y
+                    resetOffset = resetOffset + h + stackGap
+                    TweenService:Create(v, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Position = UDim2.new(1, -(WIDTH + 20), 0.8, -(resetOffset))
+                    }):Play()
+                end
+
                 n:Destroy()
             end
         end)
@@ -2253,8 +2248,7 @@ function NoirUI:CreateWindow(settings)
             title.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
             title.TextTransparency = 0
             title.Font = "GothamBold"
-            title.TextSize = 13
-            title.BackgroundTransparency = 1
+            title.TextSize = 13            title.BackgroundTransparency = 1
             title.TextXAlignment = "Left"
             
             local content = Instance.new("TextLabel", f)
@@ -2903,8 +2897,7 @@ function NoirUI:CreateWindow(settings)
                     optLbl.Text = option
                     optLbl.TextColor3 = isSel and ACCENT or currentTheme.text or Color3.fromRGB(245,245,250)
                     optLbl.Font = "Gotham"
-                    optLbl.TextSize = 13
-                    optLbl.TextXAlignment = "Left"
+                    optLbl.TextSize = 13                    optLbl.TextXAlignment = "Left"
                     optLbl.ZIndex = 1000
                     
                     local check = Instance.new("TextLabel", optBtn)
