@@ -3897,66 +3897,70 @@ function NoirUI:CreateWindow(settings)
         end
         
         -- ==========================================================
-        -- ELEMENT: PRESET BUTTON (Mới thêm)
-        -- ==========================================================
-        function Tab:CreatePresetButton(opt)
-            local parent = Tab._currentSectionContent or ContentFrame
-            local presetData = opt.Presets or {} -- Mảng các giá trị: {"kyri", "midnight", ...}
-            local defaultValue = opt.Default or (presetData[1] or "")
-            local currentValue = defaultValue
-            local spacing = opt.Spacing or 10 -- Khoảng cách giữa các nút
-            
-            -- Callback khi người dùng chọn, trả về giá trị đã chọn
-            local callback = opt.Callback or function() end
-            
-            local function updatePreset(value)
-                currentValue = value
-                -- Cập nhật giao diện các nút
-                for _, child in pairs(container:GetChildren()) do
-                    if child:IsA("TextButton") then
-                        local isSelected = child.Name == value
-                        child.BackgroundColor3 = isSelected and ACCENT or (currentTheme.element or Color3.fromRGB(20,20,26))
-                        child.BackgroundTransparency = isSelected and 0.5 or (HAS_BG_IMAGE and 0.5 or 0)
-                        child.TextColor3 = isSelected and Color3.fromRGB(255,255,255) or (currentTheme.text or Color3.fromRGB(245,245,250))
-                        
-                        -- Đổi màu viền khi chọn
-                        local stroke = child:FindFirstChild("UIStroke")
-                        if stroke then
-                            stroke.Color = isSelected and Color3.new(1,1,1) or Color3.fromRGB(40,40,48)
-                            stroke.Transparency = isSelected and 0 or 1
-                        end
+		-- ELEMENT: PRESET BUTTON (Đã sửa lỗi nil + Nâng cấp kích thước)
+		-- ==========================================================
+		function Tab:CreatePresetButton(opt)
+        local parent = Tab._currentSectionContent or ContentFrame
+        local presetData = opt.Presets or {} -- Mảng các giá trị: {"kyri", "midnight", ...}
+        local defaultValue = opt.Default or (presetData[1] or "")
+        local currentValue = defaultValue
+        local spacing = opt.Spacing or 10 -- Khoảng cách giữa các nút
+    
+        -- Callback khi người dùng chọn, trả về giá trị đã chọn
+        local callback = opt.Callback or function() end
+
+        -- Tạo container trước
+        local container = Instance.new("Frame", parent)
+        container.Size = UDim2.new(0.95, 0, 0, 0)
+        container.AutomaticSize = Enum.AutomaticSize.Y
+        container.BackgroundTransparency = 1
+        container.LayoutOrder = GetO()
+    
+        local layout = Instance.new("UIListLayout", container)
+        layout.FillDirection = Enum.FillDirection.Horizontal
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Padding = UDim.new(0, spacing)
+        layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+        layout.Wraps = true -- Cho phép xuống dòng nếu quá nhiều nút
+    
+        local padding = Instance.new("UIPadding", container)
+        padding.PaddingLeft = UDim.new(0, 4)
+    
+        -- Hàm cập nhật giao diện (Khắc phục lỗi nil container)
+        local function updatePreset(value)
+            currentValue = value
+            -- Cập nhật giao diện các nút
+            for _, child in pairs(container:GetChildren()) do
+                if child:IsA("TextButton") then
+                    local isSelected = child.Name == value
+                    child.BackgroundColor3 = isSelected and ACCENT or (currentTheme.element or Color3.fromRGB(20,20,26))
+                    child.BackgroundTransparency = isSelected and 0.5 or (HAS_BG_IMAGE and 0.5 or 0)
+                    child.TextColor3 = isSelected and Color3.fromRGB(255,255,255) or (currentTheme.text or Color3.fromRGB(245,245,250))
+                    
+                    -- Đổi màu viền khi chọn
+                    local stroke = child:FindFirstChild("UIStroke")
+                    if stroke then
+                        stroke.Color = isSelected and Color3.new(1,1,1) or Color3.fromRGB(40,40,48)
+                        stroke.Transparency = isSelected and 0 or 1
+                        stroke.Thickness = isSelected and 2 or 1
                     end
                 end
-                callback(value)
             end
-            
-            local container = Instance.new("Frame", parent)
-            container.Size = UDim2.new(0.95, 0, 0, 0)
-            container.AutomaticSize = Enum.AutomaticSize.Y
-            container.BackgroundTransparency = 1
-            container.LayoutOrder = GetO()
-            
-            local layout = Instance.new("UIListLayout", container)
-            layout.FillDirection = Enum.FillDirection.Horizontal
-            layout.SortOrder = Enum.SortOrder.LayoutOrder
-            layout.Padding = UDim.new(0, spacing)
-            layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-            layout.Wraps = true -- Cho phép xuống dòng nếu quá nhiều nút
-            
-            local padding = Instance.new("UIPadding", container)
-            padding.PaddingLeft = UDim.new(0, 4)
-            
-            -- Tạo từng nút preset
+            callback(value)
+        end
+    
+        -- Hàm tạo các nút sau khi Container đã tồn tại
+        local function renderButtons()
             for _, value in ipairs(presetData) do
                 local btn = Instance.new("TextButton", container)
                 btn.Name = value
-                btn.Size = UDim2.new(0, 0, 0, 28)
+                btn.Size = UDim2.new(0, 0, 0, 36) -- Tăng kích thước nút lên 36px (to hơn)
                 btn.AutomaticSize = Enum.AutomaticSize.X -- Tự co giãn theo chữ
                 btn.BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26)
                 btn.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
                 btn.Text = "  " .. value .. "  "
                 btn.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
-                btn.TextSize = 11
+                btn.TextSize = 13 -- Tăng kích thước chữ lên 13
                 btn.Font = Enum.Font.GothamBold
                 btn.AutoButtonColor = false
                 btn.ZIndex = 2
@@ -3981,35 +3985,39 @@ function NoirUI:CreateWindow(settings)
                 end)
             end
             
-            -- Set giá trị mặc định ban đầu
+            -- Set giá trị mặc định ban đầu sau khi render xong
             updatePreset(defaultValue)
-            
-            -- === FLAG SYSTEM: Register Preset Button ===
-            if opt.FlagName then
-                local flagData = {
-                    Type = "Preset",
-                    GetValue = function() return currentValue end,
-                    SetValue = function(value)
-                        updatePreset(value)
-                    end,
-                    SetDefault = function()
-                        local def = opt.Default or (presetData[1] or "")
-                        flagData:SetValue(def)
-                    end
-                }
-                NoirUI:RegisterFlag(opt.FlagName, flagData)
-            end
-            
-            local api = {container = container}
-            function api:set(value)
-                updatePreset(value)
-            end
-            function api:get()
-                return currentValue
-            end
-            
-            return api
         end
+    
+        -- Gọi hàm render để tạo nút
+        renderButtons()
+        
+        -- === FLAG SYSTEM: Register Preset Button ===
+        if opt.FlagName then
+            local flagData = {
+                Type = "Preset",
+                GetValue = function() return currentValue end,
+                SetValue = function(value)
+                    updatePreset(value)
+                end,
+                SetDefault = function()
+                    local def = opt.Default or (presetData[1] or "")
+                    flagData:SetValue(def)
+                end
+            }
+            NoirUI:RegisterFlag(opt.FlagName, flagData)
+        end
+        
+        local api = {container = container}
+        function api:set(value)
+            updatePreset(value)
+        end
+        function api:get()
+            return currentValue
+        end
+        
+        return api
+    end
         
         function Tab:CreateCard(opt)
             local parent = Tab._currentSectionContent or ContentFrame
