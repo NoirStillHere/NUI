@@ -26,7 +26,8 @@
 	- Shine Effect V2: Hiệu ứng chữ chạy Gradient (Snags) dùng 2 lớp chữ (Không bao giờ bị tối chữ, chuẩn Discord/Apple)
 	- ShineEffect Toggle: Có thể bật/tắt hiệu ứng chữ qua settings (Mặc định tắt)
 	- Fix lỗi Float Button bị treo sau khi minimize/mở lại quá nhiều lần (Phân biệt rõ LastFloatPosition)
-	- User Settings Popup: Popup cài đặt khi click vào Avatar ở Sidebar (Tự động bật/tắt qua UserPopup = true)
+	- [NEW] Element CreateMusicPlayer: Giao diện player nhạc dạng thẻ (như hình trái)
+	- [NEW] Element CreateLyricPlayer: Giao diện player nhạc có sóng âm thanh và lời bài hát (như hình phải)
 ]]
 
 --Core
@@ -1774,362 +1775,6 @@ function NoirUI:CreateLoader(settings)
 end
 
 -- ==========================================================
--- USER SETTINGS POPUP (Tích hợp vào UI)
--- ==========================================================
-function NoirUI:CreateUserSettingsPopup(settings)
-    settings = settings or {}
-    settings.Parent = settings.Parent or ScreenGui
-    settings.AvatarButton = settings.AvatarButton or nil
-    settings.Username = settings.Username or LocalPlayer.DisplayName
-    settings.UserId = settings.UserId or LocalPlayer.UserId
-    settings.AccentColor = settings.AccentColor or ACCENT or Color3.fromRGB(138, 116, 249)
-    
-    -- Lấy Avatar tự động nếu không có
-    local profilePicture = settings.ProfilePicture
-    if not profilePicture then
-        pcall(function()
-            profilePicture = Players:GetUserThumbnailAsync(settings.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
-        end)
-    end
-    
-    local Popup = {
-        IsOpen = false,
-        AvatarButton = settings.AvatarButton,
-        Callbacks = {},
-    }
-    
-    -- Tạo Popup Frame
-    local Frame = Instance.new("Frame")
-    Frame.Size = UDim2.new(0, 220, 0, 0)
-    Frame.Position = UDim2.new(0, 0, 0, 0)
-    Frame.BackgroundColor3 = Color3.fromRGB(20, 22, 27)
-    Frame.BackgroundTransparency = 1
-    Frame.ClipsDescendants = true
-    Frame.ZIndex = 999
-    Frame.Parent = settings.Parent
-    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 10)
-    Instance.new("UIStroke", Frame).Color = Color3.fromRGB(45, 48, 58)
-    
-    -- Shadow (Dùng ImageLabel Vignette thay cho CreateShadow)
-    local Shadow = Instance.new("ImageLabel")
-    Shadow.Name = "Shadow"
-    Shadow.Size = UDim2.new(1, 0, 1, 0)
-    Shadow.Position = UDim2.new(0, 0, 0, 0)
-    Shadow.BackgroundTransparency = 1
-    Shadow.Image = "rbxassetid://18720640102"
-    Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    Shadow.ImageTransparency = 0.65
-    Shadow.ZIndex = 0
-    Shadow.ScaleType = Enum.ScaleType.Crop
-    Shadow.Parent = Frame
-    
-    -- Layout
-    local Layout = Instance.new("UIListLayout")
-    Layout.Padding = UDim.new(0, 0)
-    Layout.SortOrder = Enum.SortOrder.LayoutOrder
-    Layout.Parent = Frame
-    
-    -- ==========================================================
-    -- USER INFO HEADER
-    -- ==========================================================
-    local Header = Instance.new("Frame")
-    Header.Size = UDim2.new(1, 0, 0, 65)
-    Header.BackgroundColor3 = Color3.fromRGB(15, 17, 22)
-    Header.BackgroundTransparency = 0
-    Header.Parent = Frame
-    Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 10)
-    
-    -- Avatar
-    local avatar = Instance.new("ImageLabel")
-    avatar.Size = UDim2.new(0, 40, 0, 40)
-    avatar.Position = UDim2.new(0, 10, 0.5, -20)
-    avatar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    avatar.BackgroundTransparency = 1
-    avatar.Image = profilePicture or "rbxassetid://6031094700"
-    avatar.Parent = Header
-    Instance.new("UICorner", avatar).CornerRadius = UDim.new(1, 0)
-    Instance.new("UIStroke", avatar).Color = settings.AccentColor
-    
-    -- Username
-    local username = Instance.new("TextLabel")
-    username.Size = UDim2.new(1, -60, 0, 20)
-    username.Position = UDim2.new(0, 58, 0, 10)
-    username.BackgroundTransparency = 1
-    username.Text = settings.Username
-    username.TextColor3 = Color3.fromRGB(245, 245, 250)
-    username.TextSize = 14
-    username.Font = Enum.Font.GothamBold
-    username.TextXAlignment = Enum.TextXAlignment.Left
-    username.Parent = Header
-    
-    -- User ID / Status
-    local userId = Instance.new("TextLabel")
-    userId.Size = UDim2.new(1, -60, 0, 15)
-    userId.Position = UDim2.new(0, 58, 0, 32)
-    userId.BackgroundTransparency = 1
-    userId.Text = "ID: " .. tostring(settings.UserId)
-    userId.TextColor3 = Color3.fromRGB(165, 165, 180)
-    userId.TextSize = 11
-    userId.Font = Enum.Font.Gotham
-    userId.TextXAlignment = Enum.TextXAlignment.Left
-    userId.Parent = Header
-    
-    -- ==========================================================
-    -- MENU ITEMS
-    -- ==========================================================
-    local function createMenuItem(parent, icon, text, callback, color)
-        local item = Instance.new("TextButton")
-        item.Size = UDim2.new(1, 0, 0, 32)
-        item.Position = UDim2.new(0, 0, 0, 0)
-        item.BackgroundColor3 = Color3.fromRGB(20, 22, 27)
-        item.BackgroundTransparency = 1
-        item.Text = ""
-        item.AutoButtonColor = false
-        item.Parent = parent
-        
-        -- Hover effect
-        item.MouseEnter:Connect(function()
-            TweenService:Create(item, TweenInfo.new(0.15), {
-                BackgroundTransparency = 0.2
-            }):Play()
-        end)
-        
-        item.MouseLeave:Connect(function()
-            TweenService:Create(item, TweenInfo.new(0.15), {
-                BackgroundTransparency = 1
-            }):Play()
-        end)
-        
-        -- Icon (Dùng TextLabel đơn giản vì có thể dùng emoji hoặc ký tự)
-        local iconLabel = Instance.new("TextLabel")
-        iconLabel.Size = UDim2.new(0, 25, 0, 25)
-        iconLabel.Position = UDim2.new(0, 8, 0.5, -12.5)
-        iconLabel.BackgroundTransparency = 1
-        iconLabel.Text = icon
-        iconLabel.TextColor3 = color or Color3.fromRGB(165, 165, 180)
-        iconLabel.TextSize = 16
-        iconLabel.Font = Enum.Font.GothamBold
-        iconLabel.Parent = item
-        
-        -- Text
-        local textLabel = Instance.new("TextLabel")
-        textLabel.Size = UDim2.new(1, -35, 1, 0)
-        textLabel.Position = UDim2.new(0, 38, 0, 0)
-        textLabel.BackgroundTransparency = 1
-        textLabel.Text = text
-        textLabel.TextColor3 = Color3.fromRGB(245, 245, 250)
-        textLabel.TextSize = 12
-        textLabel.Font = Enum.Font.Gotham
-        textLabel.TextXAlignment = Enum.TextXAlignment.Left
-        textLabel.Parent = item
-        
-        -- Click
-        item.MouseButton1Click:Connect(function()
-            if callback then callback() end
-            Popup:Close()
-        end)
-        
-        return item
-    end
-    
-    -- ==========================================================
-    -- DANH SÁCH MENU ITEMS
-    -- ==========================================================
-    local MenuItems = Instance.new("Frame")
-    MenuItems.Size = UDim2.new(1, 0, 0, 0)
-    MenuItems.BackgroundTransparency = 1
-    MenuItems.Parent = Frame
-    
-    local MenuLayout = Instance.new("UIListLayout")
-    MenuLayout.Padding = UDim.new(0, 0)
-    MenuLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    MenuLayout.Parent = MenuItems
-    
-    -- Divider
-    local function addDivider()
-        local div = Instance.new("Frame")
-        div.Size = UDim2.new(1, -10, 0, 1)
-        div.Position = UDim2.new(0, 5, 0, 0)
-        div.BackgroundColor3 = Color3.fromRGB(45, 48, 58)
-        div.BackgroundTransparency = 0.5
-        div.Parent = MenuItems
-        return div
-    end
-    
-    -- Các item mặc định
-    -- Profile
-    createMenuItem(MenuItems, "👤", "My Profile", function()
-        if Popup.Callbacks.profile then Popup.Callbacks.profile() end
-    end)
-    
-    -- Settings
-    createMenuItem(MenuItems, "⚙️", "Settings", function()
-        if Popup.Callbacks.settings then Popup.Callbacks.settings() end
-    end, Color3.fromRGB(52, 152, 219))
-    
-    addDivider()
-    
-    -- Config Manager
-    createMenuItem(MenuItems, "💾", "Config Manager", function()
-        if Popup.Callbacks.config then Popup.Callbacks.config() end
-    end, Color3.fromRGB(46, 204, 113))
-    
-    -- Keybinds
-    createMenuItem(MenuItems, "⌨️", "Keybinds", function()
-        if Popup.Callbacks.keybinds then Popup.Callbacks.keybinds() end
-    end, Color3.fromRGB(241, 196, 15))
-    
-    addDivider()
-    
-    -- About
-    createMenuItem(MenuItems, "ℹ️", "About", function()
-        if Popup.Callbacks.about then Popup.Callbacks.about() end
-    end, Color3.fromRGB(149, 165, 166))
-    
-    -- Logout / Unload
-    createMenuItem(MenuItems, "🚪", "Unload Script", function()
-        if Popup.Callbacks.logout then Popup.Callbacks.logout() end
-    end, Color3.fromRGB(231, 76, 60))
-    
-    -- ==========================================================
-    -- UPDATE SIZE
-    -- ==========================================================
-    local function updateSize()
-        task.wait()
-        local headerHeight = 65
-        local menuHeight = MenuLayout.AbsoluteContentSize.Y + 5
-        local totalHeight = headerHeight + menuHeight
-        
-        Frame.Size = UDim2.new(0, 220, 0, totalHeight)
-        MenuItems.Size = UDim2.new(1, 0, 0, menuHeight)
-    end
-    
-    MenuLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateSize)
-    
-    -- ==========================================================
-    -- POPUP API
-    -- ==========================================================
-    function Popup:Open()
-        if self.IsOpen then return end
-        self.IsOpen = true
-        
-        -- Tính vị trí
-        if self.AvatarButton then
-            local pos = self.AvatarButton.AbsolutePosition
-            local size = self.AvatarButton.AbsoluteSize
-            local screenSize = settings.Parent.AbsoluteSize or Vector2.new(1920, 1080)
-            
-            local x = pos.X + size.X / 2 - 110
-            local y = pos.Y + size.Y + 5
-            
-            -- Kiểm tra tràn màn hình
-            if x + 220 > screenSize.X then
-                x = screenSize.X - 225
-            end
-            if x < 0 then
-                x = 5
-            end
-            if y + Frame.Size.Y.Offset > screenSize.Y then
-                y = pos.Y - Frame.Size.Y.Offset - 5
-            end
-            
-            Frame.Position = UDim2.new(0, x, 0, y)
-        end
-        
-        -- Animation
-        Frame.BackgroundTransparency = 0
-        Shadow.ImageTransparency = 0.65 -- Hiện bóng
-        
-        -- Spring effect
-        Frame.Size = UDim2.new(0, 220, 0, 0)
-        TweenService:Create(Frame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 220, 0, Frame.Size.Y.Offset)
-        }):Play()
-    end
-    
-    function Popup:Close()
-        if not self.IsOpen then return end
-        self.IsOpen = false
-        
-        TweenService:Create(Frame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            Size = UDim2.new(0, 220, 0, 0),
-            BackgroundTransparency = 1
-        }):Play()
-        
-        Shadow.ImageTransparency = 1 -- Ẩn bóng
-        task.delay(0.2, function()
-            Frame.BackgroundTransparency = 1
-        end)
-    end
-    
-    function Popup:Toggle()
-        if self.IsOpen then
-            self:Close()
-        else
-            self:Open()
-        end
-    end
-    
-    function Popup:AddItem(icon, text, callback, color)
-        return createMenuItem(MenuItems, icon, text, callback, color)
-    end
-    
-    function Popup:AddDivider()
-        return addDivider()
-    end
-    
-    function Popup:On(event, callback)
-        self.Callbacks[event] = callback
-    end
-    
-    function Popup:SetUsername(name)
-        username.Text = name
-    end
-    
-    function Popup:SetAvatar(image)
-        avatar.Image = image
-    end
-    
-    function Popup:Destroy()
-        Frame:Destroy()
-    end
-    
-    -- ==========================================================
-    -- AUTO CLOSE KHI CLICK RA NGOÀI
-    -- ==========================================================
-    UIS.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or 
-           input.UserInputType == Enum.UserInputType.Touch then
-            if Popup.IsOpen then
-                local pos = input.Position
-                local framePos = Frame.AbsolutePosition
-                local frameSize = Frame.AbsoluteSize
-                
-                if pos.X < framePos.X or pos.X > framePos.X + frameSize.X or
-                   pos.Y < framePos.Y or pos.Y > framePos.Y + frameSize.Y then
-                    Popup:Close()
-                end
-            end
-        end
-    end)
-    
-    -- ==========================================================
-    -- GẮN VÀO AVATAR BUTTON
-    -- ==========================================================
-    if Popup.AvatarButton then
-        Popup.AvatarButton.MouseButton1Click:Connect(function()
-            Popup:Toggle()
-        end)
-    end
-    
-    updateSize()
-    Popup:Close()
-    
-    return Popup
-end
-
--- ==========================================================
 -- MAIN UI
 -- ==========================================================
 function NoirUI:CreateWindow(settings)
@@ -2546,20 +2191,6 @@ function NoirUI:CreateWindow(settings)
     Instance.new("UICorner", AI).CornerRadius = UDim.new(1,0)
     Instance.new("UIStroke", AI).Color = ACCENT
     
-    -- Tạo User Settings Popup nếu được bật
-    local UserPopup = nil
-    if settings.UserPopup == true then
-        UserPopup = NoirUI:CreateUserSettingsPopup({
-            Parent = ScreenGui,
-            AvatarButton = AI,
-            Username = LocalPlayer.DisplayName,
-            UserId = LocalPlayer.UserId,
-            AccentColor = ACCENT,
-            -- Bạn có thể set callback ở đây
-            -- On = function(event, cb) ... end
-        })
-    end
-    
     -- Content
     local Cont = Instance.new("Frame", Main)
     Cont.Size = UDim2.new(1, -125, 1, -50)
@@ -2961,7 +2592,7 @@ function NoirUI:CreateWindow(settings)
         Indicator.Name = "Indicator"
         Indicator.Parent = B
         Indicator.Size = UDim2.new(0, 3, 0, 0)
-        Indicator.Position = UDim2.new(1, -4, 0.5, 0)
+        Indicator.Position = UDim2.new(1, 0, 0.5, 0)
         Indicator.AnchorPoint = Vector2.new(1, 0.5)
         Indicator.BackgroundColor3 = ACCENT
         Indicator.BackgroundTransparency = 1
@@ -4412,7 +4043,7 @@ function NoirUI:CreateWindow(settings)
                         if stroke then
                             stroke.Color = isSelected and ACCENT or Color3.fromRGB(40,40,48) -- Viền Accent
                             stroke.Transparency = isSelected and 0.2 or 1 -- Hiện viền khi chọn
-                            stroke.Thickness = isSelected and 1.5 or 0 -- Độ dày viền
+                            stroke.Thickness = isSelected and 0.5 or 0 -- Độ dày viền
                         end
                     end
                 end
@@ -4424,7 +4055,7 @@ function NoirUI:CreateWindow(settings)
                 for _, value in ipairs(presetData) do
                     local btn = Instance.new("TextButton", container)
                     btn.Name = value
-                    btn.Size = UDim2.new(0, 0, 0, 32) -- Chiều cao vừa vặn 32
+                    btn.Size = UDim2.new(0, 0, 0, 40) -- Chiều cao vừa vặn 32
                     btn.AutomaticSize = Enum.AutomaticSize.X 
                     btn.BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26)
                     btn.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
@@ -5018,6 +4649,440 @@ function NoirUI:CreateWindow(settings)
             end
             
             return f
+        end
+
+        -- ==========================================================
+        -- [NEW] ELEMENT: MUSIC PLAYER (DẠNG THẺ - HÌNH TRÁI)
+        -- ==========================================================
+        function Tab:CreateMusicPlayer(opt)
+            -- opt: { Title, Artist, Cover, Duration, Controls (table callback) }
+            local parent = Tab._currentSectionContent or ContentFrame
+            local title = opt.Title or "Song title"
+            local artist = opt.Artist or "Singer name"
+            local cover = opt.Cover or "rbxassetid://6031094700" -- Ảnh bìa
+            local duration = opt.Duration or 100 -- Tổng thời gian (giây)
+            
+            -- Container chính
+            local card = Instance.new("Frame", parent)
+            card.Size = UDim2.new(0.95, 0, 0, 240) -- Chiều cao cố định cho đẹp
+            card.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
+            card.BackgroundTransparency = HAS_BG_IMAGE and 0.3 or 0
+            card.LayoutOrder = GetO()
+            Instance.new("UICorner", card).CornerRadius = UDim.new(0, 16)
+            card.Name = "MusicPlayer"
+            table.insert(Tab.Elements, card)
+            CreateSpringEffect(card, 0.05 * Tab.Count)
+
+            -- Layout cho các phần tử bên trong
+            local layout = Instance.new("UIListLayout", card)
+            layout.SortOrder = Enum.SortOrder.LayoutOrder
+            layout.Padding = UDim.new(0, 8)
+            layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+            local padding = Instance.new("UIPadding", card)
+            padding.PaddingTop = UDim.new(0, 12)
+            padding.PaddingBottom = UDim.new(0, 12)
+            padding.PaddingLeft = UDim.new(0, 12)
+            padding.PaddingRight = UDim.new(0, 12)
+
+            -- 1. Header: Icon nhạc & Trái tim
+            local header = Instance.new("Frame", card)
+            header.Size = UDim2.new(1, 0, 0, 24)
+            header.BackgroundTransparency = 1
+            header.LayoutOrder = 1
+
+            local icon = Instance.new("ImageLabel", header)
+            icon.Size = UDim2.new(0, 20, 0, 20)
+            icon.Position = UDim2.new(0, 0, 0.5, 0)
+            icon.AnchorPoint = Vector2.new(0, 0.5)
+            icon.BackgroundTransparency = 1
+            icon.Image = ResolveIcon("music-2")
+            icon.ImageColor3 = currentTheme.text
+
+            local heartBtn = Instance.new("ImageButton", header)
+            heartBtn.Size = UDim2.new(0, 20, 0, 20)
+            heartBtn.Position = UDim2.new(1, 0, 0.5, 0)
+            heartBtn.AnchorPoint = Vector2.new(1, 0.5)
+            heartBtn.BackgroundTransparency = 1
+            heartBtn.Image = ResolveIcon("heart")
+            heartBtn.ImageColor3 = currentTheme.subtext
+            heartBtn.AutoButtonColor = false
+
+            -- 2. Album Cover
+            local coverFrame = Instance.new("ImageLabel", card)
+            coverFrame.Size = UDim2.new(0, 100, 0, 100)
+            coverFrame.BackgroundColor3 = Color3.fromRGB(10,10,10)
+            coverFrame.LayoutOrder = 2
+            Instance.new("UICorner", coverFrame).CornerRadius = UDim.new(0, 8)
+            coverFrame.Image = ResolveIcon(cover) or cover
+            coverFrame.ScaleType = Enum.ScaleType.Fit
+
+            -- 3. Title & Artist
+            local info = Instance.new("Frame", card)
+            info.Size = UDim2.new(1, 0, 0, 40)
+            info.BackgroundTransparency = 1
+            info.LayoutOrder = 3
+
+            local titleLbl = Instance.new("TextLabel", info)
+            titleLbl.Size = UDim2.new(1, 0, 0, 20)
+            titleLbl.BackgroundTransparency = 1
+            titleLbl.Text = title
+            titleLbl.TextColor3 = currentTheme.text
+            titleLbl.Font = Enum.Font.GothamBold
+            titleLbl.TextSize = 14
+            titleLbl.TextXAlignment = Enum.TextXAlignment.Center
+
+            local artistLbl = Instance.new("TextLabel", info)
+            artistLbl.Size = UDim2.new(1, 0, 0, 16)
+            artistLbl.Position = UDim2.new(0, 0, 0, 22)
+            artistLbl.BackgroundTransparency = 1
+            artistLbl.Text = artist
+            artistLbl.TextColor3 = currentTheme.subtext
+            artistLbl.Font = Enum.Font.Gotham
+            artistLbl.TextSize = 11
+            artistLbl.TextXAlignment = Enum.TextXAlignment.Center
+
+            -- 4. Thanh trượt (Slider)
+            local sliderFrame = Instance.new("Frame", card)
+            sliderFrame.Size = UDim2.new(1, 0, 0, 30)
+            sliderFrame.BackgroundTransparency = 1
+            sliderFrame.LayoutOrder = 4
+
+            local track = Instance.new("Frame", sliderFrame)
+            track.Size = UDim2.new(0.8, 0, 0, 4)
+            track.Position = UDim2.new(0.1, 0, 0.5, 0)
+            track.AnchorPoint = Vector2.new(0, 0.5)
+            track.BackgroundColor3 = Color3.fromRGB(50,50,60)
+            Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
+
+            local fill = Instance.new("Frame", track)
+            fill.Size = UDim2.new(0, 0, 1, 0)
+            fill.BackgroundColor3 = ACCENT
+            Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+
+            local knob = Instance.new("Frame", track)
+            knob.Size = UDim2.new(0, 12, 0, 12)
+            knob.Position = UDim2.new(0, 0, 0.5, 0)
+            knob.AnchorPoint = Vector2.new(0.5, 0.5)
+            knob.BackgroundColor3 = Color3.fromRGB(15,15,15)
+            Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+
+            local currentTime = Instance.new("TextLabel", sliderFrame)
+            currentTime.Size = UDim2.new(0, 40, 0, 14)
+            currentTime.Position = UDim2.new(0, 0, 0.5, 0)
+            currentTime.AnchorPoint = Vector2.new(0, 0.5)
+            currentTime.BackgroundTransparency = 1
+            currentTime.Text = "0:00"
+            currentTime.TextColor3 = currentTheme.subtext
+            currentTime.TextSize = 10
+            currentTime.Font = Enum.Font.Gotham
+
+            local totalTime = Instance.new("TextLabel", sliderFrame)
+            totalTime.Size = UDim2.new(0, 40, 0, 14)
+            totalTime.Position = UDim2.new(1, 0, 0.5, 0)
+            totalTime.AnchorPoint = Vector2.new(1, 0.5)
+            totalTime.BackgroundTransparency = 1
+            totalTime.Text = string.format("%d:%02d", math.floor(duration/60), duration%60)
+            totalTime.TextColor3 = currentTheme.subtext
+            totalTime.TextSize = 10
+            totalTime.Font = Enum.Font.Gotham
+
+            -- 5. Controls (Play/Pause, Prev, Next, Shuffle, Loop)
+            local controls = Instance.new("Frame", card)
+            controls.Size = UDim2.new(1, 0, 0, 40)
+            controls.BackgroundTransparency = 1
+            controls.LayoutOrder = 5
+
+            local controlsLayout = Instance.new("UIListLayout", controls)
+            controlsLayout.FillDirection = Enum.FillDirection.Horizontal
+            controlsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            controlsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            controlsLayout.Padding = UDim.new(0, 16)
+
+            local function MakeControlBtn(iconName, callback)
+                local btn = Instance.new("ImageButton", controls)
+                btn.Size = UDim2.new(0, 24, 0, 24)
+                btn.BackgroundTransparency = 1
+                btn.Image = ResolveIcon(iconName)
+                btn.ImageColor3 = currentTheme.text
+                btn.AutoButtonColor = false
+                btn.MouseButton1Click:Connect(function()
+                    PlaySound("Click")
+                    CreateClickScaleEffect(btn)
+                    if callback then callback() end
+                end)
+                return btn
+            end
+
+            local shuffleBtn = MakeControlBtn("shuffle")
+            local prevBtn = MakeControlBtn("skip-back")
+            
+            local playBtn = Instance.new("ImageButton", controls)
+            playBtn.Size = UDim2.new(0, 44, 0, 44)
+            playBtn.BackgroundColor3 = Color3.fromRGB(15,15,15)
+            playBtn.BackgroundTransparency = 0.2
+            playBtn.Image = ResolveIcon("play-circle")
+            playBtn.ImageColor3 = currentTheme.text
+            playBtn.AutoButtonColor = false
+            Instance.new("UICorner", playBtn).CornerRadius = UDim.new(1, 0)
+            playBtn.MouseButton1Click:Connect(function()
+                PlaySound("Click")
+                CreateClickScaleEffect(playBtn)
+                if opt.Controls and opt.Controls.OnPlay then opt.Controls.OnPlay() end
+            end)
+
+            local nextBtn = MakeControlBtn("skip-forward")
+            local loopBtn = MakeControlBtn("repeat")
+
+            -- API trả về để điều khiển bên ngoài
+            local api = {
+                UpdateProgress = function(current)
+                    local percent = math.clamp(current / duration, 0, 1)
+                    fill.Size = UDim2.new(percent, 0, 1, 0)
+                    knob.Position = UDim2.new(percent, 0, 0.5, 0)
+                    currentTime.Text = string.format("%d:%02d", math.floor(current/60), current%60)
+                end,
+                TogglePlay = function(isPlaying)
+                    playBtn.Image = ResolveIcon(isPlaying and "pause-circle" or "play-circle")
+                end,
+                SetCover = function(newCover)
+                    coverFrame.Image = ResolveIcon(newCover) or newCover
+                end,
+                SetTitle = function(newTitle)
+                    titleLbl.Text = newTitle
+                end,
+                SetArtist = function(newArtist)
+                    artistLbl.Text = newArtist
+                end
+            }
+            return api
+        end
+
+        -- ==========================================================
+        -- [NEW] ELEMENT: LYRIC PLAYER (DẠNG SÓNG & LỜI - HÌNH PHẢI)
+        -- ==========================================================
+        function Tab:CreateLyricPlayer(opt)
+            -- opt: { Title, Artist, Lyrics (table string), Duration, Controls }
+            local parent = Tab._currentSectionContent or ContentFrame
+            local title = opt.Title or "Song title"
+            local artist = opt.Artist or "Singer name"
+            local lyrics = opt.Lyrics or {"Your lyric goes here", "Lyric line 2", "Lyric line 3"}
+            local duration = opt.Duration or 100
+
+            local card = Instance.new("Frame", parent)
+            card.Size = UDim2.new(0.95, 0, 0, 300)
+            card.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
+            card.BackgroundTransparency = HAS_BG_IMAGE and 0.3 or 0
+            card.LayoutOrder = GetO()
+            Instance.new("UICorner", card).CornerRadius = UDim.new(0, 16)
+            Instance.new("UIStroke", card).Color = Color3.fromRGB(40,40,48)
+            Instance.new("UIStroke", card).Thickness = 0.5
+            table.insert(Tab.Elements, card)
+            CreateSpringEffect(card, 0.05 * Tab.Count)
+
+            -- Layout
+            local padding = Instance.new("UIPadding", card)
+            padding.PaddingTop = UDim.new(0, 16)
+            padding.PaddingLeft = UDim.new(0, 16)
+            padding.PaddingRight = UDim.new(0, 16)
+
+            -- 1. Header: Title & Menu dots
+            local header = Instance.new("Frame", card)
+            header.Size = UDim2.new(1, 0, 0, 35)
+            header.BackgroundTransparency = 1
+
+            local titleLbl = Instance.new("TextLabel", header)
+            titleLbl.Size = UDim2.new(0.6, 0, 0, 18)
+            titleLbl.Position = UDim2.new(0, 0, 0, 0)
+            titleLbl.BackgroundTransparency = 1
+            titleLbl.Text = title
+            titleLbl.TextColor3 = currentTheme.text
+            titleLbl.Font = Enum.Font.GothamBold
+            titleLbl.TextSize = 14
+            titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+            local artistLbl = Instance.new("TextLabel", header)
+            artistLbl.Size = UDim2.new(0.6, 0, 0, 15)
+            artistLbl.Position = UDim2.new(0, 0, 0, 20)
+            artistLbl.BackgroundTransparency = 1
+            artistLbl.Text = artist
+            artistLbl.TextColor3 = currentTheme.subtext
+            artistLbl.Font = Enum.Font.Gotham
+            artistLbl.TextSize = 11
+            artistLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+            local menuBtn = Instance.new("ImageButton", header)
+            menuBtn.Size = UDim2.new(0, 20, 0, 20)
+            menuBtn.Position = UDim2.new(1, 0, 0.5, 0)
+            menuBtn.AnchorPoint = Vector2.new(1, 0.5)
+            menuBtn.BackgroundTransparency = 1
+            menuBtn.Image = ResolveIcon("more-vertical")
+            menuBtn.ImageColor3 = currentTheme.text
+            menuBtn.AutoButtonColor = false
+
+            -- 2. Lyrics Area
+            local lyricsFrame = Instance.new("ScrollingFrame", card)
+            lyricsFrame.Size = UDim2.new(1, 0, 0, 80)
+            lyricsFrame.Position = UDim2.new(0, 0, 0, 45)
+            lyricsFrame.BackgroundTransparency = 1
+            lyricsFrame.ScrollBarThickness = 0
+            lyricsFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+            lyricsFrame.BorderSizePixel = 0
+            lyricsFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+            local lyricsLayout = Instance.new("UIListLayout", lyricsFrame)
+            lyricsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            lyricsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            lyricsLayout.Padding = UDim.new(0, 4)
+
+            local lyricRefs = {}
+            for i, line in ipairs(lyrics) do
+                local lbl = Instance.new("TextLabel", lyricsFrame)
+                lbl.Size = UDim2.new(1, 0, 0, 18)
+                lbl.BackgroundTransparency = 1
+                lbl.Text = line
+                lbl.TextColor3 = Color3.fromRGB(120,120,130) -- Màu mờ
+                lbl.Font = Enum.Font.Gotham
+                lbl.TextSize = 13
+                lbl.TextXAlignment = Enum.TextXAlignment.Center
+                lbl.TextTransparency = 0.4
+                table.insert(lyricRefs, lbl)
+            end
+
+            -- 3. Waveform (Sóng âm thanh - Mô phỏng bằng UIGrid)
+            local waveform = Instance.new("Frame", card)
+            waveform.Size = UDim2.new(1, 0, 0, 30)
+            waveform.Position = UDim2.new(0, 0, 0, 130)
+            waveform.BackgroundTransparency = 1
+            waveform.ClipsDescendants = true
+
+            local grid = Instance.new("UIGridLayout", waveform)
+            grid.CellSize = UDim2.new(0, 4, 0.8, 0) -- Cột sóng
+            grid.SortOrder = Enum.SortOrder.LayoutOrder
+            grid.FillDirection = Enum.FillDirection.Horizontal
+
+            -- Tạo các cột sóng ngẫu nhiên
+            for i = 1, 40 do
+                local bar = Instance.new("Frame", waveform)
+                bar.BackgroundColor3 = currentTheme.subtext
+                bar.BackgroundTransparency = 0.5
+                bar.Size = UDim2.new(0, 4, 0, 0)
+                bar.AnchorPoint = Vector2.new(0.5, 1)
+                bar.Position = UDim2.new(0.5, 0, 1, 0)
+                Instance.new("UICorner", bar).CornerRadius = UDim.new(1, 0)
+                -- Tạo chiều cao ngẫu nhiên
+                local height = 10 + math.random(0, 20)
+                TweenService:Create(bar, TweenInfo.new(0.5 + math.random() * 0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, true), {
+                    Size = UDim2.new(0, 4, 0, height)
+                }):Play()
+            end
+
+            -- 4. Controls (Tương tự Music Player nhưng to hơn)
+            local controls = Instance.new("Frame", card)
+            controls.Size = UDim2.new(1, 0, 0, 60)
+            controls.Position = UDim2.new(0, 0, 0, 170)
+            controls.BackgroundTransparency = 1
+
+            -- Thanh thời gian
+            local timeInfo = Instance.new("Frame", controls)
+            timeInfo.Size = UDim2.new(1, 0, 0, 16)
+            timeInfo.BackgroundTransparency = 1
+
+            local currentTime = Instance.new("TextLabel", timeInfo)
+            currentTime.Size = UDim2.new(0, 40, 0, 14)
+            currentTime.Position = UDim2.new(0, 0, 0.5, 0)
+            currentTime.AnchorPoint = Vector2.new(0, 0.5)
+            currentTime.BackgroundTransparency = 1
+            currentTime.Text = "0:00"
+            currentTime.TextColor3 = currentTheme.text
+            currentTime.TextSize = 11
+            currentTime.Font = Enum.Font.GothamBold
+
+            local totalTime = Instance.new("TextLabel", timeInfo)
+            totalTime.Size = UDim2.new(0, 40, 0, 14)
+            totalTime.Position = UDim2.new(1, 0, 0.5, 0)
+            totalTime.AnchorPoint = Vector2.new(1, 0.5)
+            totalTime.BackgroundTransparency = 1
+            totalTime.Text = string.format("%d:%02d", math.floor(duration/60), duration%60)
+            totalTime.TextColor3 = currentTheme.text
+            totalTime.TextSize = 11
+            totalTime.Font = Enum.Font.GothamBold
+
+            -- Nút điều khiển to
+            local ctrlBtns = Instance.new("Frame", controls)
+            ctrlBtns.Size = UDim2.new(1, 0, 0, 40)
+            ctrlBtns.Position = UDim2.new(0, 0, 0, 20)
+            ctrlBtns.BackgroundTransparency = 1
+
+            local ctrlLayout = Instance.new("UIListLayout", ctrlBtns)
+            ctrlLayout.FillDirection = Enum.FillDirection.Horizontal
+            ctrlLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            ctrlLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            ctrlLayout.Padding = UDim.new(0, 16)
+
+            local function MakeBigBtn(iconName, callback)
+                local btn = Instance.new("ImageButton", ctrlBtns)
+                btn.Size = UDim2.new(0, 20, 0, 20)
+                btn.BackgroundTransparency = 1
+                btn.Image = ResolveIcon(iconName)
+                btn.ImageColor3 = currentTheme.text
+                btn.AutoButtonColor = false
+                btn.MouseButton1Click:Connect(function()
+                    PlaySound("Click")
+                    CreateClickScaleEffect(btn)
+                    if callback then callback() end
+                end)
+                return btn
+            end
+
+            local prevBtn = MakeBigBtn("skip-back")
+            
+            local playBtn = Instance.new("ImageButton", ctrlBtns)
+            playBtn.Size = UDim2.new(0, 46, 0, 46)
+            playBtn.BackgroundColor3 = Color3.fromRGB(15,15,15)
+            playBtn.BackgroundTransparency = 0.2
+            playBtn.Image = ResolveIcon("play-circle")
+            playBtn.ImageColor3 = currentTheme.text
+            playBtn.AutoButtonColor = false
+            Instance.new("UICorner", playBtn).CornerRadius = UDim.new(1, 0)
+            playBtn.MouseButton1Click:Connect(function()
+                PlaySound("Click")
+                CreateClickScaleEffect(playBtn)
+                if opt.Controls and opt.Controls.OnPlay then opt.Controls.OnPlay() end
+            end)
+
+            local nextBtn = MakeBigBtn("skip-forward")
+
+            -- API
+            local api = {
+                UpdateProgress = function(current)
+                    currentTime.Text = string.format("%d:%02d", math.floor(current/60), current%60)
+                end,
+                TogglePlay = function(isPlaying)
+                    playBtn.Image = ResolveIcon(isPlaying and "pause-circle" or "play-circle")
+                end,
+                HighlightLyric = function(index)
+                    for i, lbl in ipairs(lyricRefs) do
+                        if i == index then
+                            lbl.TextColor3 = currentTheme.text
+                            lbl.TextTransparency = 0
+                            lbl.TextSize = 14
+                            lbl.Font = Enum.Font.GothamBold
+                        else
+                            lbl.TextColor3 = Color3.fromRGB(120,120,130)
+                            lbl.TextTransparency = 0.4
+                            lbl.TextSize = 13
+                            lbl.Font = Enum.Font.Gotham
+                        end
+                    end
+                end,
+                SetLyrics = function(newLyrics)
+                    for i, lbl in ipairs(lyricRefs) do
+                        if newLyrics[i] then lbl.Text = newLyrics[i] end
+                    end
+                end
+            }
+            return api
         end
         
         Tab._button = B
