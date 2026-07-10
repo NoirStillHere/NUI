@@ -20,6 +20,8 @@
 	- AutoSave: Tự động lưu Config theo thời gian (mặc định 60 giây)
 	- Hotkey System: Đăng ký phím tắt toàn cục
 	- Element Keybind: Tạo nút gán phím tắt trong UI, hỗ trợ Flag System
+	- Log System: Hiển thị thông báo dạng nhỏ gọn, tự động biến mất, hỗ trợ icon Lucide
+	- Toast Notification: Hệ thống thông báo nổi bật (Top-Right/Top-Left/Bottom-Right/Bottom-Left) với Auto Height, 4 loại (Info, Success, Warning, Error)
 ]]
 
 --Core
@@ -47,7 +49,9 @@ local NoirUI = {
         AccentColor = Color3.fromRGB(138, 116, 249)
     },
     Hotkeys = {},
-    HotkeyConnections = {}
+    HotkeyConnections = {},
+    __LogSystem = nil,
+    __ToastInstances = {}
 }
 
 local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
@@ -208,7 +212,7 @@ function NoirUI:GetThemeList()
 end
 
 -- ==========================================================
--- HOTKEY & KEYBIND SYSTEM (Mới thêm)
+-- HOTKEY & KEYBIND SYSTEM
 -- ==========================================================
 function NoirUI:RegisterHotkey(key, callback, description)
     if not key or not callback then return end
@@ -639,6 +643,319 @@ function NoirUI:CreateAutoSave(settings)
     end
     
     return AutoSave
+end
+
+-- ==========================================================
+-- LOG SYSTEM
+-- ==========================================================
+function NoirUI:CreateLogger()
+    if NoirUI.__LogSystem then
+        return NoirUI.__LogSystem
+    end
+    
+    local LogGui = Instance.new("ScreenGui")
+    LogGui.Name = "NoirUI_Logs"
+    LogGui.Parent = game:GetService("CoreGui")
+    LogGui.ResetOnSpawn = false
+    LogGui.IgnoreGuiInset = true
+    LogGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+    LogGui.DisplayOrder = 999999999
+    
+    local Log = Instance.new("Frame")
+    Log.Name = "LogContainer"
+    Log.Parent = LogGui
+    Log.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Log.BackgroundTransparency = 1
+    Log.Position = UDim2.new(0, 25, 0, 5)
+    Log.Size = UDim2.new(0, 25, 0, 25)
+    Log.ZIndex = 999
+    
+    local UIListLayout = Instance.new("UIListLayout")
+    UIListLayout.Parent = Log
+    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    UIListLayout.Padding = UDim.new(0, 12)
+    UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    
+    local Logging = {}
+    NoirUI.__LogSystem = Logging
+    
+    function Logging.new(icon, message, duration)
+        duration = duration or 3
+        message = message or "Log"
+        icon = icon or "info"
+        
+        local LogFrame = Instance.new("Frame")
+        local UICorner = Instance.new("UICorner")
+        local UIStroke = Instance.new("UIStroke")
+        local LogContent = Instance.new("TextLabel")
+        local IconLabel = Instance.new("ImageLabel")
+        local Shadow = Instance.new("ImageLabel")
+        
+        LogFrame.Name = "LogFrame"
+        LogFrame.Parent = Log
+        LogFrame.BackgroundColor3 = Color3.fromRGB(20, 22, 27)
+        LogFrame.BackgroundTransparency = 0.075
+        LogFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        LogFrame.BorderSizePixel = 0
+        LogFrame.ClipsDescendants = true
+        LogFrame.Size = UDim2.new(0, 0, 0, 20)
+        LogFrame.ZIndex = 130
+        
+        UICorner.CornerRadius = UDim.new(0, 4)
+        UICorner.Parent = LogFrame
+        
+        UIStroke.Transparency = 0.650
+        UIStroke.Color = Color3.fromRGB(45, 48, 58)
+        UIStroke.Parent = LogFrame
+        
+        Shadow.Parent = LogFrame
+        Shadow.Size = UDim2.new(1, 0, 1, 0)
+        Shadow.Position = UDim2.new(0, 0, 0, 0)
+        Shadow.BackgroundTransparency = 1
+        Shadow.Image = "rbxassetid://18720640102"
+        Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+        Shadow.ImageTransparency = 0.65
+        Shadow.ZIndex = 0
+        Shadow.ScaleType = Enum.ScaleType.Crop
+        
+        LogContent.Parent = LogFrame
+        LogContent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        LogContent.BackgroundTransparency = 1
+        LogContent.Position = UDim2.new(0, 25, 0, 2)
+        LogContent.Size = UDim2.new(0, 200, 0, 15)
+        LogContent.ZIndex = 132
+        LogContent.Font = Enum.Font.GothamBold
+        LogContent.Text = message
+        LogContent.TextColor3 = Color3.fromRGB(255, 255, 255)
+        LogContent.TextSize = 12
+        LogContent.TextTransparency = 0.25
+        LogContent.TextXAlignment = Enum.TextXAlignment.Left
+        
+        IconLabel.Parent = LogFrame
+        IconLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        IconLabel.BackgroundTransparency = 1
+        IconLabel.Position = UDim2.new(0, 7, 0, 3)
+        IconLabel.Size = UDim2.new(0, 15, 0, 15)
+        IconLabel.ZIndex = 133
+        IconLabel.Image = ResolveIcon(icon) or "rbxassetid://6031094667"
+        IconLabel.ImageColor3 = Color3.fromRGB(223, 223, 223)
+        IconLabel.ImageTransparency = 0.25
+        
+        local size = TextService:GetTextSize(LogContent.Text, LogContent.TextSize, LogContent.Font, Vector2.new(math.huge, math.huge))
+        LogFrame.Size = UDim2.new(0, size.X + 35, 0, 20)
+        
+        task.delay(duration, function()
+            TweenService:Create(LogFrame, TweenInfo.new(0.3), {
+                BackgroundTransparency = 1
+            }):Play()
+            TweenService:Create(LogContent, TweenInfo.new(0.3), {
+                TextTransparency = 1
+            }):Play()
+            TweenService:Create(IconLabel, TweenInfo.new(0.3), {
+                ImageTransparency = 1
+            }):Play()
+            task.wait(0.3)
+            LogFrame:Destroy()
+        end)
+    end
+    
+    return Logging
+end
+
+-- ==========================================================
+-- TOAST NOTIFICATION SYSTEM (Mới thêm)
+-- ==========================================================
+function NoirUI:CreateToast(settings)
+    settings = settings or {}
+    settings.Position = settings.Position or "top-right" -- top-right, top-left, bottom-right, bottom-left
+    settings.Duration = settings.Duration or 4
+    settings.Spacing = settings.Spacing or 12
+    settings.Width = settings.Width or 320
+    
+    -- Tạo một ScreenGui riêng để toast luôn nằm trên cùng
+    local ToastGui = Instance.new("ScreenGui")
+    ToastGui.Name = "NoirUI_Toasts"
+    ToastGui.Parent = game:GetService("CoreGui")
+    ToastGui.ResetOnSpawn = false
+    ToastGui.IgnoreGuiInset = true
+    ToastGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+    ToastGui.DisplayOrder = 999999998
+    
+    local Toasts = {}
+    local Container = Instance.new("Frame")
+    Container.Size = UDim2.new(0, settings.Width, 0, 0)
+    Container.BackgroundTransparency = 1
+    Container.Parent = ToastGui
+    Container.ZIndex = 1000
+    
+    -- Đặt vị trí container
+    local rightMargin = 20
+    local topMargin = 20
+    if settings.Position == "top-right" then
+        Container.AnchorPoint = Vector2.new(1, 0)
+        Container.Position = UDim2.new(1, -rightMargin, 0, topMargin)
+    elseif settings.Position == "top-left" then
+        Container.AnchorPoint = Vector2.new(0, 0)
+        Container.Position = UDim2.new(0, rightMargin, 0, topMargin)
+    elseif settings.Position == "bottom-right" then
+        Container.AnchorPoint = Vector2.new(1, 1)
+        Container.Position = UDim2.new(1, -rightMargin, 1, -topMargin)
+    elseif settings.Position == "bottom-left" then
+        Container.AnchorPoint = Vector2.new(0, 1)
+        Container.Position = UDim2.new(0, rightMargin, 1, -topMargin)
+    end
+    
+    -- Thêm padding nếu position là bottom
+    local Layout = Instance.new("UIListLayout")
+    Layout.Padding = UDim.new(0, settings.Spacing)
+    Layout.SortOrder = Enum.SortOrder.LayoutOrder
+    Layout.Parent = Container
+    
+    -- Nếu position là bottom, đảo ngược layout để toast mới nằm trên cùng
+    if settings.Position:find("bottom") then
+        Layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+    end
+    
+    local typeColors = {
+        info = { icon = "info", color = Color3.fromRGB(60, 160, 255) },
+        success = { icon = "check-circle", color = Color3.fromRGB(80, 220, 120) },
+        warning = { icon = "alert-triangle", color = Color3.fromRGB(255, 200, 50) },
+        error = { icon = "x-circle", color = Color3.fromRGB(255, 80, 80) }
+    }
+    
+    function Toasts:Show(message, type, duration)
+        duration = duration or settings.Duration
+        type = type or "info"
+        
+        local typeData = typeColors[type] or typeColors.info
+        local iconImage = ResolveIcon(typeData.icon) or "rbxassetid://6031094667"
+        local accentColor = typeData.color
+        
+        local Toast = Instance.new("Frame")
+        Toast.Size = UDim2.new(1, 0, 0, 0)
+        Toast.BackgroundColor3 = Color3.fromRGB(22, 24, 29)
+        Toast.BackgroundTransparency = 0.95
+        Toast.ClipsDescendants = true
+        Toast.Parent = Container
+        Toast.BorderSizePixel = 0
+        Instance.new("UICorner", Toast).CornerRadius = UDim.new(0, 8)
+        
+        -- Shadow (Vignette)
+        local Shadow = Instance.new("ImageLabel")
+        Shadow.Parent = Toast
+        Shadow.Size = UDim2.new(1, 0, 1, 0)
+        Shadow.Position = UDim2.new(0, 0, 0, 0)
+        Shadow.BackgroundTransparency = 1
+        Shadow.Image = "rbxassetid://18720640102"
+        Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+        Shadow.ImageTransparency = 0.7
+        Shadow.ZIndex = 0
+        Shadow.ScaleType = Enum.ScaleType.Crop
+        
+        -- Indicator bên trái
+        local Indicator = Instance.new("Frame")
+        Indicator.Size = UDim2.new(0, 4, 1, 0)
+        Indicator.Position = UDim2.new(0, 0, 0, 0)
+        Indicator.BackgroundColor3 = accentColor
+        Indicator.BackgroundTransparency = 0
+        Indicator.ZIndex = 1
+        Indicator.Parent = Toast
+        Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1, 0)
+        
+        -- Icon
+        local icon = Instance.new("ImageLabel")
+        icon.Size = UDim2.new(0, 20, 0, 20)
+        icon.Position = UDim2.new(0, 16, 0.5, -10)
+        icon.AnchorPoint = Vector2.new(0, 0.5)
+        icon.BackgroundTransparency = 1
+        icon.Image = iconImage
+        icon.ImageColor3 = accentColor
+        icon.ZIndex = 2
+        icon.Parent = Toast
+        
+        -- Message
+        local msg = Instance.new("TextLabel")
+        msg.Size = UDim2.new(1, -54, 0, 0)
+        msg.Position = UDim2.new(0, 46, 0, 10)
+        msg.BackgroundTransparency = 1
+        msg.Text = message
+        msg.TextColor3 = Color3.fromRGB(245, 245, 250)
+        msg.TextSize = 14
+        msg.Font = Enum.Font.Gotham
+        msg.TextWrapped = true
+        msg.TextXAlignment = Enum.TextXAlignment.Left
+        msg.TextYAlignment = Enum.TextYAlignment.Top
+        msg.ZIndex = 2
+        msg.Parent = Toast
+        
+        -- Close button
+        local close = Instance.new("TextButton")
+        close.Size = UDim2.new(0, 24, 0, 24)
+        close.Position = UDim2.new(1, -6, 0.5, 0)
+        close.AnchorPoint = Vector2.new(1, 0.5)
+        close.BackgroundTransparency = 1
+        close.Text = "×"
+        close.TextColor3 = Color3.fromRGB(165, 165, 180)
+        close.TextSize = 18
+        close.Font = Enum.Font.GothamBold
+        close.ZIndex = 2
+        close.Parent = Toast
+        
+        close.MouseButton1Click:Connect(function()
+            Toasts:Remove(Toast)
+        end)
+        
+        -- Auto Height tính bằng TextService
+        local function updateSize()
+            local textWidth = Toast.AbsoluteSize.X - 54
+            if textWidth <= 0 then textWidth = 200 end
+            local textSize = TextService:GetTextSize(msg.Text, msg.TextSize, msg.Font, Vector2.new(textWidth, math.huge))
+            local height = math.max(textSize.Y + 24, 48)
+            Toast.Size = UDim2.new(1, 0, 0, height)
+        end
+        
+        msg:GetPropertyChangedSignal("Text"):Connect(updateSize)
+        task.defer(updateSize)
+        
+        -- Auto remove
+        if duration > 0 then
+            task.delay(duration, function()
+                Toasts:Remove(Toast)
+            end)
+        end
+        
+        return Toast
+    end
+    
+    function Toasts:Remove(toast)
+        if not toast or not toast.Parent then return end
+        
+        TweenService:Create(toast, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 0, 0),
+            Position = UDim2.new(toast.Position.X.Scale, toast.Position.X.Offset, toast.Position.Y.Scale, toast.Position.Y.Offset + 20)
+        }):Play()
+        
+        task.delay(0.3, function()
+            toast:Destroy()
+        end)
+    end
+    
+    function Toasts:Clear()
+        for _, child in ipairs(Container:GetChildren()) do
+            if child:IsA("Frame") then
+                self:Remove(child)
+            end
+        end
+    end
+    
+    function Toasts:Destroy()
+        self:Clear()
+        Container:Destroy()
+        ToastGui:Destroy()
+    end
+    
+    return Toasts
 end
 
 -- ==========================================================
@@ -2132,8 +2449,7 @@ function NoirUI:CreateWindow(settings)
         ml.TextWrapped = true
         ml.TextXAlignment = Enum.TextXAlignment.Left
         ml.TextYAlignment = Enum.TextYAlignment.Top
-        ml.Font = Enum.Font.Gotham
-        ml.TextSize = TEXT_SIZE
+        ml.Font = Enum.Font.Gotham        ml.TextSize = TEXT_SIZE
         ml.ZIndex = 2
 
         local progressBg = Instance.new("Frame", n)
