@@ -25,7 +25,7 @@
 	- Element PresetButton: Nút chọn dạng KyriLib (Viền sáng màu Accent khi chọn), tự động xuống dòng, hỗ trợ Flag System
 	- Shine Effect V2: Hiệu ứng chữ chạy Gradient (Snags) dùng 2 lớp chữ (Không bao giờ bị tối chữ, chuẩn Discord/Apple)
 	- ShineEffect Toggle: Có thể bật/tắt hiệu ứng chữ qua settings (Mặc định tắt)
-	- Fix lỗi Float Button bị treo sau khi minimize/mở lại quá nhiều lần
+	- Fix lỗi Float Button bị treo sau khi minimize/mở lại quá nhiều lần (Phân biệt rõ LastFloatPosition)
 ]]
 
 --Core
@@ -1888,6 +1888,9 @@ function NoirUI:CreateWindow(settings)
     TBtn.AutoButtonColor = false
     TBtn.Visible = false
     
+    -- 📌 Biến ghi nhớ vị trí người dùng đã kéo
+    local LastFloatPosition = floatDefaultPos 
+    
     local floatCorner = Instance.new("UICorner", TBtn)
     floatCorner.CornerRadius = UDim.new(0, floatCornerRadius)
     local ClipGroup = Instance.new("Frame", TBtn)
@@ -1967,6 +1970,7 @@ function NoirUI:CreateWindow(settings)
     
     local savedFloatPos = floatDefaultPos
 
+    -- 📌 Chỉ cập nhật vị trí khi người dùng thả chuột
     local floatDragging = false
     local floatDragStart, floatStartPos, floatDragInput
     TBtn.InputBegan:Connect(function(input)
@@ -1989,8 +1993,11 @@ function NoirUI:CreateWindow(settings)
     end)
     UIS.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            floatDragging = false
-            savedFloatPos = TBtn.Position
+            if floatDragging then
+                -- ✅ CHỈ CẬP NHẬT Ở ĐÂY: Lưu vị trí hiện tại làm điểm neo
+                LastFloatPosition = TBtn.Position
+                floatDragging = false
+            end
         end
     end)
     
@@ -2109,7 +2116,7 @@ function NoirUI:CreateWindow(settings)
         end)
     end
 
-    -- Minimize
+    -- Minimize (Đã sửa logic)
     TopImageB("minus", Color3.fromRGB(255,200,50), function()
         PlaySound("Click")
         local startPos = Main.Position
@@ -2120,10 +2127,13 @@ function NoirUI:CreateWindow(settings)
         }):Play()
         task.wait(0.4)
         Main.Visible = false
+        
+        -- Hiện Float và di chuyển về vị trí đã lưu
         TBtn.Visible = true
-        TBtn.Position = UDim2.new(savedFloatPos.X.Scale, savedFloatPos.X.Offset, 1, 50)
+        -- Đặt xuống đáy trước, rồi tween lên vị trí LastFloatPosition
+        TBtn.Position = UDim2.new(LastFloatPosition.X.Scale, LastFloatPosition.X.Offset, 1, 50)
         TweenService:Create(TBtn, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Position = savedFloatPos
+            Position = LastFloatPosition
         }):Play()
     end)
 
@@ -2188,23 +2198,14 @@ function NoirUI:CreateWindow(settings)
     local contCorner = Instance.new("UICorner", Cont)
     contCorner.CornerRadius = UDim.new(0, 8)
 
-    -- Float toggle (ĐÃ SỬA LỖI TREO SAU NHIỀU LẦN THU NHỎ)
+    -- Float toggle (Mở lại UI - Đã sửa logic)
     TBtn.MouseButton1Click:Connect(function()
         PlaySound("Click")
         CreateClickScaleEffect(TBtn)
         
-        -- Lưu vị trí hiện tại của Float Button
-        local floatStartPos = TBtn.Position
-        
-        -- Ẩn Float Button ngay lập tức (Quan trọng: Tránh bị lỗi hiển thị)
+        -- Ẩn Float và đưa về dưới đáy (dùng LastFloatPosition để giữ nguyên trục X)
         TBtn.Visible = false
-        
-        -- Animation thu gọn Float Button
-        local floatTargetPos = UDim2.new(floatStartPos.X.Scale, floatStartPos.X.Offset, 1, 50)
-        TweenService:Create(TBtn, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            Position = floatTargetPos,
-            BackgroundTransparency = 1
-        }):Play()
+        TBtn.Position = UDim2.new(LastFloatPosition.X.Scale, LastFloatPosition.X.Offset, 1, 50)
         
         -- Hiện Main
         Main.Visible = true
