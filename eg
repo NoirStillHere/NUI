@@ -22,7 +22,7 @@
 	- Element Keybind: Tạo nút gán phím tắt trong UI, hỗ trợ Flag System
 	- Log System: Hiển thị thông báo dạng nhỏ gọn, tự động biến mất, hỗ trợ icon Lucide
 	- Element Image: Chèn ảnh hoặc icon lớn vào giao diện, hỗ trợ LucideIcons và Asset Cache
-	- Element PresetButton: Nút chọn dạng viên thuốc (pill) hoặc bo góc 10px, tự động xuống dòng, hỗ trợ Flag System
+	- Element PresetButton: Nút chọn dạng KyriLib (Viền sáng màu Accent khi chọn), tự động xuống dòng, hỗ trợ Flag System
 ]]
 
 --Core
@@ -3897,14 +3897,14 @@ function NoirUI:CreateWindow(settings)
         end
         
         -- ==========================================================
-        -- ELEMENT: PRESET BUTTON (Đã sửa lỗi, tăng kích thước, bo góc 10, stroke button)
+        -- ELEMENT: PRESET BUTTON (Style KyriLib - Viền sáng khi chọn)
         -- ==========================================================
         function Tab:CreatePresetButton(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local presetData = opt.Presets or {} 
             local defaultValue = opt.Default or (presetData[1] or "")
             local currentValue = defaultValue
-            local spacing = opt.Spacing or 8
+            local spacing = opt.Spacing or 6
             
             local callback = opt.Callback or function() end
 
@@ -3925,48 +3925,57 @@ function NoirUI:CreateWindow(settings)
             local padding = Instance.new("UIPadding", container)
             padding.PaddingLeft = UDim.new(0, 4)
             
-            -- Hàm cập nhật giao diện (Fix nil)
+            -- Hàm cập nhật giao diện (Style KyriLib)
             local function updatePreset(value)
                 currentValue = value
                 for _, child in pairs(container:GetChildren()) do
                     if child:IsA("TextButton") then
                         local isSelected = child.Name == value
                         
-                        child.BackgroundColor3 = isSelected and ACCENT or (currentTheme.element or Color3.fromRGB(20,20,26))
-                        child.BackgroundTransparency = isSelected and 0.3 or (HAS_BG_IMAGE and 0.5 or 0)
-                        child.TextColor3 = isSelected and Color3.fromRGB(255,255,255) or (currentTheme.text or Color3.fromRGB(245,245,250))
+                        -- 1. Nền: Giữ màu tối (element), hơi sáng lên 1 chút nếu được chọn
+                        child.BackgroundColor3 = isSelected and (currentTheme.hover or Color3.fromRGB(28,28,36)) or (currentTheme.element or Color3.fromRGB(20,20,26))
+                        child.BackgroundTransparency = isSelected and 0.5 or (HAS_BG_IMAGE and 0.5 or 0)
                         
-                        -- Đổi màu viền của Button khi chọn (Stroke Button)
+                        -- 2. Chữ: Xám mờ khi chưa chọn, trắng/sáng hơn khi chọn
+                        child.TextColor3 = isSelected and (currentTheme.text or Color3.fromRGB(245,245,250)) or (currentTheme.subtext or Color3.fromRGB(165,165,180))
+                        
+                        -- 3. Viền (Stroke): Mờ khi chưa chọn -> Sáng màu Accent khi chọn
                         local stroke = child:FindFirstChild("UIStroke")
                         if stroke then
-                            stroke.Color = isSelected and Color3.fromRGB(255,255,255) or Color3.fromRGB(40,40,48)
-                            stroke.Transparency = isSelected and 0 or 0.9
-                            stroke.Thickness = isSelected and 1.5 or 1
+                            stroke.Color = isSelected and ACCENT or Color3.fromRGB(40,40,48) -- Viền Accent
+                            stroke.Transparency = isSelected and 0.2 or 1 -- Hiện viền khi chọn
+                            stroke.Thickness = isSelected and 1.5 or 0 -- Độ dày viền
                         end
                     end
                 end
                 callback(value)
             end
 
-            -- Hàm render nút (Tăng kích thước y hệt Bom2dev)
+            -- Hàm render nút
             local function renderButtons()
                 for _, value in ipairs(presetData) do
                     local btn = Instance.new("TextButton", container)
                     btn.Name = value
-                    btn.Size = UDim2.new(0, 0, 0, 40) -- Chiều cao 40px (to bản)
+                    btn.Size = UDim2.new(0, 0, 0, 32) -- Chiều cao vừa vặn 32
                     btn.AutomaticSize = Enum.AutomaticSize.X 
                     btn.BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26)
                     btn.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
                     btn.Text = "  " .. value .. "  "
-                    btn.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
-                    btn.TextSize = 14 -- Chữ lớn hơn
+                    btn.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
+                    btn.TextSize = 12 
                     btn.Font = Enum.Font.GothamBold
                     btn.AutoButtonColor = false
                     btn.ZIndex = 2
                     
-                    -- Bo góc 10 (Như Bom2dev)
+                    -- Bo góc 8 (Như KyriLib)
                     local corner = Instance.new("UICorner", btn)
-                    corner.CornerRadius = UDim.new(0, 10)
+                    corner.CornerRadius = UDim.new(0, 8) 
+                    
+                    -- Viền ngoài (Mờ mặc định)
+                    local stroke = Instance.new("UIStroke", btn)
+                    stroke.Color = Color3.fromRGB(40,40,48)
+                    stroke.Transparency = 1 -- Mặc định ẩn viền
+                    stroke.Thickness = 1.5
                     
                     -- Đăng ký theme
                     NoirUI:RegisterThemeElement(btn, "BackgroundColor3", "element")
