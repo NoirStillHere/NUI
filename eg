@@ -4,24 +4,24 @@
 	Lua Scripter: NoirNF, Adono
 	Executor Compatibility Tester: Adono
 	Animation Engineer: Adono
-	Version: 2.0.6
+	Version: 2.0.5
 	Changelog: 
 	- Theme Manager mở rộng (Kết hợp bản cũ và mới)
 	- Background System v2 (Gradient, Glassmorphism, Depth)
-	- Tab Indicator sát cạnh phải (KyriLib style)
+	- Tab Indicator bên phải
 	- Auto select tab đầu tiên
 	- Loader nâng cấp: Mặc định bo-goc (bo góc 12), thanh dời xuống, chữ dời xuống
 	- Fix lỗi Float Button bị nhân đôi lớp đen khi mở lại
 	- Tự động Glass effect khi có ảnh nền
-	- Notify v2: Auto Height, Indicator trái, Progress Bar sát đáy, Reset Stack thông minh
+	- Notify v2: Auto Height, Indicator trái, Reset Stack thông minh
 	- Asset Cache: Tự động lưu ảnh vào bộ nhớ máy (getcustomasset)
-	- Flag System: Tự động đăng ký trạng thái các Toggle, Slider, Dropdown, ColorPicker, TextBox
+	- Flag System: Tự động đăng ký trạng thái các Toggle, Slider, Dropdown, ColorPicker, TextBox, Keybind, PresetButton
 	- Config Manager: Lưu và Load trạng thái UI ra file JSON
 	- AutoSave: Tự động lưu Config theo thời gian (mặc định 60 giây)
 	- Hotkey System: Đăng ký phím tắt toàn cục
 	- Element Keybind: Tạo nút gán phím tắt trong UI, hỗ trợ Flag System
-	- Log System: Hiển thị thông báo dạng nhỏ gọn, tự động biến mất
-	- Element PresetButton: Nút dạng viền/outline (KyriLib style) hỗ trợ Single/Multi-select
+	- Log System: Hiển thị thông báo dạng nhỏ gọn, tự động biến mất, hỗ trợ icon Lucide
+	- Element PresetButton: Nút chọn dạng viên thuốc (Pill shape), hỗ trợ 3 chế độ màu (Custom, Theme, Accent)
 ]]
 
 --Core
@@ -54,7 +54,7 @@ local NoirUI = {
 }
 
 local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
-local _version = "2.0.6"
+local _version = "2.0.5"
 local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================================
@@ -652,6 +652,7 @@ function NoirUI:CreateLogger()
         return NoirUI.__LogSystem
     end
     
+    -- Tạo một ScreenGui riêng cho Log để nó không bao giờ bị che khuất
     local LogGui = Instance.new("ScreenGui")
     LogGui.Name = "NoirUI_Logs"
     LogGui.Parent = game:GetService("CoreGui")
@@ -707,6 +708,7 @@ function NoirUI:CreateLogger()
         UIStroke.Color = Color3.fromRGB(45, 48, 58)
         UIStroke.Parent = LogFrame
         
+        -- Shadow giả lập (Vignette)
         Shadow.Parent = LogFrame
         Shadow.Size = UDim2.new(1, 0, 1, 0)
         Shadow.Position = UDim2.new(0, 0, 0, 0)
@@ -2140,7 +2142,7 @@ function NoirUI:CreateWindow(settings)
     end)
 
     -- ==========================================================
-    -- NOTIFY V2.0.6 (SÁT ĐÁY + INDICATOR)
+    -- NOTIFY V2.0.2
     -- ==========================================================
     function NoirUI:Notify(title, message, iconName, soundType, duration, progressColor)
         if soundType then
@@ -2156,7 +2158,7 @@ function NoirUI:CreateWindow(settings)
         local WIDTH = settings.NotificationWidth or 260
         local PADDING_LEFT = 16
         local PADDING_TOP = 8
-        local PADDING_BOTTOM = 0 -- Sát đáy
+        local PADDING_BOTTOM = 8
         local TITLE_HEIGHT = 20
         local TEXT_SIZE = 11
         local PROGRESS_HEIGHT = 3
@@ -2189,7 +2191,6 @@ function NoirUI:CreateWindow(settings)
         
         local messageHeight = math.max(16, textSizeResult.Y + 2) 
 
-        -- Tổng height đã trừ padding bottom = 0
         local totalHeight = PADDING_TOP + TITLE_HEIGHT + GAP_TITLE_MSG + messageHeight + GAP_MSG_BAR + PROGRESS_HEIGHT + PADDING_BOTTOM
 
         local n = Instance.new("Frame", ScreenGui)
@@ -2207,7 +2208,6 @@ function NoirUI:CreateWindow(settings)
         SetupBackground(n, settings.NotificationBackground, n.BackgroundColor3, 0.1)
         CreateSpringEffect(n, 0.05)
 
-        -- Indicator Notify (sát lề trái, cách lề 6px)
         local Indicator = Instance.new("Frame", n)
         Indicator.Name = "Indicator"
         Indicator.Position = UDim2.new(0, INDICATOR_EDGE_GAP, 0, INDICATOR_EDGE_GAP)
@@ -2258,19 +2258,14 @@ function NoirUI:CreateWindow(settings)
         ml.TextSize = TEXT_SIZE
         ml.ZIndex = 2
 
-        -- Progress Bar Sát Đáy
         local progressBg = Instance.new("Frame", n)
-        progressBg.Size = UDim2.new(1, 0, 0, PROGRESS_HEIGHT)
-        progressBg.Position = UDim2.new(0, 0, 1, 0) -- Dính sát đáy 100%
+        progressBg.Size = UDim2.new(1, -16, 0, PROGRESS_HEIGHT)
+        progressBg.Position = UDim2.new(0, 8, 1, -(PADDING_BOTTOM + 2))
         progressBg.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
         progressBg.BackgroundTransparency = 0.5
         progressBg.ZIndex = 3
         progressBg.BorderSizePixel = 0
-        -- Chỉ bo góc dưới để nó dính liền với đáy Notify, giống KyriLib
-        local progressCorner = Instance.new("UICorner", progressBg)
-        progressCorner.CornerRadius = UDim.new(0, 8)
-        -- Bo góc dưới trái và dưới phải
-        progressCorner.Enabled = true
+        Instance.new("UICorner", progressBg).CornerRadius = UDim.new(1, 0)
 
         local progressFill = Instance.new("Frame", progressBg)
         progressFill.Size = UDim2.new(1, 0, 1, 0)
@@ -2278,9 +2273,7 @@ function NoirUI:CreateWindow(settings)
         progressFill.BackgroundTransparency = 0
         progressFill.ZIndex = 4
         progressFill.BorderSizePixel = 0
-        local fillCorner = Instance.new("UICorner", progressFill)
-        fillCorner.CornerRadius = UDim.new(0, 8)
-        fillCorner.Enabled = true
+        Instance.new("UICorner", progressFill).CornerRadius = UDim.new(1, 0)
 
         TweenService:Create(progressFill, TweenInfo.new(notifyDuration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
             Size = UDim2.new(0, 0, 1, 0),
@@ -2491,7 +2484,7 @@ function NoirUI:CreateWindow(settings)
     end
 
     -- ==========================================================
-    -- CREATE TAB (AUTO SELECT + INDICATOR SÁT CẠNH PHẢI)
+    -- CREATE TAB (AUTO SELECT + INDICATOR)
     -- ==========================================================
     function Window:CreateTab(name, icon)
         local B = Instance.new("TextButton", TScroll)
@@ -2511,7 +2504,7 @@ function NoirUI:CreateWindow(settings)
         Indicator.Name = "Indicator"
         Indicator.Parent = B
         Indicator.Size = UDim2.new(0, 3, 0, 0)
-        Indicator.Position = UDim2.new(1, 0, 0.5, 0) -- Sát cạnh phải hoàn toàn
+        Indicator.Position = UDim2.new(1, -4, 0.5, 0)
         Indicator.AnchorPoint = Vector2.new(1, 0.5)
         Indicator.BackgroundColor3 = ACCENT
         Indicator.BackgroundTransparency = 1
@@ -3734,143 +3727,8 @@ function NoirUI:CreateWindow(settings)
         end
         
         -- ==========================================================
-        -- ELEMENT: PRESET BUTTON (KyriLib Style)
+        -- ELEMENT: KEYBIND
         -- ==========================================================
-        function Tab:CreatePresetButton(opt)
-            local parent = Tab._currentSectionContent or ContentFrame
-            local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
-            local isMulti = opt.MultiSelect == true
-            local selected = opt.Default or {}
-            if type(selected) == "string" then selected = {selected} end
-            local options = opt.Options or {}
-            
-            local f = Instance.new("Frame", parent)
-            f.Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 35)
-            f.BackgroundColor3 = Color3.fromRGB(255,255,255)
-            f.BackgroundTransparency = 1
-            f.LayoutOrder = GetO()
-            f.Name = opt.Name or "PresetButton"
-            local idx = #Tab.Elements + 1
-            table.insert(Tab.Elements, f)
-            searchData[idx] = opt.Name or ""
-            
-            local layout = Instance.new("UIListLayout", f)
-            layout.FillDirection = Enum.FillDirection.Horizontal
-            layout.SortOrder = Enum.SortOrder.LayoutOrder
-            layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-            layout.Padding = UDim.new(0, 8)
-            
-            if hasSubtitle then AddSubtitle(f, opt.Subtitle, 35) end
-            
-            local buttonRefs = {}
-            local function updateVisuals()
-                for _, ref in ipairs(buttonRefs) do
-                    local isSel = selected[ref.Text] == true
-                    ref.BackgroundColor3 = isSel and (currentTheme.accent or ACCENT) or Color3.fromRGB(255,255,255)
-                    ref.BackgroundTransparency = isSel and 0 or 1
-                    ref.TextColor3 = isSel and Color3.fromRGB(255,255,255) or (currentTheme.text or Color3.fromRGB(245,245,250))
-                    ref.UIStroke.Color = isSel and (currentTheme.accent or ACCENT) or (currentTheme.border or Color3.fromRGB(32,32,40))
-                end
-            end
-            
-            for _, option in ipairs(options) do
-                local btn = Instance.new("TextButton", f)
-                btn.Size = UDim2.new(0, 0, 0, 28)
-                btn.AutomaticSize = Enum.AutomaticSize.X
-                btn.BackgroundColor3 = Color3.fromRGB(255,255,255)
-                btn.BackgroundTransparency = 1
-                btn.Text = option
-                btn.TextColor3 = currentTheme.text or Color3.fromRGB(245,245,250)
-                btn.TextSize = 12
-                btn.Font = Enum.Font.GothamBold
-                btn.AutoButtonColor = false
-                btn.ZIndex = 2
-                btn.BorderSizePixel = 0
-                Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-                
-                local stroke = Instance.new("UIStroke", btn)
-                stroke.Color = currentTheme.border or Color3.fromRGB(32,32,40)
-                stroke.Thickness = 1
-                stroke.Transparency = 0.5
-                
-                table.insert(buttonRefs, {
-                    Button = btn,
-                    Text = option,
-                    BackgroundColor3 = btn.BackgroundColor3,
-                    TextColor3 = btn.TextColor3,
-                    UIStroke = stroke
-                })
-                
-                btn.MouseEnter:Connect(function()
-                    TweenService:Create(btn, TweenInfo.new(0.15), {
-                        BackgroundTransparency = 0.9
-                    }):Play()
-                end)
-                btn.MouseLeave:Connect(function()
-                    TweenService:Create(btn, TweenInfo.new(0.15), {
-                        BackgroundTransparency = selected[option] and 0 or 1
-                    }):Play()
-                end)
-                
-                btn.MouseButton1Click:Connect(function()
-                    PlaySound("Element")
-                    if isMulti then
-                        selected[option] = not selected[option]
-                    else
-                        for k in pairs(selected) do selected[k] = false end
-                        selected[option] = true
-                    end
-                    updateVisuals()
-                    if opt.Callback then
-                        if isMulti then
-                            local list = {}
-                            for k, v in pairs(selected) do if v then table.insert(list, k) end end
-                            opt.Callback(list)
-                        else
-                            opt.Callback(option)
-                        end
-                    end
-                end)
-            end
-            
-            updateVisuals()
-            
-            if opt.FlagName then
-                local flagData = {
-                    Type = isMulti and "MultiPreset" or "Preset",
-                    GetValue = function()
-                        if isMulti then
-                            local list = {}
-                            for k, v in pairs(selected) do if v then table.insert(list, k) end end
-                            return list
-                        else
-                            for k, v in pairs(selected) do if v then return k end end
-                            return nil
-                        end
-                    end,
-                    SetValue = function(value)
-                        for k in pairs(selected) do selected[k] = false end
-                        if isMulti then
-                            if type(value) == "table" then
-                                for _, v in ipairs(value) do selected[v] = true end
-                            end
-                        else
-                            selected[value] = true
-                        end
-                        updateVisuals()
-                    end,
-                    SetDefault = function()
-                        local def = opt.Default or {}
-                        if type(def) == "string" then def = {def} end
-                        for k in pairs(selected) do selected[k] = false end
-                        for _, v in ipairs(def) do selected[v] = true end
-                        updateVisuals()
-                    end
-                }
-                NoirUI:RegisterFlag(opt.FlagName, flagData)
-            end
-        end
-        
         function Tab:CreateKeybind(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -3952,6 +3810,7 @@ function NoirUI:CreateWindow(settings)
                     end
                 end)
                 
+                -- Auto timeout after 5 seconds
                 task.delay(5, function()
                     if isListening then
                         isListening = false
@@ -3961,6 +3820,7 @@ function NoirUI:CreateWindow(settings)
                 end)
             end)
             
+            -- === FLAG SYSTEM: Register Keybind ===
             if opt.FlagName then
                 local flagData = {
                     Type = "Keybind",
@@ -3976,6 +3836,142 @@ function NoirUI:CreateWindow(settings)
                 }
                 NoirUI:RegisterFlag(opt.FlagName, flagData)
             end
+        end
+        
+        -- ==========================================================
+        -- ELEMENT: PRESET BUTTON (Mới thêm)
+        -- ==========================================================
+        function Tab:CreatePresetButton(opt)
+            local parent = Tab._currentSectionContent or ContentFrame
+            
+            -- Cấu hình mặc định
+            local isSelected = opt.Default or false
+            local label = opt.Label or "Preset"
+            local colorType = opt.Color or "accent" -- Mặc định là accent nếu không set
+            local customColor = nil
+            
+            -- Xác định màu sắc dựa trên loại (1. Custom, 2. Theme, 3. Accent)
+            if type(colorType) == "string" then
+                if colorType == "theme" then
+                    -- Lấy màu từ Theme (Lấy màu element làm nền)
+                    customColor = currentTheme.element or Color3.fromRGB(20,20,26)
+                else
+                    -- Mặc định là accent (hoặc string "accent")
+                    customColor = ACCENT
+                end
+            else
+                -- Là Color3 (Tự đặt)
+                customColor = colorType
+            end
+
+            -- Màu Border (Viền), mặc định lấy border của theme, hoặc màu nút nếu là custom
+            local borderColor = opt.BorderColor or (type(colorType) ~= "string" and customColor or currentTheme.border)
+            
+            local b = Instance.new("TextButton", parent)
+            b.Size = UDim2.new(0, 90, 0, 34)
+            b.BackgroundColor3 = isSelected and customColor or currentTheme.element or Color3.fromRGB(20,20,26)
+            b.BackgroundTransparency = isSelected and 0.2 or 0
+            b.Text = "  " .. label
+            b.TextColor3 = isSelected and Color3.fromRGB(255,255,255) or currentTheme.subtext or Color3.fromRGB(165,165,180)
+            b.TextTransparency = 0
+            b.TextSize = 12
+            b.Font = "GothamBold"
+            b.AutoButtonColor = false
+            b.LayoutOrder = GetO()
+            b.Name = label .. "PresetButton"
+            Instance.new("UICorner", b).CornerRadius = UDim.new(1, 0) -- Bo tròn hoàn hảo (Pill shape)
+            
+            -- Chỉ thêm Stroke nếu nó chưa được chọn (để tránh bị đè màu)
+            local bStroke = Instance.new("UIStroke", b)
+            bStroke.Color = borderColor
+            bStroke.Transparency = 0.5
+            
+            local idx = #Tab.Elements + 1
+            table.insert(Tab.Elements, b)
+            searchData[idx] = label
+            
+            CreateSpringEffect(b, 0.05 * Tab.Count)
+            
+            -- Hover effect
+            b.MouseEnter:Connect(function()
+                TweenService:Create(b, TweenInfo.new(0.15), {
+                    BackgroundTransparency = isSelected and 0.1 or 0.2,
+                    TextColor3 = isSelected and Color3.fromRGB(255,255,255) or currentTheme.text or Color3.fromRGB(245,245,250)
+                }):Play()
+            end)
+            b.MouseLeave:Connect(function()
+                TweenService:Create(b, TweenInfo.new(0.15), {
+                    BackgroundTransparency = isSelected and 0.2 or 0,
+                    TextColor3 = isSelected and Color3.fromRGB(255,255,255) or currentTheme.subtext or Color3.fromRGB(165,165,180)
+                }):Play()
+            end)
+            
+            -- Hàm cập nhật trạng thái (Chọn/Bỏ chọn) - Có cập nhật lại màu nếu đổi Theme
+            local function setSelectedState(selected)
+                isSelected = selected
+                if selected then
+                    TweenService:Create(b, TweenInfo.new(0.2), {
+                        BackgroundColor3 = customColor,
+                        BackgroundTransparency = 0.2,
+                        TextColor3 = Color3.fromRGB(255,255,255)
+                    }):Play()
+                else
+                    TweenService:Create(b, TweenInfo.new(0.2), {
+                        BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26),
+                        BackgroundTransparency = 0,
+                        TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
+                    }):Play()
+                end
+            end
+            
+            b.MouseButton1Click:Connect(function()
+                PlaySound("Element")
+                CreateClickScaleEffect(b)
+                
+                -- Nếu có GroupName, nó sẽ tự động bỏ chọn các nút khác cùng group
+                if opt.GroupName then
+                    local groupElements = Tab.Elements
+                    for _, element in ipairs(groupElements) do
+                        if element.Name == opt.GroupName .. "PresetButton" and element ~= b then
+                            -- Reset về trạng thái không chọn
+                            TweenService:Create(element, TweenInfo.new(0.2), {
+                                BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26),
+                                BackgroundTransparency = 0,
+                                TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
+                            }):Play()
+                        end
+                    end
+                end
+                
+                setSelectedState(true)
+                if opt.Callback then opt.Callback(label, isSelected) end
+            end)
+            
+            -- === FLAG SYSTEM: Register Preset ===
+            if opt.FlagName then
+                local flagData = {
+                    Type = "Preset",
+                    GetValue = function() return isSelected end,
+                    SetValue = function(value)
+                        if type(value) == "boolean" then
+                            setSelectedState(value)
+                        else
+                            -- Nếu value là string (tên label), ta tìm và chọn
+                            if value == label then
+                                setSelectedState(true)
+                                if opt.Callback then opt.Callback(label, true) end
+                            end
+                        end
+                    end,
+                    SetDefault = function()
+                        local def = opt.Default or false
+                        flagData:SetValue(def)
+                    end
+                }
+                NoirUI:RegisterFlag(opt.FlagName, flagData)
+            end
+            
+            return b
         end
         
         function Tab:CreateCard(opt)
