@@ -4,28 +4,17 @@
 	Lua Scripter: NoirNF, Adono
 	Executor Compatibility Tester: Adono
 	Animation Engineer: Adono
-	Version: 2.0.5
+	Version: 2.1.0
 	Changelog: 
 	- Theme Manager mở rộng (Kết hợp bản cũ và mới)
 	- Background System v2 (Gradient, Glassmorphism, Depth)
 	- Tab Indicator bên phải
 	- Auto select tab đầu tiên
 	- Loader nâng cấp: Mặc định bo-goc (bo góc 12), thanh dời xuống, chữ dời xuống
-	- Fix lỗi Float Button bị nhân đôi lớp đen khi mở lại
-	- Tự động Glass effect khi có ảnh nền
-	- Notify v2: Auto Height, Indicator trái, Reset Stack thông minh
-	- Asset Cache: Tự động lưu ảnh vào bộ nhớ máy (getcustomasset)
-	- Flag System: Tự động đăng ký trạng thái các Toggle, Slider, Dropdown, ColorPicker, TextBox
-	- Config Manager: Lưu và Load trạng thái UI ra file JSON
-	- AutoSave: Tự động lưu Config theo thời gian (mặc định 60 giây)
-	- Hotkey System: Đăng ký phím tắt toàn cục
-	- Element Keybind: Tạo nút gán phím tắt trong UI, hỗ trợ Flag System
-	- Log System: Hiển thị thông báo dạng nhỏ gọn, tự động biến mất, hỗ trợ icon Lucide
-	- Element Image: Chèn ảnh hoặc icon lớn vào giao diện, hỗ trợ LucideIcons và Asset Cache
-	- Element PresetButton: Nút chọn dạng KyriLib (Viền sáng màu Accent khi chọn), tự động xuống dòng, hỗ trợ Flag System
-	- Shine Effect V2: Hiệu ứng chữ chạy Gradient (Snags) dùng 2 lớp chữ (Không bao giờ bị tối chữ, chuẩn Discord/Apple)
-	- ShineEffect Toggle: Có thể bật/tắt hiệu ứng chữ qua settings (Mặc định tắt)
-	- Fix lỗi Float Button bị treo sau khi minimize/mở lại quá nhiều lần (Phân biệt rõ LastFloatPosition)
+	- Fix lỗi Float Button bị treo sau khi minimize
+	- Shine Effect V2 (2 lớp chữ, tắt mặc định, bật qua settings)
+	- Card Standard: Hỗ trợ gắn Avatar (hình tròn) và Dynamic API update dữ liệu.
+	- Tất cả Card elements đều có Dynamic API để cập nhật dữ liệu.
 ]]
 
 --Core
@@ -58,7 +47,7 @@ local NoirUI = {
 }
 
 local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
-local _version = "2.0.5"
+local _version = "2.1.0"
 local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================================
@@ -4117,6 +4106,9 @@ function NoirUI:CreateWindow(settings)
             return api
         end
         
+        -- ==========================================================
+        -- ELEMENT: CARD V2 (Dynamic + Avatar Support)
+        -- ==========================================================
         function Tab:CreateCard(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local cardType = opt.Type or "Standard"
@@ -4163,6 +4155,16 @@ function NoirUI:CreateWindow(settings)
                 return t
             end
             
+            -- === DYNAMIC API REFERENCES ===
+            local dynamicRefs = {
+                title = nil,
+                content = nil,
+                image = nil,
+                avatar = nil,
+                footerText = nil,
+                footerButtons = {}
+            }
+            
             if cardType == "Accordion" then
                 local headerBtn = Instance.new("TextButton", f)
                 headerBtn.Size = UDim2.new(1, 0, 0, 30)
@@ -4181,6 +4183,7 @@ function NoirUI:CreateWindow(settings)
                 title.Font = Enum.Font.GothamBold
                 title.TextSize = 14
                 title.TextXAlignment = Enum.TextXAlignment.Left
+                dynamicRefs.title = title
                 
                 local arrow = Instance.new("ImageLabel", headerBtn)
                 arrow.Size = UDim2.new(0, 16, 0, 16)
@@ -4217,6 +4220,7 @@ function NoirUI:CreateWindow(settings)
                     content.TextSize = 12
                     content.TextXAlignment = Enum.TextXAlignment.Left
                     content.TextWrapped = true
+                    dynamicRefs.content = content
                 end
                 
                 local isOpen = false
@@ -4230,7 +4234,7 @@ function NoirUI:CreateWindow(settings)
                 end)
                 
             elseif cardType == "Dashboard" then
-                createTitle(opt.Title or "Dashboard")
+                dynamicRefs.title = createTitle(opt.Title or "Dashboard")
                 
                 local grid = Instance.new("Frame", f)
                 grid.Size = UDim2.new(1, 0, 0, 0)
@@ -4242,6 +4246,7 @@ function NoirUI:CreateWindow(settings)
                 gridLayout.CellSize = UDim2.new(0.5, -4, 0, 50)
                 gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
                 gridLayout.FillDirection = Enum.FillDirection.Horizontal
+                dynamicRefs.content = grid
                 
                 if opt.Items then
                     for _, item in ipairs(opt.Items) do
@@ -4285,10 +4290,11 @@ function NoirUI:CreateWindow(settings)
                     footer.TextSize = 10
                     footer.TextXAlignment = Enum.TextXAlignment.Center
                     footer.LayoutOrder = 3
+                    dynamicRefs.footerText = footer
                 end
                 
             elseif cardType == "Carousel" then
-                createTitle(opt.Title or "Carousel")
+                dynamicRefs.title = createTitle(opt.Title or "Carousel")
                 
                 local display = Instance.new("Frame", f)
                 display.Size = UDim2.new(1, 0, 0, 120)
@@ -4303,6 +4309,7 @@ function NoirUI:CreateWindow(settings)
                 img.ScaleType = Enum.ScaleType.Fit
                 img.Image = ResolveIcon(opt.Items and opt.Items[1] or "image") or ""
                 img.ImageColor3 = Color3.new(1,1,1)
+                dynamicRefs.image = img
                 
                 local navFrame = Instance.new("Frame", f)
                 navFrame.Size = UDim2.new(1, 0, 0, 30)
@@ -4387,15 +4394,16 @@ function NoirUI:CreateWindow(settings)
                         btn.MouseButton1Click:Connect(function()
                             PlaySound("Element")
                             CreateClickScaleEffect(btn)
-                            if btnData.Callback then btnData.Callback() end
+                            if btnData.Callback then btnData.Callback(currentIndex) end
                         end)
+                        table.insert(dynamicRefs.footerButtons, btn)
                     end
                 end
                 
                 updateCarousel(1)
                 
             elseif cardType == "Grid" then
-                createTitle(opt.Title or "Image Grid")
+                dynamicRefs.title = createTitle(opt.Title or "Image Grid")
                 
                 local grid = Instance.new("Frame", f)
                 grid.Size = UDim2.new(1, 0, 0, 0)
@@ -4424,11 +4432,12 @@ function NoirUI:CreateWindow(settings)
                             CreateClickScaleEffect(cell)
                             if opt.OnItemClick then opt.OnItemClick(item) end
                         end)
+                        table.insert(dynamicRefs.footerButtons, cell)
                     end
                 end
                 
             elseif cardType == "Image" then
-                createTitle(opt.Title or "Image Card")
+                dynamicRefs.title = createTitle(opt.Title or "Image Card")
                 
                 if opt.Image then
                     local img = Instance.new("ImageLabel", f)
@@ -4439,6 +4448,7 @@ function NoirUI:CreateWindow(settings)
                     img.ScaleType = Enum.ScaleType.Fit
                     Instance.new("UICorner", img).CornerRadius = UDim.new(0, 6)
                     img.LayoutOrder = 2
+                    dynamicRefs.image = img
                 end
                 
                 if opt.Content then
@@ -4454,10 +4464,11 @@ function NoirUI:CreateWindow(settings)
                     content.TextXAlignment = Enum.TextXAlignment.Left
                     content.TextWrapped = true
                     content.LayoutOrder = 3
+                    dynamicRefs.content = content
                 end
                 
             elseif cardType == "Action" then
-                createTitle(opt.Title or "Action Card")
+                dynamicRefs.title = createTitle(opt.Title or "Action Card")
                 
                 if opt.Content then
                     local content = Instance.new("TextLabel", f)
@@ -4472,6 +4483,7 @@ function NoirUI:CreateWindow(settings)
                     content.TextXAlignment = Enum.TextXAlignment.Left
                     content.TextWrapped = true
                     content.LayoutOrder = 2
+                    dynamicRefs.content = content
                 end
                 
                 if opt.Footer then
@@ -4505,10 +4517,12 @@ function NoirUI:CreateWindow(settings)
                             CreateClickScaleEffect(btn)
                             if btnData.Callback then btnData.Callback() end
                         end)
+                        table.insert(dynamicRefs.footerButtons, btn)
                     end
                 end
                 
             else
+                -- Standard (Support both Image and Avatar)
                 if layout == "Left" or layout == "Right" then
                     local contentWrapper = Instance.new("Frame", f)
                     contentWrapper.Size = UDim2.new(1, 0, 0, 0)
@@ -4527,8 +4541,8 @@ function NoirUI:CreateWindow(settings)
                         wrapperLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
                     end
                     
-                    local title = createTitle(opt.Title or "Standard Card")
-                    title.LayoutOrder = 1
+                    dynamicRefs.title = createTitle(opt.Title or "Standard Card")
+                    dynamicRefs.title.LayoutOrder = 1
                     
                     if opt.Image then
                         local img = Instance.new("ImageLabel", contentWrapper)
@@ -4539,6 +4553,7 @@ function NoirUI:CreateWindow(settings)
                         img.ScaleType = Enum.ScaleType.Fit
                         Instance.new("UICorner", img).CornerRadius = UDim.new(0, 8)
                         img.LayoutOrder = 2
+                        dynamicRefs.image = img
                         
                         local textWrapper = Instance.new("Frame", contentWrapper)
                         textWrapper.Size = UDim2.new(1, -92, 0, 0)
@@ -4564,6 +4579,44 @@ function NoirUI:CreateWindow(settings)
                             content.TextXAlignment = Enum.TextXAlignment.Left
                             content.TextWrapped = true
                             content.LayoutOrder = 1
+                            dynamicRefs.content = content
+                        end
+                    elseif opt.Avatar then
+                        local avt = Instance.new("ImageLabel", contentWrapper)
+                        avt.Size = UDim2.new(0, 80, 0, 80)
+                        avt.BackgroundTransparency = 1
+                        avt.Image = ResolveIcon(opt.Avatar) or ""
+                        avt.ImageColor3 = Color3.new(1,1,1)
+                        avt.ScaleType = Enum.ScaleType.Fit
+                        Instance.new("UICorner", avt).CornerRadius = UDim.new(1, 0) -- Tròn hoàn hảo
+                        avt.LayoutOrder = 2
+                        dynamicRefs.avatar = avt
+                        
+                        local textWrapper = Instance.new("Frame", contentWrapper)
+                        textWrapper.Size = UDim2.new(1, -92, 0, 0)
+                        textWrapper.AutomaticSize = Enum.AutomaticSize.Y
+                        textWrapper.BackgroundTransparency = 1
+                        textWrapper.LayoutOrder = 3
+                        textWrapper.Name = "TextWrapper"
+                        
+                        local textWrapperLayout = Instance.new("UIListLayout", textWrapper)
+                        textWrapperLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                        textWrapperLayout.Padding = UDim.new(0, 2)
+                        
+                        if opt.Content then
+                            local content = Instance.new("TextLabel", textWrapper)
+                            content.Size = UDim2.new(1, 0, 0, 0)
+                            content.AutomaticSize = Enum.AutomaticSize.Y
+                            content.Text = opt.Content
+                            content.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
+                            content.TextTransparency = 0
+                            content.BackgroundTransparency = 1
+                            content.Font = Enum.Font.Gotham
+                            content.TextSize = 12
+                            content.TextXAlignment = Enum.TextXAlignment.Left
+                            content.TextWrapped = true
+                            content.LayoutOrder = 1
+                            dynamicRefs.content = content
                         end
                     else
                         if opt.Content then
@@ -4579,10 +4632,12 @@ function NoirUI:CreateWindow(settings)
                             content.TextXAlignment = Enum.TextXAlignment.Left
                             content.TextWrapped = true
                             content.LayoutOrder = 2
+                            dynamicRefs.content = content
                         end
                     end
                 else
-                    createTitle(opt.Title or "Standard Card")
+                    -- Center Layout
+                    dynamicRefs.title = createTitle(opt.Title or "Standard Card")
                     
                     if opt.Image then
                         local img = Instance.new("ImageLabel", f)
@@ -4593,6 +4648,17 @@ function NoirUI:CreateWindow(settings)
                         img.ScaleType = Enum.ScaleType.Fit
                         Instance.new("UICorner", img).CornerRadius = UDim.new(0, 8)
                         img.LayoutOrder = 2
+                        dynamicRefs.image = img
+                    elseif opt.Avatar then
+                        local avt = Instance.new("ImageLabel", f)
+                        avt.Size = UDim2.new(0, 60, 0, 60)
+                        avt.BackgroundTransparency = 1
+                        avt.Image = ResolveIcon(opt.Avatar) or ""
+                        avt.ImageColor3 = Color3.new(1,1,1)
+                        avt.ScaleType = Enum.ScaleType.Fit
+                        Instance.new("UICorner", avt).CornerRadius = UDim.new(1, 0) -- Tròn hoàn hảo
+                        avt.LayoutOrder = 2
+                        dynamicRefs.avatar = avt
                     end
                     
                     if opt.Content then
@@ -4608,6 +4674,7 @@ function NoirUI:CreateWindow(settings)
                         content.TextXAlignment = Enum.TextXAlignment.Left
                         content.TextWrapped = true
                         content.LayoutOrder = 3
+                        dynamicRefs.content = content
                     end
                 end
                 
@@ -4642,11 +4709,53 @@ function NoirUI:CreateWindow(settings)
                             CreateClickScaleEffect(btn)
                             if btnData.Callback then btnData.Callback() end
                         end)
+                        table.insert(dynamicRefs.footerButtons, btn)
                     end
                 end
             end
             
-            return f
+            -- === DYNAMIC API ===
+            local api = {}
+            function api:setTitle(newTitle)
+                if dynamicRefs.title and newTitle then
+                    dynamicRefs.title.Text = newTitle
+                end
+            end
+            function api:setContent(newContent)
+                if dynamicRefs.content and newContent then
+                    dynamicRefs.content.Text = newContent
+                end
+            end
+            function api:setImage(newId)
+                if dynamicRefs.image and newId then
+                    dynamicRefs.image.Image = ResolveIcon(newId) or newId
+                end
+            end
+            function api:setAvatar(newId)
+                if dynamicRefs.avatar and newId then
+                    dynamicRefs.avatar.Image = ResolveIcon(newId) or newId
+                end
+            end
+            function api:setFooterText(newText)
+                if dynamicRefs.footerText and newText then
+                    dynamicRefs.footerText.Text = newText
+                end
+            end
+            function api:setFooterButton(index, newText, newCallback)
+                if dynamicRefs.footerButtons and dynamicRefs.footerButtons[index] then
+                    local btn = dynamicRefs.footerButtons[index]
+                    if newText then btn.Text = newText end
+                    if newCallback then
+                        btn.MouseButton1Click:Connect(function()
+                            PlaySound("Element")
+                            CreateClickScaleEffect(btn)
+                            newCallback()
+                        end)
+                    end
+                end
+            end
+            
+            return api
         end
         
         Tab._button = B
