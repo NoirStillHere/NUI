@@ -22,9 +22,8 @@
 	- Element Keybind: Tạo nút gán phím tắt trong UI, hỗ trợ Flag System
 	- Log System: Hiển thị thông báo dạng nhỏ gọn, tự động biến mất, hỗ trợ icon Lucide
 	- Element Image: Chèn ảnh hoặc icon lớn vào giao diện, hỗ trợ LucideIcons và Asset Cache
-	- Element PresetButton: Nút chọn dạng KyriLib (Viền sáng màu Accent khi chọn, có hiệu ứng Shadow)
-	- Element ShadowCard: Tạo khung có bóng đổ (Drop Shadow) và hiệu ứng Rolling (Ánh sáng chạy)
-	- Shadow Effect: Hệ thống bóng đổ 4 lớp UIStroke, hỗ trợ hiệu ứng xoay vòng (Rolling)
+	- Element PresetButton: Nút chọn dạng KyriLib (Viền sáng màu Accent khi chọn), tự động xuống dòng, hỗ trợ Flag System
+	- Shine Effect: Hiệu ứng chữ chạy Gradient (Snags) cho Header, Tab và Section
 ]]
 
 --Core
@@ -280,6 +279,43 @@ end
 
 -- Khởi động listener mặc định
 task.defer(function() NoirUI:InitHotkeyListener() end)
+
+-- ==========================================================
+-- SHINE EFFECT (Hiệu ứng chữ chạy Gradient)
+-- ==========================================================
+function NoirUI:CreateShineEffect(textLabel, rotation, speed)
+    if not textLabel then return end
+    rotation = rotation or 45
+    speed = speed or 1.5
+    
+    -- Tạo UIGradient
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 50)),
+        ColorSequenceKeypoint.new(0.4, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(0.6, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 50, 50))
+    })
+    gradient.Rotation = rotation
+    gradient.Parent = textLabel
+    
+    -- Vòng lặp chạy vô tận
+    task.spawn(function()
+        while gradient and gradient.Parent do
+            local startOffset = Vector2.new(-1, 0)
+            local endOffset = Vector2.new(1, 0)
+            
+            local tween = TweenService:Create(gradient, TweenInfo.new(speed, Enum.EasingStyle.Linear), {
+                Offset = endOffset
+            })
+            tween:Play()
+            tween.Completed:Wait()
+            
+            -- Reset Offset về đầu
+            gradient.Offset = startOffset
+        end
+    end)
+end
 
 -- ==========================================================
 -- ASSET CACHE SYSTEM
@@ -762,75 +798,6 @@ function NoirUI:CreateLogger()
     end
     
     return Logging
-end
-
--- ==========================================================
--- SHADOW & ROLLING EFFECT SYSTEM (Mới thêm)
--- ==========================================================
-function NoirUI:CreateShadow(parent, rollingEffect)
-    if not parent then return nil end
-    local Shadow = {}
-    
-    local strokes = {}
-    local thicknesses = {6, 5, 4, 3}
-    local gradients = {}
-    
-    for i, thick in ipairs(thicknesses) do
-        local stroke = Instance.new("UIStroke")
-        stroke.Thickness = thick
-        stroke.Transparency = 1
-        stroke.Color = Color3.fromRGB(0, 0, 0)
-        stroke.Parent = parent
-        stroke.ZIndex = -1
-        table.insert(strokes, stroke)
-        
-        if rollingEffect then
-            local grad = Instance.new("UIGradient")
-            grad.Transparency = NumberSequence.new{
-                NumberSequenceKeypoint.new(0.00, 0.4),
-                NumberSequenceKeypoint.new(1.00, 0.00)
-            }
-            grad.Rotation = math.random(0, 360)
-            grad.Parent = stroke
-            table.insert(gradients, grad)
-        end
-    end
-    
-    local rollingThread
-    
-    Shadow.Render = function(value)
-        if rollingThread then
-            task.cancel(rollingThread)
-            rollingThread = nil
-        end
-        
-        if value then
-            for _, stroke in ipairs(strokes) do
-                TweenService:Create(stroke, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
-                    Transparency = 0.9
-                }):Play()
-            end
-            
-            if rollingEffect and #gradients > 0 then
-                rollingThread = task.spawn(function()
-                    while true do
-                        task.wait(0.025)
-                        for _, grad in ipairs(gradients) do
-                            grad.Rotation = (grad.Rotation or 0) + 20
-                        end
-                    end
-                end)
-            end
-        else
-            for _, stroke in ipairs(strokes) do
-                TweenService:Create(stroke, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
-                    Transparency = 1
-                }):Play()
-            end
-        end
-    end
-    
-    return Shadow
 end
 
 -- ==========================================================
@@ -2012,6 +1979,9 @@ function NoirUI:CreateWindow(settings)
     Title.TextSize = 14
     Title.TextXAlignment = "Left"
     
+    -- Tạo hiệu ứng chữ chạy cho Title (Shine Effect)
+    NoirUI:CreateShineEffect(Title, 45, 1.5)
+    
     -- Search bar
     local SearchBtn = Instance.new("ImageButton", Header)
     SearchBtn.Size = UDim2.new(0, 20, 0, 20)
@@ -2488,6 +2458,9 @@ function NoirUI:CreateWindow(settings)
         titleLabel.TextSize = 11
         titleLabel.TextXAlignment = "Left"
         
+        -- Tạo hiệu ứng chữ chạy cho Section Title
+        NoirUI:CreateShineEffect(titleLabel, 30, 2)
+        
         local arrow = Instance.new("ImageLabel", header)
         arrow.Size = UDim2.new(0, 16, 0, 16)
         arrow.Position = UDim2.new(1, -18, 0.5, 0)
@@ -2592,6 +2565,9 @@ function NoirUI:CreateWindow(settings)
         BT.TextSize = 13
         BT.TextXAlignment = "Left"
         BT.ZIndex = 2
+        
+        -- Tạo hiệu ứng chữ chạy cho Tab Name (Shine Effect)
+        NoirUI:CreateShineEffect(BT, 45, 2.5)
         
         if icon then
             local IC = Instance.new("ImageLabel", B)
@@ -2853,6 +2829,9 @@ function NoirUI:CreateWindow(settings)
             lbl.TextSize = 11
             lbl.TextXAlignment = "Left"
             lbl.BackgroundTransparency = 1
+            
+            -- Tạo hiệu ứng chữ chạy cho Section Title
+            NoirUI:CreateShineEffect(lbl, 30, 2)
             
             local arrow = Instance.new("ImageLabel", headerBtn)
             arrow.Size = UDim2.new(0, 16, 0, 16)
@@ -3968,7 +3947,7 @@ function NoirUI:CreateWindow(settings)
         end
         
         -- ==========================================================
-        -- ELEMENT: PRESET BUTTON (Style KyriLib + Shadow Effect)
+        -- ELEMENT: PRESET BUTTON (Style KyriLib - Viền sáng khi chọn)
         -- ==========================================================
         function Tab:CreatePresetButton(opt)
             local parent = Tab._currentSectionContent or ContentFrame
@@ -4017,12 +3996,6 @@ function NoirUI:CreateWindow(settings)
                             stroke.Transparency = isSelected and 0.2 or 1 -- Hiện viền khi chọn
                             stroke.Thickness = isSelected and 1.5 or 0 -- Độ dày viền
                         end
-
-                        -- 4. Shadow Effect: Hiệu ứng bóng đổ khi chọn
-                        local shadow = child:FindFirstChild("_Shadow")
-                        if shadow then
-                            shadow:Render(isSelected)
-                        end
                     end
                 end
                 callback(value)
@@ -4053,11 +4026,6 @@ function NoirUI:CreateWindow(settings)
                     stroke.Color = Color3.fromRGB(40,40,48)
                     stroke.Transparency = 1 -- Mặc định ẩn viền
                     stroke.Thickness = 1.5
-                    
-                    -- Tạo Shadow Effect (Bóng đổ khi được chọn)
-                    local shadow = NoirUI:CreateShadow(btn, true) -- rollingEffect = true
-                    shadow.Render(false) -- Mặc định tắt
-                    btn._Shadow = shadow
                     
                     -- Đăng ký theme
                     NoirUI:RegisterThemeElement(btn, "BackgroundColor3", "element")
@@ -4101,41 +4069,7 @@ function NoirUI:CreateWindow(settings)
             
             return api
         end
-
-        -- ==========================================================
-        -- ELEMENT: SHADOW CARD (Mới thêm)
-        -- ==========================================================
-        function Tab:CreateShadowCard(opt)
-            local parent = Tab._currentSectionContent or ContentFrame
-            local height = opt.Height or 120
-            local rollingEffect = opt.RollingEffect or true
-            
-            local frame = Instance.new("Frame", parent)
-            frame.Size = UDim2.new(0.95, 0, 0, height)
-            frame.BackgroundColor3 = currentTheme.element or settings.ElementBackgroundColor or Color3.fromRGB(20,20,26)
-            frame.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
-            frame.LayoutOrder = GetO()
-            Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
-            
-            -- Tạo Shadow cho Card
-            local shadow = NoirUI:CreateShadow(frame, rollingEffect)
-            shadow.Render(true) -- Tự động hiện shadow ngay lập tức
-            
-            -- Đăng ký theme
-            NoirUI:RegisterThemeElement(frame, "BackgroundColor3", "element")
-            
-            local api = {
-                frame = frame,
-                shadow = shadow
-            }
-            
-            function api:setShadow(value)
-                shadow:Render(value)
-            end
-            
-            return api
-        end
-
+        
         function Tab:CreateCard(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local cardType = opt.Type or "Standard"
