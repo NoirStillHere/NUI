@@ -3940,7 +3940,8 @@ function NoirUI:CreateWindow(settings)
                         local stroke = child:FindFirstChild("UIStroke")
                         if stroke then
                             stroke.Color = isSelected and Color3.fromRGB(255,255,255) or Color3.fromRGB(40,40,48)
-                            stroke.Transparency = isSelected and 0 or 0.8
+                            stroke.Transparency = isSelected and 0 or 0.9
+                            stroke.Thickness = isSelected and 1.5 or 1
                         end
                     end
                 end
@@ -3970,8 +3971,8 @@ function NoirUI:CreateWindow(settings)
                     -- Viền ngoài mờ (Stroke Button)
                     local stroke = Instance.new("UIStroke", btn)
                     stroke.Color = Color3.fromRGB(40,40,48)
-                    stroke.Transparency = 0.8
-                    stroke.Thickness = 2
+                    stroke.Transparency = 0.9
+                    stroke.Thickness = 1
                     
                     -- Đăng ký theme
                     NoirUI:RegisterThemeElement(btn, "BackgroundColor3", "element")
