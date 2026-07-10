@@ -24,6 +24,8 @@
 	- Element Image: Chèn ảnh hoặc icon lớn vào giao diện, hỗ trợ LucideIcons và Asset Cache
 	- Element PresetButton: Nút chọn dạng KyriLib (Viền sáng màu Accent khi chọn), tự động xuống dòng, hỗ trợ Flag System
 	- Shine Effect V2: Hiệu ứng chữ chạy Gradient (Snags) dùng 2 lớp chữ (Không bao giờ bị tối chữ, chuẩn Discord/Apple)
+	- ShineEffect Toggle: Có thể bật/tắt hiệu ứng chữ qua settings (Mặc định tắt)
+	- Fix lỗi Float Button bị treo sau khi minimize/mở lại quá nhiều lần
 ]]
 
 --Core
@@ -2011,8 +2013,10 @@ function NoirUI:CreateWindow(settings)
     Title.TextSize = 14
     Title.TextXAlignment = "Left"
     
-    -- Tạo hiệu ứng chữ chạy cho Title (Shine Effect V2 - 2 lớp chữ)
-    NoirUI:CreateShineEffect(Title, 45, 1.5)
+    -- Bật Shine Effect nếu settings yêu cầu
+    if settings.ShineEffect == true then
+        NoirUI:CreateShineEffect(Title, 45, 1.5)
+    end
     
     -- Search bar
     local SearchBtn = Instance.new("ImageButton", Header)
@@ -2184,21 +2188,25 @@ function NoirUI:CreateWindow(settings)
     local contCorner = Instance.new("UICorner", Cont)
     contCorner.CornerRadius = UDim.new(0, 8)
 
-    -- Float toggle (ĐÃ SỬA LỖI NHÂN ĐÔI GLASS)
+    -- Float toggle (ĐÃ SỬA LỖI TREO SAU NHIỀU LẦN THU NHỎ)
     TBtn.MouseButton1Click:Connect(function()
         PlaySound("Click")
         CreateClickScaleEffect(TBtn)
         
+        -- Lưu vị trí hiện tại của Float Button
         local floatStartPos = TBtn.Position
+        
+        -- Ẩn Float Button ngay lập tức (Quan trọng: Tránh bị lỗi hiển thị)
+        TBtn.Visible = false
+        
+        -- Animation thu gọn Float Button
         local floatTargetPos = UDim2.new(floatStartPos.X.Scale, floatStartPos.X.Offset, 1, 50)
         TweenService:Create(TBtn, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
             Position = floatTargetPos,
             BackgroundTransparency = 1
         }):Play()
-        task.wait(0.3)
-        TBtn.Visible = false
-        TBtn.Position = savedFloatPos
         
+        -- Hiện Main
         Main.Visible = true
         Main.Size = savedSize
         Main.Position = UDim2.new(mainDefaultPos.X.Scale, mainDefaultPos.X.Offset, 1, 0)
@@ -2490,8 +2498,10 @@ function NoirUI:CreateWindow(settings)
         titleLabel.TextSize = 11
         titleLabel.TextXAlignment = "Left"
         
-        -- Tạo hiệu ứng chữ chạy cho Section Title (Shine Effect V2 - 2 lớp chữ)
-        NoirUI:CreateShineEffect(titleLabel, 30, 2)
+        -- Bật Shine Effect nếu settings yêu cầu
+        if settings.ShineEffect == true then
+            NoirUI:CreateShineEffect(titleLabel, 30, 2)
+        end
         
         local arrow = Instance.new("ImageLabel", header)
         arrow.Size = UDim2.new(0, 16, 0, 16)
@@ -2598,8 +2608,10 @@ function NoirUI:CreateWindow(settings)
         BT.TextXAlignment = "Left"
         BT.ZIndex = 2
         
-        -- Tạo hiệu ứng chữ chạy cho Tab Name (Shine Effect V2 - 2 lớp chữ)
-        NoirUI:CreateShineEffect(BT, 45, 2.5)
+        -- Bật Shine Effect nếu settings yêu cầu
+        if settings.ShineEffect == true then
+            NoirUI:CreateShineEffect(BT, 45, 2.5)
+        end
         
         if icon then
             local IC = Instance.new("ImageLabel", B)
@@ -2862,8 +2874,10 @@ function NoirUI:CreateWindow(settings)
             lbl.TextXAlignment = "Left"
             lbl.BackgroundTransparency = 1
             
-            -- Tạo hiệu ứng chữ chạy cho Section Title (Shine Effect V2 - 2 lớp chữ)
-            NoirUI:CreateShineEffect(lbl, 30, 2)
+            -- Bật Shine Effect nếu settings yêu cầu
+            if settings.ShineEffect == true then
+                NoirUI:CreateShineEffect(lbl, 30, 2)
+            end
             
             local arrow = Instance.new("ImageLabel", headerBtn)
             arrow.Size = UDim2.new(0, 16, 0, 16)
