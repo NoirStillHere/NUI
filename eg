@@ -1,5 +1,5 @@
 -- ==========================================================
--- NoirUI V2.0.5 Ultimate - Full Source Code
+-- NoirUI V2.0.5 Ultimate - Full Source Code (Fixed AutoSize)
 -- Library Owner: NoirNF
 -- UI Engineer: NoirNF
 -- Lua Scripter: NoirNF, Adono
@@ -4568,21 +4568,21 @@ function NoirUI:CreateWindow(settings)
         end
 
         -- ==========================================================
-        -- ELEMENT: MUSIC PLAYER
+        -- ELEMENT: MUSIC PLAYER (Đã sửa: Tự động co giãn chiều cao)
         -- ==========================================================
         function Tab:CreateMusicPlayer(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             opt = opt or {}
             
-            local height = opt.Height or 240
+            -- 🛠️ Bỏ height cố định, dùng AutomaticSize
             local bgColor = opt.BackgroundColor or Color3.fromRGB(235, 235, 235)
             local textColor = opt.TextColor or Color3.fromRGB(20, 20, 20)
             local subTextColor = opt.SubTextColor or Color3.fromRGB(120, 120, 120)
-            local accentColor = opt.AccentColor or Color3.fromRGB(0, 0, 0)
             local albumArt = opt.AlbumArt or "rbxassetid://6031094700"
 
             local container = Instance.new("Frame", parent)
-            container.Size = UDim2.new(0.95, 0, 0, height)
+            container.Size = UDim2.new(0.95, 0, 0, 0)
+            container.AutomaticSize = Enum.AutomaticSize.Y -- Quan trọng: Tự co giãn theo chiều dọc
             container.BackgroundColor3 = bgColor
             container.BackgroundTransparency = 0
             Instance.new("UICorner", container).CornerRadius = UDim.new(0, 16)
@@ -4596,6 +4596,7 @@ function NoirUI:CreateWindow(settings)
             pad.PaddingLeft = UDim.new(0, 16)
             pad.PaddingRight = UDim.new(0, 16)
 
+            -- 1. Header
             local header = Instance.new("Frame", container)
             header.Size = UDim2.new(1, 0, 0, 30)
             header.BackgroundTransparency = 1
@@ -4625,6 +4626,7 @@ function NoirUI:CreateWindow(settings)
                 end
             end)
 
+            -- 2. Album Art
             local artContainer = Instance.new("Frame", container)
             artContainer.Size = UDim2.new(0, 120, 0, 120)
             artContainer.Position = UDim2.new(0.5, -60, 0, 35)
@@ -4638,6 +4640,7 @@ function NoirUI:CreateWindow(settings)
             imgArt.Image = ResolveIcon(albumArt)
             imgArt.ScaleType = Enum.ScaleType.Fit
 
+            -- 3. Thông tin bài hát
             local songTitle = Instance.new("TextLabel", container)
             songTitle.Size = UDim2.new(1, 0, 0, 20)
             songTitle.Position = UDim2.new(0, 0, 0, 160)
@@ -4658,6 +4661,7 @@ function NoirUI:CreateWindow(settings)
             artistName.TextSize = 10
             artistName.TextXAlignment = Enum.TextXAlignment.Center
 
+            -- 4. Thanh trượt (Seek Bar)
             local seekContainer = Instance.new("Frame", container)
             seekContainer.Size = UDim2.new(1, 0, 0, 20)
             seekContainer.Position = UDim2.new(0, 0, 0, 210)
@@ -4726,9 +4730,12 @@ function NoirUI:CreateWindow(settings)
                 end
             end)
 
+            -- 5. Controller (Play, Next, Prev, Shuffle, Loop)
+            -- 🛠️ Quan trọng: Dùng UDim2.new(1,0,0,0) để nó tự co dãn theo chiều cao nội dung bên trong
             local controls = Instance.new("Frame", container)
-            controls.Size = UDim2.new(1, 0, 0, 40)
-            controls.Position = UDim2.new(0, 0, 1, -40)
+            controls.Size = UDim2.new(1, 0, 0, 0)
+            controls.AutomaticSize = Enum.AutomaticSize.Y -- Cho nó tự co giãn
+            controls.Position = UDim2.new(0, 0, 0, 240)
             controls.BackgroundTransparency = 1
 
             local cLayout = Instance.new("UIListLayout", controls)
@@ -4736,6 +4743,9 @@ function NoirUI:CreateWindow(settings)
             cLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
             cLayout.VerticalAlignment = Enum.VerticalAlignment.Center
             cLayout.Padding = UDim.new(0, 12)
+            -- Thêm PaddingTop để nó cách thanh thời gian 1 khoảng
+            local cPadding = Instance.new("UIPadding", controls)
+            cPadding.PaddingTop = UDim.new(0, 4)
 
             local function createControlBtn(icon, callback)
                 local btn = Instance.new("ImageButton", controls)
@@ -4801,6 +4811,7 @@ function NoirUI:CreateWindow(settings)
                 NoirUI:Notify("Music Player", "Mode: " .. NoirUI.Music:GetModeName(), "repeat", nil, 1.5)
             end)
 
+            -- Cập nhật loop
             local updateConnection
             local function startUpdateLoop()
                 if updateConnection then updateConnection:Disconnect() end
