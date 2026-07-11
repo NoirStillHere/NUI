@@ -4,13 +4,8 @@
 	Lua Scripter: NoirNF, Adono
 	Executor Compatibility Tester: Adono
 	Animation Engineer: Adono
-	Version: 2.1.0
-	Changelog v2.1.0:
-	- Added Element: CreateMusicPlayer (Minimalist Card)
-	- Added API Support for Music Player (Load, Play, Pause, Seek, Next/Prev Hooks)
-	- Optimized Music Player memory management (Auto-destroy sound on UI removal)
-	
-	Changelog v2.0.5:
+	Version: 2.0.5
+	Changelog: 
 	- Theme Manager mở rộng (Kết hợp bản cũ và mới)
 	- Background System v2 (Gradient, Glassmorphism, Depth)
 	- Tab Indicator bên phải
@@ -31,6 +26,7 @@
 	- Shine Effect V2: Hiệu ứng chữ chạy Gradient (Snags) dùng 2 lớp chữ (Không bao giờ bị tối chữ, chuẩn Discord/Apple)
 	- ShineEffect Toggle: Có thể bật/tắt hiệu ứng chữ qua settings (Mặc định tắt)
 	- Fix lỗi Float Button bị treo sau khi minimize/mở lại quá nhiều lần (Phân biệt rõ LastFloatPosition)
+	- Cập nhật hiệu ứng Slide Swap cho Float Button (Trượt xuống đáy mới biến mất, không đột ngột)
 ]]
 
 --Core
@@ -63,7 +59,7 @@ local NoirUI = {
 }
 
 local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
-local _version = "2.1.0"
+local _version = "2.0.5"
 local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================================
@@ -2203,26 +2199,36 @@ function NoirUI:CreateWindow(settings)
     local contCorner = Instance.new("UICorner", Cont)
     contCorner.CornerRadius = UDim.new(0, 8)
 
-    -- Float toggle (Mở lại UI - Đã sửa logic)
+    -- Float toggle (Mở lại UI - Đã sửa Slide Swap)
     TBtn.MouseButton1Click:Connect(function()
         PlaySound("Click")
         CreateClickScaleEffect(TBtn)
         
-        -- Ẩn Float và đưa về dưới đáy (dùng LastFloatPosition để giữ nguyên trục X)
-        TBtn.Visible = false
-        TBtn.Position = UDim2.new(LastFloatPosition.X.Scale, LastFloatPosition.X.Offset, 1, 50)
+        -- 1. Trượt Float xuống đáy màn hình (dùng LastFloatPosition để giữ nguyên trục X)
+        local floatStartPos = TBtn.Position
+        local floatTargetPos = UDim2.new(LastFloatPosition.X.Scale, LastFloatPosition.X.Offset, 1, 50)
         
-        -- Hiện Main
+        local floatTween = TweenService:Create(TBtn, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            Position = floatTargetPos
+        })
+        floatTween:Play()
+        
+        -- 2. Trượt UI từ dưới đáy lên vị trí cũ
         Main.Visible = true
         Main.Size = savedSize
         Main.Position = UDim2.new(mainDefaultPos.X.Scale, mainDefaultPos.X.Offset, 1, 0)
         Main.BackgroundTransparency = HAS_BG_IMAGE and 1 or 0
         Main.ClipsDescendants = true
         
-        TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        local mainTween = TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Position = mainDefaultPos,
             BackgroundTransparency = HAS_BG_IMAGE and 1 or 0
-        }):Play()
+        })
+        mainTween:Play()
+        
+        -- 3. Chờ Float trượt xong rồi mới ẩn hẳn nó đi
+        floatTween.Completed:Wait()
+        TBtn.Visible = false
         
         PlaySound("Open")
     end)
@@ -2595,7 +2601,7 @@ function NoirUI:CreateWindow(settings)
         Indicator.Name = "Indicator"
         Indicator.Parent = B
         Indicator.Size = UDim2.new(0, 3, 0, 0)
-        Indicator.Position = UDim2.new(1, 0, 0.5, 0)
+        Indicator.Position = UDim2.new(1, -4, 0.5, 0)
         Indicator.AnchorPoint = Vector2.new(1, 0.5)
         Indicator.BackgroundColor3 = ACCENT
         Indicator.BackgroundTransparency = 1
@@ -4046,7 +4052,7 @@ function NoirUI:CreateWindow(settings)
                         if stroke then
                             stroke.Color = isSelected and ACCENT or Color3.fromRGB(40,40,48) -- Viền Accent
                             stroke.Transparency = isSelected and 0.2 or 1 -- Hiện viền khi chọn
-                            stroke.Thickness = isSelected and 0.5 or 0 -- Độ dày viền
+                            stroke.Thickness = isSelected and 1.5 or 0 -- Độ dày viền
                         end
                     end
                 end
@@ -4058,7 +4064,7 @@ function NoirUI:CreateWindow(settings)
                 for _, value in ipairs(presetData) do
                     local btn = Instance.new("TextButton", container)
                     btn.Name = value
-                    btn.Size = UDim2.new(0, 0, 0, 40) -- Chiều cao vừa vặn 32
+                    btn.Size = UDim2.new(0, 0, 0, 32) -- Chiều cao vừa vặn 32
                     btn.AutomaticSize = Enum.AutomaticSize.X 
                     btn.BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26)
                     btn.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
@@ -4652,412 +4658,6 @@ function NoirUI:CreateWindow(settings)
             end
             
             return f
-        end
-
-        -- ==========================================================
-        -- ELEMENT: MUSIC PLAYER (Minimalist Style) - [NEW v2.1.0]
-        -- ==========================================================
-        function Tab:CreateMusicPlayer(opt)
-            local parent = Tab._currentSectionContent or ContentFrame
-            
-            -- Lấy theme hiện tại để phối màu
-            local theme = currentTheme or NoirUI.Themes.Current or NoirUI.Themes.Presets["kyri"]
-            local accent = opt.AccentColor or ACCENT or theme.accent
-            
-            -- 1. Container chính (Card)
-            local player = Instance.new("Frame", parent)
-            player.Size = UDim2.new(0, 260, 0, 280)
-            player.BackgroundColor3 = Color3.fromRGB(245, 245, 248) -- Màu trắng xám sáng (như ảnh)
-            player.BackgroundTransparency = 0
-            player.LayoutOrder = GetO()
-            player.Name = "MusicPlayer"
-            Instance.new("UICorner", player).CornerRadius = UDim.new(0, 16)
-            Instance.new("UIStroke", player).Color = Color3.fromRGB(220, 220, 225) -- Viền rất nhẹ
-            Instance.new("UIStroke", player).Thickness = 1
-            Instance.new("UIStroke", player).Transparency = 0.5
-            
-            -- 2. Nội dung layout
-            local layout = Instance.new("UIListLayout", player)
-            layout.SortOrder = Enum.SortOrder.LayoutOrder
-            layout.Padding = UDim.new(0, 8)
-            layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-            
-            local padding = Instance.new("UIPadding", player)
-            padding.PaddingTop = UDim.new(0, 18)
-            padding.PaddingBottom = UDim.new(0, 16)
-            padding.PaddingLeft = UDim.new(0, 16)
-            padding.PaddingRight = UDim.new(0, 16)
-
-            -- 3. Header (Icon trái, Tim phải)
-            local header = Instance.new("Frame", player)
-            header.Size = UDim2.new(1, 0, 0, 20)
-            header.BackgroundTransparency = 1
-            header.LayoutOrder = 1
-            
-            local headerLayout = Instance.new("UIListLayout", header)
-            headerLayout.FillDirection = Enum.FillDirection.Horizontal
-            headerLayout.HorizontalAlignment = Enum.HorizontalAlignment.SpaceBetween
-            headerLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            
-            local menuBtn = Instance.new("ImageLabel", header)
-            menuBtn.Size = UDim2.new(0, 20, 0, 20)
-            menuBtn.BackgroundTransparency = 1
-            menuBtn.Image = ResolveIcon("music-2") or "rbxassetid://6031094667"
-            menuBtn.ImageColor3 = Color3.fromRGB(40, 40, 45)
-            menuBtn.LayoutOrder = 1
-            
-            local favBtn = Instance.new("ImageLabel", header)
-            favBtn.Size = UDim2.new(0, 20, 0, 20)
-            favBtn.BackgroundTransparency = 1
-            favBtn.Image = ResolveIcon("heart") or "rbxassetid://6031094667"
-            favBtn.ImageColor3 = Color3.fromRGB(40, 40, 45)
-            favBtn.LayoutOrder = 2
-
-            -- 4. Artwork (Ảnh vuông)
-            local artContainer = Instance.new("Frame", player)
-            artContainer.Size = UDim2.new(0.55, 0, 0, 100)
-            artContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-            artContainer.LayoutOrder = 2
-            Instance.new("UICorner", artContainer).CornerRadius = UDim.new(0, 8)
-            
-            local artImg = Instance.new("ImageLabel", artContainer)
-            artImg.Size = UDim2.new(1, 0, 1, 0)
-            artImg.BackgroundTransparency = 1
-            artImg.ScaleType = Enum.ScaleType.Fit
-            artImg.Image = ResolveIcon(opt.DefaultImage) or "rbxassetid://6031094667"
-
-            -- 5. Text Info (Title & Artist)
-            local infoFrame = Instance.new("Frame", player)
-            infoFrame.Size = UDim2.new(1, 0, 0, 38)
-            infoFrame.BackgroundTransparency = 1
-            infoFrame.LayoutOrder = 3
-            
-            local infoLayout = Instance.new("UIListLayout", infoFrame)
-            infoLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            infoLayout.Padding = UDim.new(0, 2)
-            infoLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
-            local titleLbl = Instance.new("TextLabel", infoFrame)
-            titleLbl.Size = UDim2.new(1, 0, 0, 16)
-            titleLbl.BackgroundTransparency = 1
-            titleLbl.Text = "Song title"
-            titleLbl.TextColor3 = Color3.fromRGB(30, 30, 35)
-            titleLbl.Font = Enum.Font.GothamBold
-            titleLbl.TextSize = 14
-            titleLbl.LayoutOrder = 1
-            
-            local artistLbl = Instance.new("TextLabel", infoFrame)
-            artistLbl.Size = UDim2.new(1, 0, 0, 16)
-            artistLbl.BackgroundTransparency = 1
-            artistLbl.Text = "Singer name"
-            artistLbl.TextColor3 = Color3.fromRGB(120, 120, 125)
-            artistLbl.Font = Enum.Font.Gotham
-            artistLbl.TextSize = 11
-            artistLbl.LayoutOrder = 2
-
-            -- 6. Seek Bar (Thanh tiến trình)
-            local seekFrame = Instance.new("Frame", player)
-            seekFrame.Size = UDim2.new(1, 0, 0, 14)
-            seekFrame.BackgroundTransparency = 1
-            seekFrame.LayoutOrder = 4
-            
-            local seekLayout = Instance.new("UIListLayout", seekFrame)
-            seekLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            seekLayout.Padding = UDim.new(0, 0)
-            
-            -- Track (Đường chạy)
-            local track = Instance.new("Frame", seekFrame)
-            track.Size = UDim2.new(1, 0, 0, 4)
-            track.BackgroundColor3 = Color3.fromRGB(200, 200, 205)
-            track.LayoutOrder = 1
-            track.AnchorPoint = Vector2.new(0, 0.5)
-            Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
-            
-            -- Fill (Phần đã chạy)
-            local fill = Instance.new("Frame", track)
-            fill.Size = UDim2.new(0, 0, 1, 0)
-            fill.BackgroundColor3 = accent -- Màu accent của UI
-            fill.AnchorPoint = Vector2.new(0, 0)
-            Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
-            
-            -- Handle (Nút tròn kéo thả)
-            local handle = Instance.new("Frame", track)
-            handle.Size = UDim2.new(0, 10, 0, 10)
-            handle.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-            handle.AnchorPoint = Vector2.new(0.5, 0.5)
-            handle.Position = UDim2.new(0, 0, 0.5, 0)
-            handle.ZIndex = 2
-            Instance.new("UICorner", handle).CornerRadius = UDim.new(1, 0)
-            
-            -- Time Labels (Thời gian)
-            local timeFrame = Instance.new("Frame", seekFrame)
-            timeFrame.Size = UDim2.new(1, 0, 0, 14)
-            timeFrame.BackgroundTransparency = 1
-            timeFrame.LayoutOrder = 2
-            
-            local timeLayout = Instance.new("UIListLayout", timeFrame)
-            timeLayout.FillDirection = Enum.FillDirection.Horizontal
-            timeLayout.HorizontalAlignment = Enum.HorizontalAlignment.SpaceBetween
-            
-            local curTimeLbl = Instance.new("TextLabel", timeFrame)
-            curTimeLbl.Size = UDim2.new(0, 50, 1, 0)
-            curTimeLbl.BackgroundTransparency = 1
-            curTimeLbl.Text = "00:00"
-            curTimeLbl.TextColor3 = Color3.fromRGB(80, 80, 85)
-            curTimeLbl.Font = Enum.Font.Gotham
-            curTimeLbl.TextSize = 11
-            curTimeLbl.TextXAlignment = Enum.TextXAlignment.Left
-            
-            local totalTimeLbl = Instance.new("TextLabel", timeFrame)
-            totalTimeLbl.Size = UDim2.new(0, 50, 1, 0)
-            totalTimeLbl.BackgroundTransparency = 1
-            totalTimeLbl.Text = "00:00"
-            totalTimeLbl.TextColor3 = Color3.fromRGB(80, 80, 85)
-            totalTimeLbl.Font = Enum.Font.Gotham
-            totalTimeLbl.TextSize = 11
-            totalTimeLbl.TextXAlignment = Enum.TextXAlignment.Right
-
-            -- 7. Controls (Các nút bấm)
-            local controlsFrame = Instance.new("Frame", player)
-            controlsFrame.Size = UDim2.new(1, 0, 0, 40)
-            controlsFrame.BackgroundTransparency = 1
-            controlsFrame.LayoutOrder = 5
-            
-            local controlsLayout = Instance.new("UIListLayout", controlsFrame)
-            controlsLayout.FillDirection = Enum.FillDirection.Horizontal
-            controlsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-            controlsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            controlsLayout.Padding = UDim.new(0, 12)
-            
-            -- Hàm tạo nút icon nhỏ
-            local function createControlBtn(icon, color)
-                local btn = Instance.new("ImageButton", controlsFrame)
-                btn.Size = UDim2.new(0, 18, 0, 18)
-                btn.BackgroundTransparency = 1
-                btn.Image = ResolveIcon(icon)
-                btn.ImageColor3 = color or Color3.fromRGB(40, 40, 45)
-                btn.LayoutOrder = GetO()
-                btn.AutoButtonColor = false
-                return btn
-            end
-            
-            -- Shuffle
-            local shuffleBtn = createControlBtn("shuffle", Color3.fromRGB(160, 160, 165))
-            shuffleBtn.LayoutOrder = 1
-            -- Prev
-            local prevBtn = createControlBtn("skip-back")
-            prevBtn.LayoutOrder = 2
-            -- Play/Pause (To)
-            local playBtn = Instance.new("TextButton", controlsFrame)
-            playBtn.Size = UDim2.new(0, 44, 0, 44)
-            playBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-            playBtn.Text = ""
-            playBtn.LayoutOrder = 3
-            playBtn.AutoButtonColor = false
-            Instance.new("UICorner", playBtn).CornerRadius = UDim.new(1, 0)
-            local playIcon = Instance.new("ImageLabel", playBtn)
-            playIcon.Size = UDim2.new(0, 20, 0, 20)
-            playIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
-            playIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-            playIcon.BackgroundTransparency = 1
-            playIcon.Image = ResolveIcon("play")
-            playIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
-            playIcon.Name = "Icon"
-            -- Next
-            local nextBtn = createControlBtn("skip-forward")
-            nextBtn.LayoutOrder = 4
-            -- Loop
-            local loopBtn = createControlBtn("repeat", Color3.fromRGB(160, 160, 165))
-            loopBtn.LayoutOrder = 5
-
-            -- ==========================================================
-            -- LOGIC & API (Heart của Music Player)
-            -- ==========================================================
-            local isPlaying = false
-            local currentTime = 0
-            local totalTime = 0
-            local isLoop = false
-            local isShuffle = false
-            local isSeeking = false
-            local soundObj = nil
-            
-            -- Hàm tiện ích format thời gian (seconds -> MM:SS)
-            local function formatTime(sec)
-                if not sec or sec < 0 then return "00:00" end
-                local m = math.floor(sec / 60)
-                local s = math.floor(sec % 60)
-                return string.format("%02d:%02d", m, s)
-            end
-
-            -- Hàm cập nhật thanh tiến trình
-            local function updateSeekBar()
-                if totalTime <= 0 then return end
-                local pct = currentTime / totalTime
-                fill.Size = UDim2.new(pct, 0, 1, 0)
-                handle.Position = UDim2.new(pct, 0, 0.5, 0)
-                curTimeLbl.Text = formatTime(currentTime)
-                totalTimeLbl.Text = formatTime(totalTime)
-            end
-
-            -- Logic Play/Pause
-            local function togglePlay()
-                if not soundObj then return end
-                isPlaying = not isPlaying
-                if isPlaying then
-                    soundObj:Resume()
-                    playIcon.Image = ResolveIcon("pause")
-                else
-                    soundObj:Pause()
-                    playIcon.Image = ResolveIcon("play")
-                end
-            end
-
-            playBtn.MouseButton1Click:Connect(function()
-                CreateClickScaleEffect(playBtn)
-                togglePlay()
-            end)
-
-            -- Logic Seek (Kéo thả thanh tiến trình)
-            local function handleSeek(input)
-                if not soundObj then return end
-                local localX = input.Position.X - track.AbsolutePosition.X
-                local pct = math.clamp(localX / track.AbsoluteSize.X, 0, 1)
-                local targetTime = pct * totalTime
-                
-                currentTime = targetTime
-                soundObj.TimePosition = targetTime
-                updateSeekBar()
-            end
-
-            local hitArea = Instance.new("Frame", seekFrame)
-            hitArea.Size = UDim2.new(1, 0, 0, 20)
-            hitArea.Position = UDim2.new(0, 0, 0, -6)
-            hitArea.BackgroundTransparency = 1
-            hitArea.ZIndex = 3
-            
-            hitArea.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    isSeeking = true
-                    handleSeek(input)
-                end
-            end)
-            UIS.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    isSeeking = false
-                end
-            end)
-            UIS.InputChanged:Connect(function(input)
-                if isSeeking and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                    handleSeek(input)
-                end
-            end)
-
-            -- Logic Loop & Shuffle (Chỉ đổi màu icon)
-            loopBtn.MouseButton1Click:Connect(function()
-                isLoop = not isLoop
-                loopBtn.ImageColor3 = isLoop and accent or Color3.fromRGB(160, 160, 165)
-                CreateClickScaleEffect(loopBtn)
-            end)
-            shuffleBtn.MouseButton1Click:Connect(function()
-                isShuffle = not isShuffle
-                shuffleBtn.ImageColor3 = isShuffle and accent or Color3.fromRGB(160, 160, 165)
-                CreateClickScaleEffect(shuffleBtn)
-            end)
-
-            -- Logic Next/Prev (Gọi callback để chủ script xử lý danh sách nhạc)
-            nextBtn.MouseButton1Click:Connect(function() 
-                CreateClickScaleEffect(nextBtn)
-                if opt.OnNext then opt.OnNext() end
-            end)
-            prevBtn.MouseButton1Click:Connect(function() 
-                CreateClickScaleEffect(prevBtn)
-                if opt.OnPrev then opt.OnPrev() end
-            end)
-
-            -- Vòng lặp cập nhật thời gian thực (RenderStepped)
-            local updateConnection
-            updateConnection = RunService.RenderStepped:Connect(function()
-                if not player or not player.Parent then updateConnection:Disconnect() return end
-                if soundObj and isPlaying and not isSeeking then
-                    currentTime = soundObj.TimePosition
-                    updateSeekBar()
-                end
-            end)
-
-            -- ==========================================================
-            -- PUBLIC API
-            -- ==========================================================
-            local api = {
-                player = player,
-                
-                -- Load bài hát mới (có thể truyền SoundId, Duration)
-                load = function(soundId, duration, title, artist, imageId)
-                    -- Hủy sound cũ nếu có
-                    if soundObj then 
-                        soundObj:Stop()
-                        soundObj:Destroy()
-                    end
-                    
-                    -- Tạo sound mới
-                    soundObj = Instance.new("Sound")
-                    soundObj.SoundId = tostring(soundId)
-                    soundObj.Volume = 0.5
-                    soundObj.Parent = player
-                    
-                    -- Cập nhật UI
-                    titleLbl.Text = title or "Unknown Title"
-                    artistLbl.Text = artist or "Unknown Artist"
-                    if imageId then artImg.Image = ResolveIcon(imageId) end
-                    
-                    -- Xử lý thời gian
-                    if duration then
-                        totalTime = duration
-                    else
-                        -- Nếu không truyền duration, đợi sound load xong để lấy duration
-                        soundObj.Loaded:Connect(function()
-                            totalTime = soundObj.Duration
-                            updateSeekBar()
-                        end)
-                    end
-                    updateSeekBar()
-                    
-                    -- Reset trạng thái
-                    isPlaying = false
-                    playIcon.Image = ResolveIcon("play")
-                    currentTime = 0
-                    updateSeekBar()
-                end,
-                
-                -- Điều khiển từ bên ngoài
-                play = function()
-                    if not soundObj then return end
-                    if not isPlaying then togglePlay() end
-                end,
-                pause = function()
-                    if isPlaying then togglePlay() end
-                end,
-                stop = function()
-                    if soundObj then 
-                        soundObj:Stop() 
-                        isPlaying = false
-                        currentTime = 0
-                        playIcon.Image = ResolveIcon("play")
-                        updateSeekBar()
-                    end
-                end,
-                
-                getState = function()
-                    return {
-                        isPlaying = isPlaying,
-                        currentTime = currentTime,
-                        totalTime = totalTime,
-                        isLoop = isLoop,
-                        isShuffle = isShuffle
-                    }
-                end
-            }
-            
-            return api
         end
         
         Tab._button = B
