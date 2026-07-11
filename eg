@@ -228,17 +228,14 @@ end
 task.defer(function() NoirUI:InitHotkeyListener() end)
 
 -- ==========================================================
--- SHINE EFFECT V2.1 (CÓ MÀU ACCENT THEO THEME)
+-- SHINE EFFECT V2 (Dùng 2 lớp chữ, không bao giờ bị tối)
 -- ==========================================================
 function NoirUI:CreateShineEffect(textLabel, rotation, speed)
     if not textLabel then return end
     rotation = rotation or 45
     speed = speed or 1.5
     
-    -- Lấy màu Accent hiện tại (từ Theme đang áp dụng)
-    local accentColor = NoirUI.Themes.AccentColor or Color3.fromRGB(138, 116, 249)
-    
-    -- Lưu lại text gốc và thuộc tính để sao chép
+    -- Lưu lại text gốc và màu gốc
     local originalText = textLabel.Text
     local originalColor = textLabel.TextColor3
     local originalSize = textLabel.Size
@@ -250,7 +247,7 @@ function NoirUI:CreateShineEffect(textLabel, rotation, speed)
     textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     textLabel.RichText = true
     
-    -- 2. Lớp chữ hiệu ứng (Đè lên trên, có Gradient màu Accent)
+    -- 2. Lớp chữ hiệu ứng (Đè lên trên, có Gradient)
     local shineLabel = Instance.new("TextLabel")
     shineLabel.Name = "ShineEffect"
     shineLabel.Parent = textLabel.Parent
@@ -258,7 +255,7 @@ function NoirUI:CreateShineEffect(textLabel, rotation, speed)
     shineLabel.Position = originalPosition
     shineLabel.BackgroundTransparency = 1
     shineLabel.Text = originalText
-    shineLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- Vẫn giữ màu trắng ở gốc
+    shineLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     shineLabel.Font = originalFont
     shineLabel.TextSize = originalTextSize
     shineLabel.TextXAlignment = textLabel.TextXAlignment
@@ -267,14 +264,13 @@ function NoirUI:CreateShineEffect(textLabel, rotation, speed)
     shineLabel.RichText = true
     shineLabel.ClipsDescendants = true -- Quan trọng: Cắt gradient theo chữ
     
-    -- Tạo UIGradient cho lớp Shine (Màu sắc thay đổi theo Accent)
+    -- Tạo UIGradient cho lớp Shine
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new({
-        -- [Màu Accent đậm (Tối) -> Màu Accent sáng (Rực rỡ) -> Màu Accent đậm]
-        ColorSequenceKeypoint.new(0, accentColor * 0.3),        -- Accent tối (thấp)
-        ColorSequenceKeypoint.new(0.4, accentColor),            -- Accent rực rỡ
-        ColorSequenceKeypoint.new(0.6, accentColor),            -- Accent rực rỡ
-        ColorSequenceKeypoint.new(1, accentColor * 0.3)         -- Accent tối
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 50)),
+        ColorSequenceKeypoint.new(0.4, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(0.6, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 50, 50))
     })
     gradient.Rotation = rotation
     gradient.Parent = shineLabel
@@ -296,7 +292,7 @@ function NoirUI:CreateShineEffect(textLabel, rotation, speed)
         end
     end)
     
-    -- Đăng ký Theme cho chữ gốc (để khi đổi theme, nó vẫn giữ màu trắng nền)
+    -- Đăng ký Theme cho chữ gốc (để khi đổi theme, nó vẫn giữ màu trắng nền chính xác)
     NoirUI:RegisterThemeElement(textLabel, "TextColor3", "text")
 end
 
