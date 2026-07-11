@@ -1,11 +1,37 @@
--- ==========================================================
--- NoirUI V2.0.5 Ultimate - Full Source Code (Fixed AutoSize)
--- Library Owner: NoirNF
--- UI Engineer: NoirNF
--- Lua Scripter: NoirNF, Adono
--- Executor Compatibility Tester: Adono
--- Animation Engineer: Adono
--- ==========================================================
+--[[
+	Library Owner: NoirNF
+	UI Engineer: NoirNF
+	Lua Scripter: NoirNF, Adono
+	Executor Compatibility Tester: Adono
+	Animation Engineer: Adono
+	Version: 2.1.0
+	Changelog v2.1.0:
+	- Added Element: CreateMusicPlayer (Minimalist Card)
+	- Added API Support for Music Player (Load, Play, Pause, Seek, Next/Prev Hooks)
+	- Optimized Music Player memory management (Auto-destroy sound on UI removal)
+	
+	Changelog v2.0.5:
+	- Theme Manager mở rộng (Kết hợp bản cũ và mới)
+	- Background System v2 (Gradient, Glassmorphism, Depth)
+	- Tab Indicator bên phải
+	- Auto select tab đầu tiên
+	- Loader nâng cấp: Mặc định bo-goc (bo góc 12), thanh dời xuống, chữ dời xuống
+	- Fix lỗi Float Button bị nhân đôi lớp đen khi mở lại
+	- Tự động Glass effect khi có ảnh nền
+	- Notify v2: Auto Height, Indicator trái, Reset Stack thông minh
+	- Asset Cache: Tự động lưu ảnh vào bộ nhớ máy (getcustomasset)
+	- Flag System: Tự động đăng ký trạng thái các Toggle, Slider, Dropdown, ColorPicker, TextBox
+	- Config Manager: Lưu và Load trạng thái UI ra file JSON
+	- AutoSave: Tự động lưu Config theo thời gian (mặc định 60 giây)
+	- Hotkey System: Đăng ký phím tắt toàn cục
+	- Element Keybind: Tạo nút gán phím tắt trong UI, hỗ trợ Flag System
+	- Log System: Hiển thị thông báo dạng nhỏ gọn, tự động biến mất, hỗ trợ icon Lucide
+	- Element Image: Chèn ảnh hoặc icon lớn vào giao diện, hỗ trợ LucideIcons và Asset Cache
+	- Element PresetButton: Nút chọn dạng KyriLib (Viền sáng màu Accent khi chọn), tự động xuống dòng, hỗ trợ Flag System
+	- Shine Effect V2: Hiệu ứng chữ chạy Gradient (Snags) dùng 2 lớp chữ (Không bao giờ bị tối chữ, chuẩn Discord/Apple)
+	- ShineEffect Toggle: Có thể bật/tắt hiệu ứng chữ qua settings (Mặc định tắt)
+	- Fix lỗi Float Button bị treo sau khi minimize/mở lại quá nhiều lần (Phân biệt rõ LastFloatPosition)
+]]
 
 --Core
 local TweenService = game:GetService("TweenService")
@@ -37,11 +63,11 @@ local NoirUI = {
 }
 
 local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
-local _version = "2.0.5"
+local _version = "2.1.0"
 local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================================
--- THEME PRESETS
+-- THEME PRESETS (Kết hợp bản cũ và bản mở rộng)
 -- ==========================================================
 NoirUI.Themes.Presets = {
     ["kyri"] = {
@@ -146,7 +172,7 @@ NoirUI.Themes.Presets = {
 }
 
 -- ==========================================================
--- THEME MANAGER API
+-- THEME MANAGER API (Mở rộng từ CK)
 -- ==========================================================
 function NoirUI:RegisterThemeElement(element, property, themeKey)
     if not element or not property or not themeKey then return end
@@ -258,16 +284,18 @@ function NoirUI:InitHotkeyListener()
     end)
 end
 
+-- Khởi động listener mặc định
 task.defer(function() NoirUI:InitHotkeyListener() end)
 
 -- ==========================================================
--- SHINE EFFECT V2
+-- SHINE EFFECT V2 (Dùng 2 lớp chữ, không bao giờ bị tối)
 -- ==========================================================
 function NoirUI:CreateShineEffect(textLabel, rotation, speed)
     if not textLabel then return end
     rotation = rotation or 45
     speed = speed or 1.5
     
+    -- Lưu lại text gốc và màu gốc
     local originalText = textLabel.Text
     local originalColor = textLabel.TextColor3
     local originalSize = textLabel.Size
@@ -275,9 +303,11 @@ function NoirUI:CreateShineEffect(textLabel, rotation, speed)
     local originalFont = textLabel.Font
     local originalTextSize = textLabel.TextSize
     
+    -- 1. Lớp chữ nền (Màu trắng tĩnh - Luôn hiện)
     textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     textLabel.RichText = true
     
+    -- 2. Lớp chữ hiệu ứng (Đè lên trên, có Gradient)
     local shineLabel = Instance.new("TextLabel")
     shineLabel.Name = "ShineEffect"
     shineLabel.Parent = textLabel.Parent
@@ -290,10 +320,11 @@ function NoirUI:CreateShineEffect(textLabel, rotation, speed)
     shineLabel.TextSize = originalTextSize
     shineLabel.TextXAlignment = textLabel.TextXAlignment
     shineLabel.TextYAlignment = textLabel.TextYAlignment
-    shineLabel.ZIndex = textLabel.ZIndex + 1
+    shineLabel.ZIndex = textLabel.ZIndex + 1 -- Đè lên trên chữ gốc
     shineLabel.RichText = true
-    shineLabel.ClipsDescendants = true
+    shineLabel.ClipsDescendants = true -- Quan trọng: Cắt gradient theo chữ
     
+    -- Tạo UIGradient cho lớp Shine
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 50)),
@@ -304,6 +335,7 @@ function NoirUI:CreateShineEffect(textLabel, rotation, speed)
     gradient.Rotation = rotation
     gradient.Parent = shineLabel
     
+    -- Vòng lặp chạy vô tận
     task.spawn(function()
         while gradient and gradient.Parent and shineLabel and shineLabel.Parent do
             local startOffset = Vector2.new(-1, 0)
@@ -314,10 +346,13 @@ function NoirUI:CreateShineEffect(textLabel, rotation, speed)
             })
             tween:Play()
             tween.Completed:Wait()
+            
+            -- Reset Offset về đầu
             gradient.Offset = startOffset
         end
     end)
     
+    -- Đăng ký Theme cho chữ gốc (để khi đổi theme, nó vẫn giữ màu trắng nền chính xác)
     NoirUI:RegisterThemeElement(textLabel, "TextColor3", "text")
 end
 
@@ -848,6 +883,9 @@ local function GetContrastColor(backgroundColor)
     end
 end
 
+-- ====================================================
+-- ANIMATION
+-- ====================================================
 local function CreateClickScaleEffect(button)
     if not button then return end
     local origSize = button.Size
@@ -906,6 +944,7 @@ local function CreateHoverEffect(button)
     end)
 end
 
+-- Sound Settings
 local SoundSettings = {
     Enabled = true,
     Volume = 0.5,
@@ -1013,6 +1052,9 @@ local function MakeDraggable(frame)
     end)
 end
 
+-- ====================================================
+-- BACKGROUND SYSTEM V2.0.0 (HIỆN ĐẠI)
+-- ====================================================
 local function SetupBackground(frame, bgSetting, bgColor, defaultTransparency)
     local existingBg = frame:FindFirstChild("_BackgroundImage")
     if existingBg then existingBg:Destroy() end
@@ -1110,6 +1152,7 @@ function NoirUI:RegisterCommand(prefix, callback)
     NoirUI.CustomCommands[prefix:lower()] = callback
 end
 
+-- Key System
 local function KeySystem(settings)
     if not settings then return true end
     local ks = settings.KeySettings or {}
@@ -1796,6 +1839,9 @@ function NoirUI:CreateWindow(settings)
     
     local savedSize = Main.Size
 
+    -- ==========================================================
+    -- RESIZE WINDOW
+    -- ==========================================================
     local resizeHandle = Instance.new("ImageButton", Main)
     resizeHandle.Size = UDim2.new(0, 18, 0, 18)
     resizeHandle.Position = UDim2.new(1, 0, 1, 0)
@@ -1830,6 +1876,9 @@ function NoirUI:CreateWindow(settings)
         end
     end)
 
+    -- ==========================================================
+    -- FLOAT BUTTON
+    -- ==========================================================
     local floatSize = settings.FloatSize or 45
     local floatIconSize = settings.FloatIconSize or 24
     local floatCornerRadius = settings.FloatCornerRadius or 8
@@ -1844,6 +1893,7 @@ function NoirUI:CreateWindow(settings)
     TBtn.AutoButtonColor = false
     TBtn.Visible = false
     
+    -- 📌 Biến ghi nhớ vị trí người dùng đã kéo
     local LastFloatPosition = floatDefaultPos 
     
     local floatCorner = Instance.new("UICorner", TBtn)
@@ -1925,6 +1975,7 @@ function NoirUI:CreateWindow(settings)
     
     local savedFloatPos = floatDefaultPos
 
+    -- 📌 Chỉ cập nhật vị trí khi người dùng thả chuột
     local floatDragging = false
     local floatDragStart, floatStartPos, floatDragInput
     TBtn.InputBegan:Connect(function(input)
@@ -1948,12 +1999,14 @@ function NoirUI:CreateWindow(settings)
     UIS.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             if floatDragging then
+                -- ✅ CHỈ CẬP NHẬT Ở ĐÂY: Lưu vị trí hiện tại làm điểm neo
                 LastFloatPosition = TBtn.Position
                 floatDragging = false
             end
         end
     end)
     
+    -- Header
     local Header = Instance.new("Frame", Main)
     Header.Size = UDim2.new(1, 0, 0, 40)
     Header.BackgroundColor3 = currentTheme.container or Color3.fromRGB(14,14,18)
@@ -1972,10 +2025,12 @@ function NoirUI:CreateWindow(settings)
     Title.TextSize = 14
     Title.TextXAlignment = "Left"
     
+    -- Bật Shine Effect nếu settings yêu cầu
     if settings.ShineEffect == true then
         NoirUI:CreateShineEffect(Title, 45, 1.5)
     end
     
+    -- Search bar
     local SearchBtn = Instance.new("ImageButton", Header)
     SearchBtn.Size = UDim2.new(0, 20, 0, 20)
     SearchBtn.Position = UDim2.new(1, -95, 0.5, 0)
@@ -2034,6 +2089,7 @@ function NoirUI:CreateWindow(settings)
         end
     end)
     
+    -- Buttons
     local Btns = Instance.new("Frame", Header)
     Btns.Size = UDim2.new(0, 60, 1, 0)
     Btns.Position = UDim2.new(1, -20, 0, 0)
@@ -2065,6 +2121,7 @@ function NoirUI:CreateWindow(settings)
         end)
     end
 
+    -- Minimize (Đã sửa logic)
     TopImageB("minus", Color3.fromRGB(255,200,50), function()
         PlaySound("Click")
         local startPos = Main.Position
@@ -2076,13 +2133,16 @@ function NoirUI:CreateWindow(settings)
         task.wait(0.4)
         Main.Visible = false
         
+        -- Hiện Float và di chuyển về vị trí đã lưu
         TBtn.Visible = true
+        -- Đặt xuống đáy trước, rồi tween lên vị trí LastFloatPosition
         TBtn.Position = UDim2.new(LastFloatPosition.X.Scale, LastFloatPosition.X.Offset, 1, 50)
         TweenService:Create(TBtn, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Position = LastFloatPosition
         }):Play()
     end)
 
+    -- Close Button
     TopImageB("x", Color3.fromRGB(255,100,100), function()
         PlaySound("Click")
         StopAndCleanupMusic()
@@ -2090,6 +2150,7 @@ function NoirUI:CreateWindow(settings)
         PlaySound("Close")
     end)
     
+    -- Sidebar
     local Side = Instance.new("Frame", Main)
     Side.Size = UDim2.new(0, 110, 1, -50)
     Side.Position = UDim2.new(0, 5, 0, 40)
@@ -2133,6 +2194,7 @@ function NoirUI:CreateWindow(settings)
     Instance.new("UICorner", AI).CornerRadius = UDim.new(1,0)
     Instance.new("UIStroke", AI).Color = ACCENT
     
+    -- Content
     local Cont = Instance.new("Frame", Main)
     Cont.Size = UDim2.new(1, -125, 1, -50)
     Cont.Position = UDim2.new(0, 120, 0, 40)
@@ -2141,13 +2203,16 @@ function NoirUI:CreateWindow(settings)
     local contCorner = Instance.new("UICorner", Cont)
     contCorner.CornerRadius = UDim.new(0, 8)
 
+    -- Float toggle (Mở lại UI - Đã sửa logic)
     TBtn.MouseButton1Click:Connect(function()
         PlaySound("Click")
         CreateClickScaleEffect(TBtn)
         
+        -- Ẩn Float và đưa về dưới đáy (dùng LastFloatPosition để giữ nguyên trục X)
         TBtn.Visible = false
         TBtn.Position = UDim2.new(LastFloatPosition.X.Scale, LastFloatPosition.X.Offset, 1, 50)
         
+        -- Hiện Main
         Main.Visible = true
         Main.Size = savedSize
         Main.Position = UDim2.new(mainDefaultPos.X.Scale, mainDefaultPos.X.Offset, 1, 0)
@@ -2439,6 +2504,7 @@ function NoirUI:CreateWindow(settings)
         titleLabel.TextSize = 11
         titleLabel.TextXAlignment = "Left"
         
+        -- Bật Shine Effect nếu settings yêu cầu
         if settings.ShineEffect == true then
             NoirUI:CreateShineEffect(titleLabel, 30, 2)
         end
@@ -2548,6 +2614,7 @@ function NoirUI:CreateWindow(settings)
         BT.TextXAlignment = "Left"
         BT.ZIndex = 2
         
+        -- Bật Shine Effect nếu settings yêu cầu
         if settings.ShineEffect == true then
             NoirUI:CreateShineEffect(BT, 45, 2.5)
         end
@@ -2813,6 +2880,7 @@ function NoirUI:CreateWindow(settings)
             lbl.TextXAlignment = "Left"
             lbl.BackgroundTransparency = 1
             
+            -- Bật Shine Effect nếu settings yêu cầu
             if settings.ShineEffect == true then
                 NoirUI:CreateShineEffect(lbl, 30, 2)
             end
@@ -3063,6 +3131,7 @@ function NoirUI:CreateWindow(settings)
                 if opt.Callback then opt.Callback(s) end
             end)
             
+            -- === FLAG SYSTEM: Register Toggle ===
             if opt.FlagName then
                 local flagData = {
                     Type = "Toggle",
@@ -3240,6 +3309,7 @@ function NoirUI:CreateWindow(settings)
                 valBtn.Visible = true
             end)
             
+            -- === FLAG SYSTEM: Register Slider ===
             if opt.FlagName then
                 local flagData = {
                     Type = "Slider",
@@ -3710,6 +3780,7 @@ function NoirUI:CreateWindow(settings)
                 table.insert(NoirUI.Connections, refreshConnection)
             end
             
+            -- === FLAG SYSTEM: Register Dropdown ===
             if opt.FlagName then
                 local flagData = {
                     Type = "Dropdown",
@@ -3840,6 +3911,7 @@ function NoirUI:CreateWindow(settings)
                     end
                 end)
                 
+                -- Auto timeout after 5 seconds
                 task.delay(5, function()
                     if isListening then
                         isListening = false
@@ -3849,6 +3921,7 @@ function NoirUI:CreateWindow(settings)
                 end)
             end)
             
+            -- === FLAG SYSTEM: Register Keybind ===
             if opt.FlagName then
                 local flagData = {
                     Type = "Keybind",
@@ -3883,12 +3956,14 @@ function NoirUI:CreateWindow(settings)
             box.Parent = parent
             box.LayoutOrder = GetO()
             
+            -- Register theme element for box
             NoirUI:RegisterThemeElement(box, "BackgroundColor3", "element")
             
             local boxCorner = Instance.new("UICorner")
             boxCorner.CornerRadius = UDim.new(0, cornerRadius)
             boxCorner.Parent = box
             
+            -- Resolve image ID (Supports Asset Cache and LucideIcons)
             local resolvedImage = ResolveIcon(imageId) or imageId
             
             local img = Instance.new("ImageLabel")
@@ -3913,6 +3988,7 @@ function NoirUI:CreateWindow(settings)
                 img.Image = resolved
             end
             
+            -- Add to elements list for search/filter functionality
             local idx = #Tab.Elements + 1
             table.insert(Tab.Elements, box)
             searchData[idx] = opt.Name or "Image"
@@ -3923,7 +3999,7 @@ function NoirUI:CreateWindow(settings)
         end
         
         -- ==========================================================
-        -- ELEMENT: PRESET BUTTON
+        -- ELEMENT: PRESET BUTTON (Style KyriLib - Viền sáng khi chọn)
         -- ==========================================================
         function Tab:CreatePresetButton(opt)
             local parent = Tab._currentSectionContent or ContentFrame
@@ -3934,6 +4010,7 @@ function NoirUI:CreateWindow(settings)
             
             local callback = opt.Callback or function() end
 
+            -- Tạo container
             local container = Instance.new("Frame", parent)
             container.Size = UDim2.new(0.95, 0, 0, 0)
             container.AutomaticSize = Enum.AutomaticSize.Y
@@ -3950,33 +4027,38 @@ function NoirUI:CreateWindow(settings)
             local padding = Instance.new("UIPadding", container)
             padding.PaddingLeft = UDim.new(0, 4)
             
+            -- Hàm cập nhật giao diện (Style KyriLib)
             local function updatePreset(value)
                 currentValue = value
                 for _, child in pairs(container:GetChildren()) do
                     if child:IsA("TextButton") then
                         local isSelected = child.Name == value
                         
+                        -- 1. Nền: Giữ màu tối (element), hơi sáng lên 1 chút nếu được chọn
                         child.BackgroundColor3 = isSelected and (currentTheme.hover or Color3.fromRGB(28,28,36)) or (currentTheme.element or Color3.fromRGB(20,20,26))
                         child.BackgroundTransparency = isSelected and 0.5 or (HAS_BG_IMAGE and 0.5 or 0)
                         
+                        -- 2. Chữ: Xám mờ khi chưa chọn, trắng/sáng hơn khi chọn
                         child.TextColor3 = isSelected and (currentTheme.text or Color3.fromRGB(245,245,250)) or (currentTheme.subtext or Color3.fromRGB(165,165,180))
                         
+                        -- 3. Viền (Stroke): Mờ khi chưa chọn -> Sáng màu Accent khi chọn
                         local stroke = child:FindFirstChild("UIStroke")
                         if stroke then
-                            stroke.Color = isSelected and ACCENT or Color3.fromRGB(40,40,48)
-                            stroke.Transparency = isSelected and 0.2 or 1
-                            stroke.Thickness = isSelected and 0.5 or 0
+                            stroke.Color = isSelected and ACCENT or Color3.fromRGB(40,40,48) -- Viền Accent
+                            stroke.Transparency = isSelected and 0.2 or 1 -- Hiện viền khi chọn
+                            stroke.Thickness = isSelected and 0.5 or 0 -- Độ dày viền
                         end
                     end
                 end
                 callback(value)
             end
 
+            -- Hàm render nút
             local function renderButtons()
                 for _, value in ipairs(presetData) do
                     local btn = Instance.new("TextButton", container)
                     btn.Name = value
-                    btn.Size = UDim2.new(0, 0, 0, 40)
+                    btn.Size = UDim2.new(0, 0, 0, 40) -- Chiều cao vừa vặn 32
                     btn.AutomaticSize = Enum.AutomaticSize.X 
                     btn.BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26)
                     btn.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
@@ -3987,14 +4069,17 @@ function NoirUI:CreateWindow(settings)
                     btn.AutoButtonColor = false
                     btn.ZIndex = 2
                     
+                    -- Bo góc 8 (Như KyriLib)
                     local corner = Instance.new("UICorner", btn)
                     corner.CornerRadius = UDim.new(0, 8) 
                     
+                    -- Viền ngoài (Mờ mặc định)
                     local stroke = Instance.new("UIStroke", btn)
                     stroke.Color = Color3.fromRGB(40,40,48)
-                    stroke.Transparency = 1
+                    stroke.Transparency = 1 -- Mặc định ẩn viền
                     stroke.Thickness = 1.5
                     
+                    -- Đăng ký theme
                     NoirUI:RegisterThemeElement(btn, "BackgroundColor3", "element")
                     NoirUI:RegisterThemeElement(btn, "TextColor3", "text")
                     
@@ -4004,11 +4089,13 @@ function NoirUI:CreateWindow(settings)
                     end)
                 end
                 
+                -- Set giá trị mặc định ban đầu sau khi render xong
                 updatePreset(defaultValue)
             end
 
             renderButtons()
             
+            -- === FLAG SYSTEM ===
             if opt.FlagName then
                 local flagData = {
                     Type = "Preset",
@@ -4568,300 +4655,409 @@ function NoirUI:CreateWindow(settings)
         end
 
         -- ==========================================================
-        -- ELEMENT: MUSIC PLAYER (Đã sửa: Tự động co giãn chiều cao)
+        -- ELEMENT: MUSIC PLAYER (Minimalist Style) - [NEW v2.1.0]
         -- ==========================================================
         function Tab:CreateMusicPlayer(opt)
             local parent = Tab._currentSectionContent or ContentFrame
-            opt = opt or {}
             
-            -- 🛠️ Bỏ height cố định, dùng AutomaticSize
-            local bgColor = opt.BackgroundColor or Color3.fromRGB(235, 235, 235)
-            local textColor = opt.TextColor or Color3.fromRGB(20, 20, 20)
-            local subTextColor = opt.SubTextColor or Color3.fromRGB(120, 120, 120)
-            local albumArt = opt.AlbumArt or "rbxassetid://6031094700"
+            -- Lấy theme hiện tại để phối màu
+            local theme = currentTheme or NoirUI.Themes.Current or NoirUI.Themes.Presets["kyri"]
+            local accent = opt.AccentColor or ACCENT or theme.accent
+            
+            -- 1. Container chính (Card)
+            local player = Instance.new("Frame", parent)
+            player.Size = UDim2.new(0, 260, 0, 280)
+            player.BackgroundColor3 = Color3.fromRGB(245, 245, 248) -- Màu trắng xám sáng (như ảnh)
+            player.BackgroundTransparency = 0
+            player.LayoutOrder = GetO()
+            player.Name = "MusicPlayer"
+            Instance.new("UICorner", player).CornerRadius = UDim.new(0, 16)
+            Instance.new("UIStroke", player).Color = Color3.fromRGB(220, 220, 225) -- Viền rất nhẹ
+            Instance.new("UIStroke", player).Thickness = 1
+            Instance.new("UIStroke", player).Transparency = 0.5
+            
+            -- 2. Nội dung layout
+            local layout = Instance.new("UIListLayout", player)
+            layout.SortOrder = Enum.SortOrder.LayoutOrder
+            layout.Padding = UDim.new(0, 8)
+            layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            
+            local padding = Instance.new("UIPadding", player)
+            padding.PaddingTop = UDim.new(0, 18)
+            padding.PaddingBottom = UDim.new(0, 16)
+            padding.PaddingLeft = UDim.new(0, 16)
+            padding.PaddingRight = UDim.new(0, 16)
 
-            local container = Instance.new("Frame", parent)
-            container.Size = UDim2.new(0.95, 0, 0, 0)
-            container.AutomaticSize = Enum.AutomaticSize.Y -- Quan trọng: Tự co giãn theo chiều dọc
-            container.BackgroundColor3 = bgColor
-            container.BackgroundTransparency = 0
-            Instance.new("UICorner", container).CornerRadius = UDim.new(0, 16)
-            container.LayoutOrder = GetO()
-            table.insert(Tab.Elements, container)
-            CreateSpringEffect(container, 0.05 * Tab.Count)
-
-            local pad = Instance.new("UIPadding", container)
-            pad.PaddingTop = UDim.new(0, 16)
-            pad.PaddingBottom = UDim.new(0, 16)
-            pad.PaddingLeft = UDim.new(0, 16)
-            pad.PaddingRight = UDim.new(0, 16)
-
-            -- 1. Header
-            local header = Instance.new("Frame", container)
-            header.Size = UDim2.new(1, 0, 0, 30)
+            -- 3. Header (Icon trái, Tim phải)
+            local header = Instance.new("Frame", player)
+            header.Size = UDim2.new(1, 0, 0, 20)
             header.BackgroundTransparency = 1
+            header.LayoutOrder = 1
             
-            local iconMusic = Instance.new("ImageLabel", header)
-            iconMusic.Size = UDim2.new(0, 24, 0, 24)
-            iconMusic.Position = UDim2.new(0, 0, 0.5, 0)
-            iconMusic.AnchorPoint = Vector2.new(0, 0.5)
-            iconMusic.BackgroundTransparency = 1
-            iconMusic.Image = ResolveIcon("music") or "rbxassetid://6031094667"
-            iconMusic.ImageColor3 = textColor
+            local headerLayout = Instance.new("UIListLayout", header)
+            headerLayout.FillDirection = Enum.FillDirection.Horizontal
+            headerLayout.HorizontalAlignment = Enum.HorizontalAlignment.SpaceBetween
+            headerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            
+            local menuBtn = Instance.new("ImageLabel", header)
+            menuBtn.Size = UDim2.new(0, 20, 0, 20)
+            menuBtn.BackgroundTransparency = 1
+            menuBtn.Image = ResolveIcon("music-2") or "rbxassetid://6031094667"
+            menuBtn.ImageColor3 = Color3.fromRGB(40, 40, 45)
+            menuBtn.LayoutOrder = 1
+            
+            local favBtn = Instance.new("ImageLabel", header)
+            favBtn.Size = UDim2.new(0, 20, 0, 20)
+            favBtn.BackgroundTransparency = 1
+            favBtn.Image = ResolveIcon("heart") or "rbxassetid://6031094667"
+            favBtn.ImageColor3 = Color3.fromRGB(40, 40, 45)
+            favBtn.LayoutOrder = 2
 
-            local btnHeart = Instance.new("ImageButton", header)
-            btnHeart.Size = UDim2.new(0, 24, 0, 24)
-            btnHeart.Position = UDim2.new(1, 0, 0.5, 0)
-            btnHeart.AnchorPoint = Vector2.new(1, 0.5)
-            btnHeart.BackgroundTransparency = 1
-            btnHeart.Image = ResolveIcon("heart")
-            btnHeart.ImageColor3 = subTextColor
-            btnHeart.AutoButtonColor = false
+            -- 4. Artwork (Ảnh vuông)
+            local artContainer = Instance.new("Frame", player)
+            artContainer.Size = UDim2.new(0.55, 0, 0, 100)
+            artContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+            artContainer.LayoutOrder = 2
+            Instance.new("UICorner", artContainer).CornerRadius = UDim.new(0, 8)
             
-            btnHeart.MouseButton1Click:Connect(function()
-                if btnHeart.ImageColor3 == subTextColor then
-                    TweenService:Create(btnHeart, TweenInfo.new(0.2), {ImageColor3 = Color3.fromRGB(255, 50, 50)}):Play()
+            local artImg = Instance.new("ImageLabel", artContainer)
+            artImg.Size = UDim2.new(1, 0, 1, 0)
+            artImg.BackgroundTransparency = 1
+            artImg.ScaleType = Enum.ScaleType.Fit
+            artImg.Image = ResolveIcon(opt.DefaultImage) or "rbxassetid://6031094667"
+
+            -- 5. Text Info (Title & Artist)
+            local infoFrame = Instance.new("Frame", player)
+            infoFrame.Size = UDim2.new(1, 0, 0, 38)
+            infoFrame.BackgroundTransparency = 1
+            infoFrame.LayoutOrder = 3
+            
+            local infoLayout = Instance.new("UIListLayout", infoFrame)
+            infoLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            infoLayout.Padding = UDim.new(0, 2)
+            infoLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+            local titleLbl = Instance.new("TextLabel", infoFrame)
+            titleLbl.Size = UDim2.new(1, 0, 0, 16)
+            titleLbl.BackgroundTransparency = 1
+            titleLbl.Text = "Song title"
+            titleLbl.TextColor3 = Color3.fromRGB(30, 30, 35)
+            titleLbl.Font = Enum.Font.GothamBold
+            titleLbl.TextSize = 14
+            titleLbl.LayoutOrder = 1
+            
+            local artistLbl = Instance.new("TextLabel", infoFrame)
+            artistLbl.Size = UDim2.new(1, 0, 0, 16)
+            artistLbl.BackgroundTransparency = 1
+            artistLbl.Text = "Singer name"
+            artistLbl.TextColor3 = Color3.fromRGB(120, 120, 125)
+            artistLbl.Font = Enum.Font.Gotham
+            artistLbl.TextSize = 11
+            artistLbl.LayoutOrder = 2
+
+            -- 6. Seek Bar (Thanh tiến trình)
+            local seekFrame = Instance.new("Frame", player)
+            seekFrame.Size = UDim2.new(1, 0, 0, 14)
+            seekFrame.BackgroundTransparency = 1
+            seekFrame.LayoutOrder = 4
+            
+            local seekLayout = Instance.new("UIListLayout", seekFrame)
+            seekLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            seekLayout.Padding = UDim.new(0, 0)
+            
+            -- Track (Đường chạy)
+            local track = Instance.new("Frame", seekFrame)
+            track.Size = UDim2.new(1, 0, 0, 4)
+            track.BackgroundColor3 = Color3.fromRGB(200, 200, 205)
+            track.LayoutOrder = 1
+            track.AnchorPoint = Vector2.new(0, 0.5)
+            Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
+            
+            -- Fill (Phần đã chạy)
+            local fill = Instance.new("Frame", track)
+            fill.Size = UDim2.new(0, 0, 1, 0)
+            fill.BackgroundColor3 = accent -- Màu accent của UI
+            fill.AnchorPoint = Vector2.new(0, 0)
+            Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+            
+            -- Handle (Nút tròn kéo thả)
+            local handle = Instance.new("Frame", track)
+            handle.Size = UDim2.new(0, 10, 0, 10)
+            handle.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+            handle.AnchorPoint = Vector2.new(0.5, 0.5)
+            handle.Position = UDim2.new(0, 0, 0.5, 0)
+            handle.ZIndex = 2
+            Instance.new("UICorner", handle).CornerRadius = UDim.new(1, 0)
+            
+            -- Time Labels (Thời gian)
+            local timeFrame = Instance.new("Frame", seekFrame)
+            timeFrame.Size = UDim2.new(1, 0, 0, 14)
+            timeFrame.BackgroundTransparency = 1
+            timeFrame.LayoutOrder = 2
+            
+            local timeLayout = Instance.new("UIListLayout", timeFrame)
+            timeLayout.FillDirection = Enum.FillDirection.Horizontal
+            timeLayout.HorizontalAlignment = Enum.HorizontalAlignment.SpaceBetween
+            
+            local curTimeLbl = Instance.new("TextLabel", timeFrame)
+            curTimeLbl.Size = UDim2.new(0, 50, 1, 0)
+            curTimeLbl.BackgroundTransparency = 1
+            curTimeLbl.Text = "00:00"
+            curTimeLbl.TextColor3 = Color3.fromRGB(80, 80, 85)
+            curTimeLbl.Font = Enum.Font.Gotham
+            curTimeLbl.TextSize = 11
+            curTimeLbl.TextXAlignment = Enum.TextXAlignment.Left
+            
+            local totalTimeLbl = Instance.new("TextLabel", timeFrame)
+            totalTimeLbl.Size = UDim2.new(0, 50, 1, 0)
+            totalTimeLbl.BackgroundTransparency = 1
+            totalTimeLbl.Text = "00:00"
+            totalTimeLbl.TextColor3 = Color3.fromRGB(80, 80, 85)
+            totalTimeLbl.Font = Enum.Font.Gotham
+            totalTimeLbl.TextSize = 11
+            totalTimeLbl.TextXAlignment = Enum.TextXAlignment.Right
+
+            -- 7. Controls (Các nút bấm)
+            local controlsFrame = Instance.new("Frame", player)
+            controlsFrame.Size = UDim2.new(1, 0, 0, 40)
+            controlsFrame.BackgroundTransparency = 1
+            controlsFrame.LayoutOrder = 5
+            
+            local controlsLayout = Instance.new("UIListLayout", controlsFrame)
+            controlsLayout.FillDirection = Enum.FillDirection.Horizontal
+            controlsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            controlsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            controlsLayout.Padding = UDim.new(0, 12)
+            
+            -- Hàm tạo nút icon nhỏ
+            local function createControlBtn(icon, color)
+                local btn = Instance.new("ImageButton", controlsFrame)
+                btn.Size = UDim2.new(0, 18, 0, 18)
+                btn.BackgroundTransparency = 1
+                btn.Image = ResolveIcon(icon)
+                btn.ImageColor3 = color or Color3.fromRGB(40, 40, 45)
+                btn.LayoutOrder = GetO()
+                btn.AutoButtonColor = false
+                return btn
+            end
+            
+            -- Shuffle
+            local shuffleBtn = createControlBtn("shuffle", Color3.fromRGB(160, 160, 165))
+            shuffleBtn.LayoutOrder = 1
+            -- Prev
+            local prevBtn = createControlBtn("skip-back")
+            prevBtn.LayoutOrder = 2
+            -- Play/Pause (To)
+            local playBtn = Instance.new("TextButton", controlsFrame)
+            playBtn.Size = UDim2.new(0, 44, 0, 44)
+            playBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+            playBtn.Text = ""
+            playBtn.LayoutOrder = 3
+            playBtn.AutoButtonColor = false
+            Instance.new("UICorner", playBtn).CornerRadius = UDim.new(1, 0)
+            local playIcon = Instance.new("ImageLabel", playBtn)
+            playIcon.Size = UDim2.new(0, 20, 0, 20)
+            playIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
+            playIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+            playIcon.BackgroundTransparency = 1
+            playIcon.Image = ResolveIcon("play")
+            playIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+            playIcon.Name = "Icon"
+            -- Next
+            local nextBtn = createControlBtn("skip-forward")
+            nextBtn.LayoutOrder = 4
+            -- Loop
+            local loopBtn = createControlBtn("repeat", Color3.fromRGB(160, 160, 165))
+            loopBtn.LayoutOrder = 5
+
+            -- ==========================================================
+            -- LOGIC & API (Heart của Music Player)
+            -- ==========================================================
+            local isPlaying = false
+            local currentTime = 0
+            local totalTime = 0
+            local isLoop = false
+            local isShuffle = false
+            local isSeeking = false
+            local soundObj = nil
+            
+            -- Hàm tiện ích format thời gian (seconds -> MM:SS)
+            local function formatTime(sec)
+                if not sec or sec < 0 then return "00:00" end
+                local m = math.floor(sec / 60)
+                local s = math.floor(sec % 60)
+                return string.format("%02d:%02d", m, s)
+            end
+
+            -- Hàm cập nhật thanh tiến trình
+            local function updateSeekBar()
+                if totalTime <= 0 then return end
+                local pct = currentTime / totalTime
+                fill.Size = UDim2.new(pct, 0, 1, 0)
+                handle.Position = UDim2.new(pct, 0, 0.5, 0)
+                curTimeLbl.Text = formatTime(currentTime)
+                totalTimeLbl.Text = formatTime(totalTime)
+            end
+
+            -- Logic Play/Pause
+            local function togglePlay()
+                if not soundObj then return end
+                isPlaying = not isPlaying
+                if isPlaying then
+                    soundObj:Resume()
+                    playIcon.Image = ResolveIcon("pause")
                 else
-                    TweenService:Create(btnHeart, TweenInfo.new(0.2), {ImageColor3 = subTextColor}):Play()
+                    soundObj:Pause()
+                    playIcon.Image = ResolveIcon("play")
                 end
+            end
+
+            playBtn.MouseButton1Click:Connect(function()
+                CreateClickScaleEffect(playBtn)
+                togglePlay()
             end)
 
-            -- 2. Album Art
-            local artContainer = Instance.new("Frame", container)
-            artContainer.Size = UDim2.new(0, 120, 0, 120)
-            artContainer.Position = UDim2.new(0.5, -60, 0, 35)
-            artContainer.BackgroundColor3 = textColor
-            Instance.new("UICorner", artContainer).CornerRadius = UDim.new(0, 8)
-            artContainer.ClipsDescendants = true
+            -- Logic Seek (Kéo thả thanh tiến trình)
+            local function handleSeek(input)
+                if not soundObj then return end
+                local localX = input.Position.X - track.AbsolutePosition.X
+                local pct = math.clamp(localX / track.AbsoluteSize.X, 0, 1)
+                local targetTime = pct * totalTime
+                
+                currentTime = targetTime
+                soundObj.TimePosition = targetTime
+                updateSeekBar()
+            end
 
-            local imgArt = Instance.new("ImageLabel", artContainer)
-            imgArt.Size = UDim2.new(1, 0, 1, 0)
-            imgArt.BackgroundTransparency = 1
-            imgArt.Image = ResolveIcon(albumArt)
-            imgArt.ScaleType = Enum.ScaleType.Fit
-
-            -- 3. Thông tin bài hát
-            local songTitle = Instance.new("TextLabel", container)
-            songTitle.Size = UDim2.new(1, 0, 0, 20)
-            songTitle.Position = UDim2.new(0, 0, 0, 160)
-            songTitle.BackgroundTransparency = 1
-            songTitle.Text = opt.DefaultTitle or "Song title"
-            songTitle.TextColor3 = textColor
-            songTitle.Font = Enum.Font.GothamBold
-            songTitle.TextSize = 14
-            songTitle.TextXAlignment = Enum.TextXAlignment.Center
-
-            local artistName = Instance.new("TextLabel", container)
-            artistName.Size = UDim2.new(1, 0, 0, 16)
-            artistName.Position = UDim2.new(0, 0, 0, 182)
-            artistName.BackgroundTransparency = 1
-            artistName.Text = opt.DefaultArtist or "Singer name"
-            artistName.TextColor3 = subTextColor
-            artistName.Font = Enum.Font.Gotham
-            artistName.TextSize = 10
-            artistName.TextXAlignment = Enum.TextXAlignment.Center
-
-            -- 4. Thanh trượt (Seek Bar)
-            local seekContainer = Instance.new("Frame", container)
-            seekContainer.Size = UDim2.new(1, 0, 0, 20)
-            seekContainer.Position = UDim2.new(0, 0, 0, 210)
-            seekContainer.BackgroundTransparency = 1
-
-            local barBg = Instance.new("Frame", seekContainer)
-            barBg.Size = UDim2.new(1, 0, 0, 3)
-            barBg.Position = UDim2.new(0, 0, 0.5, 0)
-            barBg.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
-            Instance.new("UICorner", barBg).CornerRadius = UDim.new(1, 0)
-
-            local barFill = Instance.new("Frame", barBg)
-            barFill.Size = UDim2.new(0, 0, 1, 0)
-            barFill.BackgroundColor3 = textColor
-            Instance.new("UICorner", barFill).CornerRadius = UDim.new(1, 0)
-
-            local knob = Instance.new("TextButton", seekContainer)
-            knob.Size = UDim2.new(0, 12, 0, 12)
-            knob.Position = UDim2.new(0, 0, 0.5, 0)
-            knob.AnchorPoint = Vector2.new(0.5, 0.5)
-            knob.BackgroundColor3 = textColor
-            knob.Text = ""
-            Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
-
-            local timeLeft = Instance.new("TextLabel", seekContainer)
-            timeLeft.Size = UDim2.new(0, 60, 0, 16)
-            timeLeft.Position = UDim2.new(0, 0, 1, 0)
-            timeLeft.BackgroundTransparency = 1
-            timeLeft.Text = "00:00"
-            timeLeft.TextColor3 = subTextColor
-            timeLeft.Font = Enum.Font.Gotham
-            timeLeft.TextSize = 10
-            timeLeft.TextXAlignment = Enum.TextXAlignment.Left
-
-            local timeRight = Instance.new("TextLabel", seekContainer)
-            timeRight.Size = UDim2.new(0, 60, 0, 16)
-            timeRight.Position = UDim2.new(1, 0, 1, 0)
-            timeRight.AnchorPoint = Vector2.new(1, 0)
-            timeRight.BackgroundTransparency = 1
-            timeRight.Text = "00:00"
-            timeRight.TextColor3 = subTextColor
-            timeRight.Font = Enum.Font.Gotham
-            timeRight.TextSize = 10
-            timeRight.TextXAlignment = Enum.TextXAlignment.Right
-
-            local isDragging = false
-            knob.InputBegan:Connect(function(input)
+            local hitArea = Instance.new("Frame", seekFrame)
+            hitArea.Size = UDim2.new(1, 0, 0, 20)
+            hitArea.Position = UDim2.new(0, 0, 0, -6)
+            hitArea.BackgroundTransparency = 1
+            hitArea.ZIndex = 3
+            
+            hitArea.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    isDragging = true
+                    isSeeking = true
+                    handleSeek(input)
                 end
             end)
             UIS.InputEnded:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    isDragging = false
+                    isSeeking = false
                 end
             end)
             UIS.InputChanged:Connect(function(input)
-                if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                    local relativeX = math.clamp((input.Position.X - seekContainer.AbsolutePosition.X) / seekContainer.AbsoluteSize.X, 0, 1)
-                    barFill.Size = UDim2.new(relativeX, 0, 1, 0)
-                    knob.Position = UDim2.new(relativeX, 0, 0.5, 0)
-                    
-                    if NoirUI.Music.CurrentSound then
-                        NoirUI.Music.CurrentSound.TimePosition = relativeX * NoirUI.Music.CurrentSound.Duration
-                    end
+                if isSeeking and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                    handleSeek(input)
                 end
             end)
 
-            -- 5. Controller (Play, Next, Prev, Shuffle, Loop)
-            -- 🛠️ Quan trọng: Dùng UDim2.new(1,0,0,0) để nó tự co dãn theo chiều cao nội dung bên trong
-            local controls = Instance.new("Frame", container)
-            controls.Size = UDim2.new(1, 0, 0, 0)
-            controls.AutomaticSize = Enum.AutomaticSize.Y -- Cho nó tự co giãn
-            controls.Position = UDim2.new(0, 0, 0, 240)
-            controls.BackgroundTransparency = 1
-
-            local cLayout = Instance.new("UIListLayout", controls)
-            cLayout.FillDirection = Enum.FillDirection.Horizontal
-            cLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-            cLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-            cLayout.Padding = UDim.new(0, 12)
-            -- Thêm PaddingTop để nó cách thanh thời gian 1 khoảng
-            local cPadding = Instance.new("UIPadding", controls)
-            cPadding.PaddingTop = UDim.new(0, 4)
-
-            local function createControlBtn(icon, callback)
-                local btn = Instance.new("ImageButton", controls)
-                btn.Size = UDim2.new(0, 20, 0, 20)
-                btn.BackgroundTransparency = 1
-                btn.Image = ResolveIcon(icon)
-                btn.ImageColor3 = textColor
-                btn.ZIndex = 2
-                btn.AutoButtonColor = false
-
-                btn.MouseButton1Click:Connect(function()
-                    CreateClickScaleEffect(btn)
-                    if callback then callback() end
-                end)
-                return btn
-            end
-
-            local btnShuffle = createControlBtn("shuffle", function()
-                NoirUI.Music:SetMode("Shuffle")
-                NoirUI:Notify("Music Player", "Mode: Shuffle", "repeat", nil, 1.5)
+            -- Logic Loop & Shuffle (Chỉ đổi màu icon)
+            loopBtn.MouseButton1Click:Connect(function()
+                isLoop = not isLoop
+                loopBtn.ImageColor3 = isLoop and accent or Color3.fromRGB(160, 160, 165)
+                CreateClickScaleEffect(loopBtn)
+            end)
+            shuffleBtn.MouseButton1Click:Connect(function()
+                isShuffle = not isShuffle
+                shuffleBtn.ImageColor3 = isShuffle and accent or Color3.fromRGB(160, 160, 165)
+                CreateClickScaleEffect(shuffleBtn)
             end)
 
-            local btnPrev = createControlBtn("skip-back", function()
-                NoirUI.Music:Previous()
+            -- Logic Next/Prev (Gọi callback để chủ script xử lý danh sách nhạc)
+            nextBtn.MouseButton1Click:Connect(function() 
+                CreateClickScaleEffect(nextBtn)
+                if opt.OnNext then opt.OnNext() end
+            end)
+            prevBtn.MouseButton1Click:Connect(function() 
+                CreateClickScaleEffect(prevBtn)
+                if opt.OnPrev then opt.OnPrev() end
             end)
 
-            local btnPlay = Instance.new("TextButton", controls)
-            btnPlay.Size = UDim2.new(0, 44, 0, 44)
-            btnPlay.BackgroundColor3 = textColor
-            btnPlay.Text = ""
-            Instance.new("UICorner", btnPlay).CornerRadius = UDim.new(1, 0)
-            btnPlay.ZIndex = 3
-            btnPlay.AutoButtonColor = false
-
-            local iconPlay = Instance.new("ImageLabel", btnPlay)
-            iconPlay.Size = UDim2.new(0, 20, 0, 20)
-            iconPlay.Position = UDim2.new(0.5, 0, 0.5, 0)
-            iconPlay.AnchorPoint = Vector2.new(0.5, 0.5)
-            iconPlay.BackgroundTransparency = 1
-            iconPlay.Image = ResolveIcon("play")
-            iconPlay.ImageColor3 = bgColor
-
-            btnPlay.MouseButton1Click:Connect(function()
-                CreateClickScaleEffect(btnPlay)
-                if NoirUI.Music.IsPlaying then
-                    NoirUI.Music:Pause()
-                    iconPlay.Image = ResolveIcon("play")
-                else
-                    NoirUI.Music:Play()
-                    iconPlay.Image = ResolveIcon("pause")
-                end
-            end)
-
-            local btnNext = createControlBtn("skip-forward", function()
-                NoirUI.Music:Next()
-            end)
-
-            local btnLoop = createControlBtn("repeat", function()
-                local modes = {"Playlist", "Repeat One", "Single"}
-                local currentIdx = table.find(modes, NoirUI.Music:GetModeName())
-                local nextIdx = (currentIdx % #modes) + 1
-                NoirUI.Music:SetMode(modes[nextIdx])
-                NoirUI:Notify("Music Player", "Mode: " .. NoirUI.Music:GetModeName(), "repeat", nil, 1.5)
-            end)
-
-            -- Cập nhật loop
+            -- Vòng lặp cập nhật thời gian thực (RenderStepped)
             local updateConnection
-            local function startUpdateLoop()
-                if updateConnection then updateConnection:Disconnect() end
-                updateConnection = RunService.RenderStepped:Connect(function()
-                    if not container or not container.Parent then updateConnection:Disconnect() return end
+            updateConnection = RunService.RenderStepped:Connect(function()
+                if not player or not player.Parent then updateConnection:Disconnect() return end
+                if soundObj and isPlaying and not isSeeking then
+                    currentTime = soundObj.TimePosition
+                    updateSeekBar()
+                end
+            end)
 
-                    if NoirUI.Music.CurrentSound and NoirUI.Music.IsPlaying then
-                        local currentTime = NoirUI.Music.CurrentSound.TimePosition
-                        local duration = NoirUI.Music.CurrentSound.Duration
-                        
-                        if not isDragging and duration > 0 then
-                            local percent = currentTime / duration
-                            barFill.Size = UDim2.new(percent, 0, 1, 0)
-                            knob.Position = UDim2.new(percent, 0, 0.5, 0)
-                        end
-
-                        local min1, sec1 = math.floor(currentTime/60), math.floor(currentTime%60)
-                        local min2, sec2 = math.floor(duration/60), math.floor(duration%60)
-                        timeLeft.Text = string.format("%02d:%02d", min1, sec1)
-                        timeRight.Text = string.format("%02d:%02d", min2, sec2)
+            -- ==========================================================
+            -- PUBLIC API
+            -- ==========================================================
+            local api = {
+                player = player,
+                
+                -- Load bài hát mới (có thể truyền SoundId, Duration)
+                load = function(soundId, duration, title, artist, imageId)
+                    -- Hủy sound cũ nếu có
+                    if soundObj then 
+                        soundObj:Stop()
+                        soundObj:Destroy()
                     end
-                end)
-            end
-            startUpdateLoop()
-
-            local playerAPI = {
-                container = container,
-                setSong = function(title, artist, artId)
-                    songTitle.Text = title or "Unknown"
-                    artistName.Text = artist or ""
-                    if artId then
-                        imgArt.Image = ResolveIcon(artId)
+                    
+                    -- Tạo sound mới
+                    soundObj = Instance.new("Sound")
+                    soundObj.SoundId = tostring(soundId)
+                    soundObj.Volume = 0.5
+                    soundObj.Parent = player
+                    
+                    -- Cập nhật UI
+                    titleLbl.Text = title or "Unknown Title"
+                    artistLbl.Text = artist or "Unknown Artist"
+                    if imageId then artImg.Image = ResolveIcon(imageId) end
+                    
+                    -- Xử lý thời gian
+                    if duration then
+                        totalTime = duration
+                    else
+                        -- Nếu không truyền duration, đợi sound load xong để lấy duration
+                        soundObj.Loaded:Connect(function()
+                            totalTime = soundObj.Duration
+                            updateSeekBar()
+                        end)
                     end
+                    updateSeekBar()
+                    
+                    -- Reset trạng thái
+                    isPlaying = false
+                    playIcon.Image = ResolveIcon("play")
+                    currentTime = 0
+                    updateSeekBar()
                 end,
-                play = function() 
-                    btnPlay.MouseButton1Click:Fire() 
+                
+                -- Điều khiển từ bên ngoài
+                play = function()
+                    if not soundObj then return end
+                    if not isPlaying then togglePlay() end
                 end,
-                pause = function() 
-                    if NoirUI.Music.IsPlaying then btnPlay.MouseButton1Click:Fire() end 
+                pause = function()
+                    if isPlaying then togglePlay() end
                 end,
                 stop = function()
-                    NoirUI.Music:Stop()
-                    iconPlay.Image = ResolveIcon("play")
+                    if soundObj then 
+                        soundObj:Stop() 
+                        isPlaying = false
+                        currentTime = 0
+                        playIcon.Image = ResolveIcon("play")
+                        updateSeekBar()
+                    end
                 end,
-                setVolume = function(vol)
-                    NoirUI.Music:SetVolume(vol)
+                
+                getState = function()
+                    return {
+                        isPlaying = isPlaying,
+                        currentTime = currentTime,
+                        totalTime = totalTime,
+                        isLoop = isLoop,
+                        isShuffle = isShuffle
+                    }
                 end
             }
-
-            return playerAPI
+            
+            return api
         end
         
         Tab._button = B
