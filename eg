@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 
-local OldGui = game.CoreGui:FindFirstChild("NoirUI")
+local OldGui = game.CoreGui:FindFirstChild("NoirUI_V3_Ultimate")
 if OldGui then OldGui:Destroy() end
 
 local NoirUI = { 
@@ -64,8 +64,10 @@ for _, url in ipairs(IconSources) do
     LoadIconFile(url)
 end
 
-local ThemePresets = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirStillHere/NUI/main/modules/Themes.lua"))()
+local _version = "2.9.1"
+local LocalPlayer = Players.LocalPlayer
 
+local ThemePresets = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirStillHere/NUI/main/modules/Themes.lua"))()
 if not ThemePresets then
     ThemePresets = {
         ["Noir"] = {
@@ -82,10 +84,19 @@ if not ThemePresets then
     }
 end
 
+-- Gán Presets vào NoirUI
 NoirUI.Themes.Presets = ThemePresets
 
-local _version = "2.9.1"
-local LocalPlayer = Players.LocalPlayer
+function NoirUI:RegisterThemeElement(element, property, themeKey)
+    if not element or not property or not themeKey then return end
+    if not NoirUI.Themes.Elements[themeKey] then
+        NoirUI.Themes.Elements[themeKey] = {}
+    end
+    table.insert(NoirUI.Themes.Elements[themeKey], {
+        Element = element,
+        Property = property
+    })
+end
 
 function NoirUI:ApplyTheme(themeName)
     local theme = NoirUI.Themes.Presets[themeName]
@@ -99,48 +110,13 @@ function NoirUI:ApplyTheme(themeName)
         if color then
             for _, item in ipairs(elements) do
                 if item.Element and item.Element[item.Property] ~= nil then
-                    self:ApplyGradientOrColor(item.Element, color)
+                    item.Element[item.Property] = color
                 end
             end
         end
     end
     
     return true
-end
-
-function NoirUI:ApplyGradientOrColor(element, colorData)
-    local oldGradient = element:FindFirstChild("_ThemeGradient")
-    if oldGradient then oldGradient:Destroy() end
-    
-    if type(colorData) == "table" and colorData.type == "Gradient" then
-        element.BackgroundColor3 = Color3.fromRGB(0,0,0)
-        element.BackgroundTransparency = 0
-        
-        local gradient = Instance.new("UIGradient")
-        gradient.Name = "_ThemeGradient"
-        gradient.Rotation = colorData.rotation or 45
-        
-        local points = {}
-        for i, color in ipairs(colorData.colors) do
-            local time = (i - 1) / (math.max(#colorData.colors - 1, 1))
-            table.insert(points, ColorSequenceKeypoint.new(time, color))
-        end
-        gradient.Color = ColorSequence.new(points)
-        gradient.Parent = element
-    else
-        element.BackgroundColor3 = colorData
-    end
-end
-
-function NoirUI:RegisterThemeElement(element, property, themeKey)
-    if not element or not property or not themeKey then return end
-    if not NoirUI.Themes.Elements[themeKey] then
-        NoirUI.Themes.Elements[themeKey] = {}
-    end
-    table.insert(NoirUI.Themes.Elements[themeKey], {
-        Element = element,
-        Property = property
-    })
 end
 
 function NoirUI:GetCurrentTheme()
@@ -221,20 +197,18 @@ function NoirUI:InitHotkeyListener()
     end)
 end
 
+-- Khởi động listener mặc định
 task.defer(function() NoirUI:InitHotkeyListener() end)
 
 -- ==========================================================
--- SHINE EFFECT V2.1 (ĐÃ SỬA - TIA SÁNG MÀU ACCENT)
+-- SHINE EFFECT V2 (Dùng 2 lớp chữ, không bao giờ bị tối)
 -- ==========================================================
 function NoirUI:CreateShineEffect(textLabel, rotation, speed)
     if not textLabel then return end
     rotation = rotation or 45
     speed = speed or 1.5
     
-    -- Lấy màu Accent hiện tại (từ Theme đang áp dụng)
-    local accentColor = NoirUI.Themes.AccentColor or Color3.fromRGB(138, 116, 249)
-    
-    -- Lưu lại text gốc và thuộc tính để sao chép
+    -- Lưu lại text gốc và màu gốc
     local originalText = textLabel.Text
     local originalColor = textLabel.TextColor3
     local originalSize = textLabel.Size
@@ -246,7 +220,7 @@ function NoirUI:CreateShineEffect(textLabel, rotation, speed)
     textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     textLabel.RichText = true
     
-    -- 2. Lớp chữ hiệu ứng (Đè lên trên, có Gradient màu Accent)
+    -- 2. Lớp chữ hiệu ứng (Đè lên trên, có Gradient)
     local shineLabel = Instance.new("TextLabel")
     shineLabel.Name = "ShineEffect"
     shineLabel.Parent = textLabel.Parent
@@ -259,17 +233,17 @@ function NoirUI:CreateShineEffect(textLabel, rotation, speed)
     shineLabel.TextSize = originalTextSize
     shineLabel.TextXAlignment = textLabel.TextXAlignment
     shineLabel.TextYAlignment = textLabel.TextYAlignment
-    shineLabel.ZIndex = textLabel.ZIndex + 1
+    shineLabel.ZIndex = textLabel.ZIndex + 1 -- Đè lên trên chữ gốc
     shineLabel.RichText = true
-    shineLabel.ClipsDescendants = true
+    shineLabel.ClipsDescendants = true -- Quan trọng: Cắt gradient theo chữ
     
-    -- Tạo UIGradient cho lớp Shine (Màu sắc thay đổi theo Accent)
+    -- Tạo UIGradient cho lớp Shine
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, accentColor * 0.3),
-        ColorSequenceKeypoint.new(0.4, accentColor),
-        ColorSequenceKeypoint.new(0.6, accentColor),
-        ColorSequenceKeypoint.new(1, accentColor * 0.3)
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 50)),
+        ColorSequenceKeypoint.new(0.4, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(0.6, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 50, 50))
     })
     gradient.Rotation = rotation
     gradient.Parent = shineLabel
@@ -286,10 +260,12 @@ function NoirUI:CreateShineEffect(textLabel, rotation, speed)
             tween:Play()
             tween.Completed:Wait()
             
+            -- Reset Offset về đầu
             gradient.Offset = startOffset
         end
     end)
     
+    -- Đăng ký Theme cho chữ gốc (để khi đổi theme, nó vẫn giữ màu trắng nền chính xác)
     NoirUI:RegisterThemeElement(textLabel, "TextColor3", "text")
 end
 
@@ -990,7 +966,7 @@ local function MakeDraggable(frame)
 end
 
 -- ====================================================
--- BACKGROUND SYSTEM V2.0.0
+-- BACKGROUND SYSTEM V2.0.0 (HIỆN ĐẠI)
 -- ====================================================
 local function SetupBackground(frame, bgSetting, bgColor, defaultTransparency)
     local existingBg = frame:FindFirstChild("_BackgroundImage")
@@ -1281,7 +1257,7 @@ function NoirUI:Destroy()
     for _, notif in pairs(NoirUI.Notifications) do
         pcall(function() notif:Destroy() end)
     end
-    local gui = game.CoreGui:FindFirstChild("NoirUI")
+    local gui = game.CoreGui:FindFirstChild("NoirUI_V3_Ultimate")
     if gui then
         gui:Destroy()
     end
@@ -1719,7 +1695,7 @@ end
 -- ==========================================================
 function NoirUI:CreateWindow(settings)
     local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-    ScreenGui.Name = "NoirUI"
+    ScreenGui.Name = "NoirUI_V3_Ultimate"
     ScreenGui.ResetOnSpawn = false
     
     if settings.KeySystem then
@@ -1830,6 +1806,7 @@ function NoirUI:CreateWindow(settings)
     TBtn.AutoButtonColor = false
     TBtn.Visible = false
     
+    -- 📌 Biến ghi nhớ vị trí người dùng đã kéo
     local LastFloatPosition = floatDefaultPos 
     
     local floatCorner = Instance.new("UICorner", TBtn)
@@ -1911,6 +1888,7 @@ function NoirUI:CreateWindow(settings)
     
     local savedFloatPos = floatDefaultPos
 
+    -- 📌 Chỉ cập nhật vị trí khi người dùng thả chuột
     local floatDragging = false
     local floatDragStart, floatStartPos, floatDragInput
     TBtn.InputBegan:Connect(function(input)
@@ -1934,6 +1912,7 @@ function NoirUI:CreateWindow(settings)
     UIS.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             if floatDragging then
+                -- ✅ CHỈ CẬP NHẬT Ở ĐÂY: Lưu vị trí hiện tại làm điểm neo
                 LastFloatPosition = TBtn.Position
                 floatDragging = false
             end
@@ -1959,6 +1938,7 @@ function NoirUI:CreateWindow(settings)
     Title.TextSize = 14
     Title.TextXAlignment = "Left"
     
+    -- Bật Shine Effect nếu settings yêu cầu
     if settings.ShineEffect == true then
         NoirUI:CreateShineEffect(Title, 45, 1.5)
     end
@@ -2054,6 +2034,7 @@ function NoirUI:CreateWindow(settings)
         end)
     end
 
+    -- Minimize (Đã sửa logic)
     TopImageB("minus", Color3.fromRGB(255,200,50), function()
         PlaySound("Click")
         local startPos = Main.Position
@@ -2065,13 +2046,16 @@ function NoirUI:CreateWindow(settings)
         task.wait(0.4)
         Main.Visible = false
         
+        -- Hiện Float và di chuyển về vị trí đã lưu
         TBtn.Visible = true
+        -- Đặt xuống đáy trước, rồi tween lên vị trí LastFloatPosition
         TBtn.Position = UDim2.new(LastFloatPosition.X.Scale, LastFloatPosition.X.Offset, 1, 50)
         TweenService:Create(TBtn, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Position = LastFloatPosition
         }):Play()
     end)
 
+    -- Close Button
     TopImageB("x", Color3.fromRGB(255,100,100), function()
         PlaySound("Click")
         StopAndCleanupMusic()
@@ -2132,10 +2116,12 @@ function NoirUI:CreateWindow(settings)
     local contCorner = Instance.new("UICorner", Cont)
     contCorner.CornerRadius = UDim.new(0, 8)
 
+    -- Float toggle (Mở lại UI - Đã sửa Slide Swap)
     TBtn.MouseButton1Click:Connect(function()
         PlaySound("Click")
         CreateClickScaleEffect(TBtn)
         
+        -- 1. Trượt Float xuống đáy màn hình (dùng LastFloatPosition để giữ nguyên trục X)
         local floatStartPos = TBtn.Position
         local floatTargetPos = UDim2.new(LastFloatPosition.X.Scale, LastFloatPosition.X.Offset, 1, 50)
         
@@ -2144,6 +2130,7 @@ function NoirUI:CreateWindow(settings)
         })
         floatTween:Play()
         
+        -- 2. Trượt UI từ dưới đáy lên vị trí cũ
         Main.Visible = true
         Main.Size = savedSize
         Main.Position = UDim2.new(mainDefaultPos.X.Scale, mainDefaultPos.X.Offset, 1, 0)
@@ -2156,6 +2143,7 @@ function NoirUI:CreateWindow(settings)
         })
         mainTween:Play()
         
+        -- 3. Chờ Float trượt xong rồi mới ẩn hẳn nó đi
         floatTween.Completed:Wait()
         TBtn.Visible = false
         
@@ -2439,6 +2427,7 @@ function NoirUI:CreateWindow(settings)
         titleLabel.TextSize = 11
         titleLabel.TextXAlignment = "Left"
         
+        -- Bật Shine Effect nếu settings yêu cầu
         if settings.ShineEffect == true then
             NoirUI:CreateShineEffect(titleLabel, 30, 2)
         end
@@ -2528,8 +2517,8 @@ function NoirUI:CreateWindow(settings)
         local Indicator = Instance.new("Frame")
         Indicator.Name = "Indicator"
         Indicator.Parent = B
-        Indicator.Size = UDim2.new(0, 2, 0, 0)
-        Indicator.Position = UDim2.new(1, 0, 0.5, 0)
+        Indicator.Size = UDim2.new(0, 3, 0, 0)
+        Indicator.Position = UDim2.new(1, -4, 0.5, 0)
         Indicator.AnchorPoint = Vector2.new(1, 0.5)
         Indicator.BackgroundColor3 = ACCENT
         Indicator.BackgroundTransparency = 1
@@ -2542,11 +2531,13 @@ function NoirUI:CreateWindow(settings)
         BT.BackgroundTransparency = 1
         BT.Text = name
         BT.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
-        BT.TextTransparency = 0        BT.Font = "GothamBold"
+        BT.TextTransparency = 0
+        BT.Font = "GothamBold"
         BT.TextSize = 13
         BT.TextXAlignment = "Left"
         BT.ZIndex = 2
         
+        -- Bật Shine Effect nếu settings yêu cầu
         if settings.ShineEffect == true then
             NoirUI:CreateShineEffect(BT, 45, 2.5)
         end
@@ -2812,6 +2803,7 @@ function NoirUI:CreateWindow(settings)
             lbl.TextXAlignment = "Left"
             lbl.BackgroundTransparency = 1
             
+            -- Bật Shine Effect nếu settings yêu cầu
             if settings.ShineEffect == true then
                 NoirUI:CreateShineEffect(lbl, 30, 2)
             end
@@ -3062,6 +3054,7 @@ function NoirUI:CreateWindow(settings)
                 if opt.Callback then opt.Callback(s) end
             end)
             
+            -- === FLAG SYSTEM: Register Toggle ===
             if opt.FlagName then
                 local flagData = {
                     Type = "Toggle",
@@ -3239,6 +3232,7 @@ function NoirUI:CreateWindow(settings)
                 valBtn.Visible = true
             end)
             
+            -- === FLAG SYSTEM: Register Slider ===
             if opt.FlagName then
                 local flagData = {
                     Type = "Slider",
@@ -3709,6 +3703,7 @@ function NoirUI:CreateWindow(settings)
                 table.insert(NoirUI.Connections, refreshConnection)
             end
             
+            -- === FLAG SYSTEM: Register Dropdown ===
             if opt.FlagName then
                 local flagData = {
                     Type = "Dropdown",
@@ -3755,6 +3750,9 @@ function NoirUI:CreateWindow(settings)
             return api
         end
         
+        -- ==========================================================
+        -- ELEMENT: KEYBIND
+        -- ==========================================================
         function Tab:CreateKeybind(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -3836,6 +3834,7 @@ function NoirUI:CreateWindow(settings)
                     end
                 end)
                 
+                -- Auto timeout after 5 seconds
                 task.delay(5, function()
                     if isListening then
                         isListening = false
@@ -3845,6 +3844,7 @@ function NoirUI:CreateWindow(settings)
                 end)
             end)
             
+            -- === FLAG SYSTEM: Register Keybind ===
             if opt.FlagName then
                 local flagData = {
                     Type = "Keybind",
@@ -3862,6 +3862,9 @@ function NoirUI:CreateWindow(settings)
             end
         end
         
+        -- ==========================================================
+        -- ELEMENT: IMAGE
+        -- ==========================================================
         function Tab:CreateImage(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local height = opt.Height or 120
@@ -3876,12 +3879,14 @@ function NoirUI:CreateWindow(settings)
             box.Parent = parent
             box.LayoutOrder = GetO()
             
+            -- Register theme element for box
             NoirUI:RegisterThemeElement(box, "BackgroundColor3", "element")
             
             local boxCorner = Instance.new("UICorner")
             boxCorner.CornerRadius = UDim.new(0, cornerRadius)
             boxCorner.Parent = box
             
+            -- Resolve image ID (Supports Asset Cache and LucideIcons)
             local resolvedImage = ResolveIcon(imageId) or imageId
             
             local img = Instance.new("ImageLabel")
@@ -3906,6 +3911,7 @@ function NoirUI:CreateWindow(settings)
                 img.Image = resolved
             end
             
+            -- Add to elements list for search/filter functionality
             local idx = #Tab.Elements + 1
             table.insert(Tab.Elements, box)
             searchData[idx] = opt.Name or "Image"
@@ -3915,15 +3921,19 @@ function NoirUI:CreateWindow(settings)
             return api
         end
         
+        -- ==========================================================
+        -- ELEMENT: PRESET BUTTON (Style KyriLib - Viền sáng khi chọn)
+        -- ==========================================================
         function Tab:CreatePresetButton(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local presetData = opt.Presets or {} 
             local defaultValue = opt.Default or (presetData[1] or "")
             local currentValue = defaultValue
-            local spacing = opt.Spacing or 8
+            local spacing = opt.Spacing or 6
             
             local callback = opt.Callback or function() end
 
+            -- Tạo container
             local container = Instance.new("Frame", parent)
             container.Size = UDim2.new(0.95, 0, 0, 0)
             container.AutomaticSize = Enum.AutomaticSize.Y
@@ -3940,51 +3950,59 @@ function NoirUI:CreateWindow(settings)
             local padding = Instance.new("UIPadding", container)
             padding.PaddingLeft = UDim.new(0, 4)
             
+            -- Hàm cập nhật giao diện (Style KyriLib)
             local function updatePreset(value)
                 currentValue = value
                 for _, child in pairs(container:GetChildren()) do
                     if child:IsA("TextButton") then
                         local isSelected = child.Name == value
                         
+                        -- 1. Nền: Giữ màu tối (element), hơi sáng lên 1 chút nếu được chọn
                         child.BackgroundColor3 = isSelected and (currentTheme.hover or Color3.fromRGB(28,28,36)) or (currentTheme.element or Color3.fromRGB(20,20,26))
                         child.BackgroundTransparency = isSelected and 0.5 or (HAS_BG_IMAGE and 0.5 or 0)
                         
+                        -- 2. Chữ: Xám mờ khi chưa chọn, trắng/sáng hơn khi chọn
                         child.TextColor3 = isSelected and (currentTheme.text or Color3.fromRGB(245,245,250)) or (currentTheme.subtext or Color3.fromRGB(165,165,180))
                         
+                        -- 3. Viền (Stroke): Mờ khi chưa chọn -> Sáng màu Accent khi chọn
                         local stroke = child:FindFirstChild("UIStroke")
                         if stroke then
-                            stroke.Color = isSelected and ACCENT or Color3.fromRGB(40,40,48)
-                            stroke.Transparency = isSelected and 0.2 or 1
-                            stroke.Thickness = isSelected and 0.5 or 0
+                            stroke.Color = isSelected and ACCENT or Color3.fromRGB(40,40,48) -- Viền Accent
+                            stroke.Transparency = isSelected and 0.2 or 1 -- Hiện viền khi chọn
+                            stroke.Thickness = isSelected and 1.5 or 0 -- Độ dày viền
                         end
                     end
                 end
                 callback(value)
             end
 
+            -- Hàm render nút
             local function renderButtons()
                 for _, value in ipairs(presetData) do
                     local btn = Instance.new("TextButton", container)
                     btn.Name = value
-                    btn.Size = UDim2.new(0, 0, 0, 44)
+                    btn.Size = UDim2.new(0, 0, 0, 32) -- Chiều cao vừa vặn 32
                     btn.AutomaticSize = Enum.AutomaticSize.X 
                     btn.BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26)
                     btn.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
                     btn.Text = "  " .. value .. "  "
                     btn.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
-                    btn.TextSize = 14
+                    btn.TextSize = 12 
                     btn.Font = Enum.Font.GothamBold
                     btn.AutoButtonColor = false
                     btn.ZIndex = 2
                     
+                    -- Bo góc 8 (Như KyriLib)
                     local corner = Instance.new("UICorner", btn)
                     corner.CornerRadius = UDim.new(0, 8) 
                     
+                    -- Viền ngoài (Mờ mặc định)
                     local stroke = Instance.new("UIStroke", btn)
                     stroke.Color = Color3.fromRGB(40,40,48)
-                    stroke.Transparency = 1
+                    stroke.Transparency = 1 -- Mặc định ẩn viền
                     stroke.Thickness = 1.5
                     
+                    -- Đăng ký theme
                     NoirUI:RegisterThemeElement(btn, "BackgroundColor3", "element")
                     NoirUI:RegisterThemeElement(btn, "TextColor3", "text")
                     
@@ -3994,11 +4012,13 @@ function NoirUI:CreateWindow(settings)
                     end)
                 end
                 
+                -- Set giá trị mặc định ban đầu sau khi render xong
                 updatePreset(defaultValue)
             end
 
             renderButtons()
             
+            -- === FLAG SYSTEM ===
             if opt.FlagName then
                 local flagData = {
                     Type = "Preset",
@@ -4281,7 +4301,7 @@ function NoirUI:CreateWindow(settings)
                     
                     for _, btnData in ipairs(opt.Footer) do
                         local btn = Instance.new("TextButton", footerFrame)
-                        btn.Size = UDim2.new(0, 0, 0, 32)
+                        btn.Size = UDim2.new(0, 0, 0, 28)
                         btn.AutomaticSize = Enum.AutomaticSize.X
                         btn.BackgroundColor3 = ACCENT
                         btn.Text = btnData.Text or "Button"
@@ -4397,7 +4417,7 @@ function NoirUI:CreateWindow(settings)
                     
                     for _, btnData in ipairs(opt.Footer) do
                         local btn = Instance.new("TextButton", footerFrame)
-                        btn.Size = UDim2.new(0, 0, 0, 32)
+                        btn.Size = UDim2.new(0, 0, 0, 28)
                         btn.AutomaticSize = Enum.AutomaticSize.X
                         btn.BackgroundColor3 = ACCENT
                         btn.Text = btnData.Text or "Button"
@@ -4534,7 +4554,7 @@ function NoirUI:CreateWindow(settings)
                     
                     for _, btnData in ipairs(opt.Footer) do
                         local btn = Instance.new("TextButton", footerFrame)
-                        btn.Size = UDim2.new(0, 0, 0, 32)
+                        btn.Size = UDim2.new(0, 0, 0, 28)
                         btn.AutomaticSize = Enum.AutomaticSize.X
                         btn.BackgroundColor3 = ACCENT
                         btn.Text = btnData.Text or "Button"
