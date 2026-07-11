@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 
-local OldGui = game.CoreGui:FindFirstChild("NoirUI_V3_Ultimate")
+local OldGui = game.CoreGui:FindFirstChild("NoirUI")
 if OldGui then OldGui:Destroy() end
 
 local NoirUI = { 
@@ -1257,7 +1257,7 @@ function NoirUI:Destroy()
     for _, notif in pairs(NoirUI.Notifications) do
         pcall(function() notif:Destroy() end)
     end
-    local gui = game.CoreGui:FindFirstChild("NoirUI_V3_Ultimate")
+    local gui = game.CoreGui:FindFirstChild("NoirUI")
     if gui then
         gui:Destroy()
     end
@@ -1695,7 +1695,7 @@ end
 -- ==========================================================
 function NoirUI:CreateWindow(settings)
     local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-    ScreenGui.Name = "NoirUI_V3_Ultimate"
+    ScreenGui.Name = "NoirUI"
     ScreenGui.ResetOnSpawn = false
     
     if settings.KeySystem then
@@ -2517,8 +2517,8 @@ function NoirUI:CreateWindow(settings)
         local Indicator = Instance.new("Frame")
         Indicator.Name = "Indicator"
         Indicator.Parent = B
-        Indicator.Size = UDim2.new(0, 3, 0, 0)
-        Indicator.Position = UDim2.new(1, -4, 0.5, 0)
+        Indicator.Size = UDim2.new(0, 2, 0, 0)
+        Indicator.Position = UDim2.new(1, 0, 0.5, 0)
         Indicator.AnchorPoint = Vector2.new(1, 0.5)
         Indicator.BackgroundColor3 = ACCENT
         Indicator.BackgroundTransparency = 1
@@ -2536,6 +2536,10 @@ function NoirUI:CreateWindow(settings)
         BT.TextSize = 13
         BT.TextXAlignment = "Left"
         BT.ZIndex = 2
+        
+        NoirUI:RegisterThemeElement(B, "BackgroundColor3", "element")
+        NoirUI:RegisterThemeElement(BT, "TextColor3", "text")
+        NoirUI:RegisterThemeElement(Indicator, "BackgroundColor3", "accent")
         
         -- Bật Shine Effect nếu settings yêu cầu
         if settings.ShineEffect == true then
@@ -3929,7 +3933,7 @@ function NoirUI:CreateWindow(settings)
             local presetData = opt.Presets or {} 
             local defaultValue = opt.Default or (presetData[1] or "")
             local currentValue = defaultValue
-            local spacing = opt.Spacing or 6
+            local spacing = opt.Spacing or 8
             
             local callback = opt.Callback or function() end
 
@@ -3981,13 +3985,13 @@ function NoirUI:CreateWindow(settings)
                 for _, value in ipairs(presetData) do
                     local btn = Instance.new("TextButton", container)
                     btn.Name = value
-                    btn.Size = UDim2.new(0, 0, 0, 32) -- Chiều cao vừa vặn 32
+                    btn.Size = UDim2.new(0, 0, 0, 45) -- Chiều cao vừa vặn 32
                     btn.AutomaticSize = Enum.AutomaticSize.X 
                     btn.BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26)
                     btn.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
                     btn.Text = "  " .. value .. "  "
                     btn.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
-                    btn.TextSize = 12 
+                    btn.TextSize = 14
                     btn.Font = Enum.Font.GothamBold
                     btn.AutoButtonColor = false
                     btn.ZIndex = 2
@@ -4000,7 +4004,7 @@ function NoirUI:CreateWindow(settings)
                     local stroke = Instance.new("UIStroke", btn)
                     stroke.Color = Color3.fromRGB(40,40,48)
                     stroke.Transparency = 1 -- Mặc định ẩn viền
-                    stroke.Thickness = 1.5
+                    stroke.Thickness = 0.75
                     
                     -- Đăng ký theme
                     NoirUI:RegisterThemeElement(btn, "BackgroundColor3", "element")
@@ -4189,7 +4193,7 @@ function NoirUI:CreateWindow(settings)
                         val.TextXAlignment = Enum.TextXAlignment.Center
                         
                         local lbl = Instance.new("TextLabel", cell)
-                        lbl.Size = UDim2.new(1, 0, 0, 18)
+                        lbl.Size = UDim2.new(1, 0, 0, 20)
                         lbl.Position = UDim2.new(0, 0, 0.9, 0)
                         lbl.AnchorPoint = Vector2.new(0, 1)
                         lbl.BackgroundTransparency = 1
@@ -4301,7 +4305,7 @@ function NoirUI:CreateWindow(settings)
                     
                     for _, btnData in ipairs(opt.Footer) do
                         local btn = Instance.new("TextButton", footerFrame)
-                        btn.Size = UDim2.new(0, 0, 0, 28)
+                        btn.Size = UDim2.new(0, 0, 0, 32)
                         btn.AutomaticSize = Enum.AutomaticSize.X
                         btn.BackgroundColor3 = ACCENT
                         btn.Text = btnData.Text or "Button"
@@ -4417,7 +4421,7 @@ function NoirUI:CreateWindow(settings)
                     
                     for _, btnData in ipairs(opt.Footer) do
                         local btn = Instance.new("TextButton", footerFrame)
-                        btn.Size = UDim2.new(0, 0, 0, 28)
+                        btn.Size = UDim2.new(0, 0, 0, 32)
                         btn.AutomaticSize = Enum.AutomaticSize.X
                         btn.BackgroundColor3 = ACCENT
                         btn.Text = btnData.Text or "Button"
@@ -4554,7 +4558,7 @@ function NoirUI:CreateWindow(settings)
                     
                     for _, btnData in ipairs(opt.Footer) do
                         local btn = Instance.new("TextButton", footerFrame)
-                        btn.Size = UDim2.new(0, 0, 0, 28)
+                        btn.Size = UDim2.new(0, 0, 0, 32)
                         btn.AutomaticSize = Enum.AutomaticSize.X
                         btn.BackgroundColor3 = ACCENT
                         btn.Text = btnData.Text or "Button"
