@@ -457,6 +457,37 @@ export type FlagData = {
     SetDefault: () -> ()
 }
 
+export type FileSystem = {
+    readfile: (path: string) -> string,
+    writefile: (path: string, data: string | any) -> (),
+    isfile: (path: string) -> boolean,
+    isfolder: (path: string) -> boolean,
+    makefolder: (path: string) -> (),
+    listfiles: (path: string) -> {string},
+    delfile: (path: string) -> (),
+    getcustomasset: (filePath: string) -> string?,
+    getsynasset: (filePath: string) -> string?,
+    getgenv: () -> {[string]: any},
+    getfenv: (fn: function?) -> {[string]: any}
+}
+
+export type GlobalEnvironment = FileSystem & {
+    -- Người dùng có thể mở rộng thêm nếu cần
+    _G: {[string]: any}
+}
+
+declare global {
+    writefile: (path: string, data: string) -> (),
+    readfile: (path: string) -> string,
+    isfile: (path: string) -> boolean,
+    isfolder: (path: string) -> boolean,
+    makefolder: (path: string) -> (),
+    listfiles: (path: string) -> {string},
+    delfile: (path: string) -> (),
+    getcustomasset: (filePath: string) -> string?,
+    getsynasset: (filePath: string) -> string?
+}
+
 local ThemePresets = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirStillHere/NUI/main/modules/Themes.lua"))()
 if not ThemePresets then
     ThemePresets = {
