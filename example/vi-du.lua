@@ -1,4 +1,4 @@
-local NoirUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirStillHere/NUI/main/src/Main.lua"))()
+local NoirUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirStillHere/NUI/refs/heads/main/src/NoirUI.lua"))()
 local LocalPlayer = game:GetService("Players").LocalPlayer
 
 NoirUI:EnableAssetCache("NoirUI_Full_Cache")
