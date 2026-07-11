@@ -1,4 +1,4 @@
-local LucideIcons = {
+return {
 	['mouse-2'] = "rbxassetid://10088146939",
 	['internet'] = "rbxassetid://12785195438",
 	['earth'] = "rbxassetid://115986292591138",
@@ -2606,5 +2606,3 @@ local LucideIcons = {
 	["zodiac-taurus"] = "rbxassetid://123053219704400",
 	["zodiac-virgo"] = "rbxassetid://99462994613661",
 }
-
-return LucideIcons
