@@ -26,7 +26,7 @@
 --[[
   --- 1. CORE SETUP ---
   
-  local NoirUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirStillHere/NUI/main/modules/NoirUI.lua"))()
+  local NoirUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirStillHere/NUI/refs/heads/main/src/NoirUI.lua"))()
   
   Returns a NoirUI instance with all methods below.
 ]]
@@ -464,7 +464,7 @@
 --[[
   --- EXAMPLE USAGE ---
   
-  local NoirUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirStillHere/NUI/main/modules/NoirUI.lua"))()
+  local NoirUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirStillHere/NUI/refs/heads/main/src/NoirUI.lua"))()
   
   -- Enable asset cache
   NoirUI:EnableAssetCache("NoirUI_Cache")
