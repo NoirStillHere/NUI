@@ -1,5 +1,5 @@
 ![Version](https://img.shields.io/badge/Version-2.9.1-8B5CF6?style=for-the-badge&logo=roblox&logoColor=white)
-![Luau](https://img.shields.io/badge/Luau-100%25-8B5CF6?style=for-the-badge&logo=lua&logoColor=white)
+![Lua](https://img.shields.io/badge/Lua-100%25-8B5CF6?style=for-the-badge&logo=lua&logoColor=white)
 
 # NoirUI v2.9.1 - Complete Reference
 **NoirUI** is a modern, feature-rich Roblox UI Library. It includes a comprehensive theme engine, config manager, asset cache, built-in music player, complex UI elements (Cards, Presets, Accordions, Carousels), and a robust key system.
