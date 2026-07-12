@@ -3956,7 +3956,7 @@ function NoirUI:CreateWindow(settings)
             local parent = Tab._currentSectionContent or ContentFrame
             local height = opt.Height or 120
             local scaleType = opt.ScaleType or Enum.ScaleType.Fit
-            local imageId = opt.Image or "rbxassetid://6031094700"
+            local imageId = opt.Image or "rbxassetid://75585190658263"
             local cornerRadius = opt.CornerRadius or 8
             
             local box = Instance.new("Frame")
@@ -4079,12 +4079,12 @@ function NoirUI:CreateWindow(settings)
                     btn.AutoButtonColor = false
                     btn.ZIndex = 2
                     
-                    local padding = Instance.new("UDPadding", btn)
-                    padding.PaddingLeft = UDim.new(0, 16)
-                    padding.PaddingRight = UDim.new(0,16)
+                    local padding = Instance.new("UIPadding", btn)
+                    padding.PaddingLeft = UDim.new(0, 20)
+                    padding.PaddingRight = UDim.new(0,20)
                     
-                    padding.PaddingTop = UDim.new(0, 8)
-                    padding.PaddingBottom = UDim.new(0, 8)
+                    padding.PaddingTop = UDim.new(0, 10)
+                    padding.PaddingBottom = UDim.new(0, 10)
                     
                     -- Bo góc 8 (Như KyriLib)
                     local corner = Instance.new("UICorner", btn)
@@ -4395,7 +4395,7 @@ function NoirUI:CreateWindow(settings)
                     
                     for _, btnData in ipairs(opt.Footer) do
                         local btn = Instance.new("TextButton", footerFrame)
-                        btn.Size = UDim2.new(0, 0, 0, 32)
+                        btn.Size = UDim2.new(0, 0, 0, 30)
                         btn.AutomaticSize = Enum.AutomaticSize.X
                         btn.BackgroundColor3 = ACCENT
                         btn.Text = btnData.Text or "Button"
@@ -4407,8 +4407,8 @@ function NoirUI:CreateWindow(settings)
                         btn.AutoButtonColor = false
                         
                         local padding = Instance.new("UIPadding", btn)
-                        padding.PaddingLeft = UDim.new(0, 20)
-                        padding.PaddingRight = UDim.new(0, 20)
+                        padding.PaddingLeft = UDim.new(0, 16)
+                        padding.PaddingRight = UDim.new(0, 16)
                         
                         btn.MouseButton1Click:Connect(function()
                             PlaySound("Element")
@@ -4515,7 +4515,7 @@ function NoirUI:CreateWindow(settings)
                     
                     for _, btnData in ipairs(opt.Footer) do
                         local btn = Instance.new("TextButton", footerFrame)
-                        btn.Size = UDim2.new(0, 0, 0, 32)
+                        btn.Size = UDim2.new(0, 0, 0, 30)
                         btn.AutomaticSize = Enum.AutomaticSize.X
                         btn.BackgroundColor3 = ACCENT
                         btn.Text = btnData.Text or "Button"
@@ -4527,8 +4527,8 @@ function NoirUI:CreateWindow(settings)
                         btn.AutoButtonColor = false
                         
                         local padding = Instance.new("UIPadding", btn)
-                        padding.PaddingLeft = UDim.new(0, 20)
-                        padding.PaddingRight = UDim.new(0, 20)
+                        padding.PaddingLeft = UDim.new(0, 16)
+                        padding.PaddingRight = UDim.new(0, 16)
                         
                         btn.MouseButton1Click:Connect(function()
                             PlaySound("Element")
@@ -4656,7 +4656,7 @@ function NoirUI:CreateWindow(settings)
                     
                     for _, btnData in ipairs(opt.Footer) do
                         local btn = Instance.new("TextButton", footerFrame)
-                        btn.Size = UDim2.new(0, 0, 0, 32)
+                        btn.Size = UDim2.new(0, 0, 0, 30)
                         btn.AutomaticSize = Enum.AutomaticSize.X
                         btn.BackgroundColor3 = ACCENT
                         btn.Text = btnData.Text or "Button"
@@ -4668,8 +4668,8 @@ function NoirUI:CreateWindow(settings)
                         btn.AutoButtonColor = false
                         
                         local padding = Instance.new("UIPadding", btn)
-                        padding.PaddingLeft = UDim.new(0, 20)
-                        padding.PaddingRight = UDim.new(0, 20)
+                        padding.PaddingLeft = UDim.new(0, 16)
+                        padding.PaddingRight = UDim.new(0, 16)
                         
                         btn.MouseButton1Click:Connect(function()
                             PlaySound("Element")
