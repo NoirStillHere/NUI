@@ -4073,7 +4073,7 @@ function NoirUI:CreateWindow(settings)
             local spacing = opt.Spacing or 8
             
             local callback = opt.Callback or function() end
-
+        
             -- Tạo container
             local container = Instance.new("Frame", parent)
             container.Size = UDim2.new(0.95, 0, 0, 0)
@@ -4093,36 +4093,36 @@ function NoirUI:CreateWindow(settings)
             
             -- Hàm cập nhật giao diện (Style KyriLib)
             local function updatePreset(value)
+                if not value then return end -- 🟢 Bảo vệ an toàn: Nếu value là nil thì dừng luôn
                 currentValue = value
                 for _, child in pairs(container:GetChildren()) do
                     if child:IsA("TextButton") then
                         local isSelected = child.Name == value
                         
-                        -- 1. Nền: Giữ màu tối (element), hơi sáng lên 1 chút nếu được chọn
                         child.BackgroundColor3 = isSelected and (currentTheme.hover or Color3.fromRGB(28,28,36)) or (currentTheme.element or Color3.fromRGB(20,20,26))
                         child.BackgroundTransparency = isSelected and 0.5 or (HAS_BG_IMAGE and 0.5 or 0)
                         
-                        -- 2. Chữ: Xám mờ khi chưa chọn, trắng/sáng hơn khi chọn
                         child.TextColor3 = isSelected and (currentTheme.text or Color3.fromRGB(245,245,250)) or (currentTheme.subtext or Color3.fromRGB(165,165,180))
                         
-                        -- 3. Viền (Stroke): Mờ khi chưa chọn -> Sáng màu Accent khi chọn
                         local stroke = child:FindFirstChild("UIStroke")
                         if stroke then
-                            stroke.Color = isSelected and ACCENT or Color3.fromRGB(40,40,48) -- Viền Accent
-                            stroke.Transparency = isSelected and 0.2 or 1 -- Hiện viền khi chọn
-                            stroke.Thickness = isSelected and 1 or 0 -- Độ dày viền
+                            stroke.Color = isSelected and ACCENT or Color3.fromRGB(40,40,48)
+                            stroke.Transparency = isSelected and 0.2 or 1
+                            stroke.Thickness = isSelected and 1 or 0
                         end
                     end
                 end
                 callback(value)
             end
-
+        
             -- Hàm render nút
             local function renderButtons()
                 for _, value in ipairs(presetData) do
+                    if not value then continue end -- 🟢 Bỏ qua nếu giá trị bị nil
+                    
                     local btn = Instance.new("TextButton", container)
                     btn.Name = value
-                    btn.Size = UDim2.new(0, 0, 0, 40) -- Chiều cao vừa vặn 32
+                    btn.Size = UDim2.new(0, 0, 0, 40)
                     btn.AutomaticSize = Enum.AutomaticSize.X 
                     btn.BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26)
                     btn.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
@@ -4136,36 +4136,34 @@ function NoirUI:CreateWindow(settings)
                     local padding = Instance.new("UIPadding", btn)
                     padding.PaddingLeft = UDim.new(0, 20)
                     padding.PaddingRight = UDim.new(0,20)
-                    
                     padding.PaddingTop = UDim.new(0, 10)
                     padding.PaddingBottom = UDim.new(0, 10)
                     
-                    -- Bo góc 8 (Như KyriLib)
                     local corner = Instance.new("UICorner", btn)
                     corner.CornerRadius = UDim.new(0, 8) 
                     
-                    -- Viền ngoài (Mờ mặc định)
                     local stroke = Instance.new("UIStroke", btn)
                     stroke.Color = Color3.fromRGB(40,40,48)
-                    stroke.Transparency = 1 -- Mặc định ẩn viền
+                    stroke.Transparency = 1
                     stroke.Thickness = 1
                     
-                    -- Đăng ký theme
                     NoirUI:RegisterThemeElement(btn, "BackgroundColor3", "element")
                     NoirUI:RegisterThemeElement(btn, "TextColor3", "text")
                     
                     btn.MouseButton1Click:Connect(function()
                         PlaySound("Element")
-                        if value then
+                        if value then -- 🟢 Kiểm tra an toàn trước khi gọi update
                             updatePreset(value)
-	                    end
-	                end)
-	            end
+                        end
+                    end)
+                end
                 
-                -- Set giá trị mặc định ban đầu sau khi render xong
-                updatePreset(defaultValue)
+                -- 🟢 Chỉ gọi update mặc định khi có giá trị hợp lệ
+                if defaultValue and defaultValue ~= "" then
+                    updatePreset(defaultValue)
+                end
             end
-
+        
             renderButtons()
             
             -- === FLAG SYSTEM ===
@@ -4183,7 +4181,7 @@ function NoirUI:CreateWindow(settings)
                 }
                 NoirUI:RegisterFlag(opt.FlagName, flagData)
             end
-            
+    
             local api = {container = container}
             function api:set(value)
                 updatePreset(value)
@@ -4191,7 +4189,7 @@ function NoirUI:CreateWindow(settings)
             function api:get()
                 return currentValue
             end
-            
+    
             return api
         end
         
