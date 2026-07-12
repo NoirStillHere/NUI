@@ -4156,9 +4156,11 @@ function NoirUI:CreateWindow(settings)
                     
                     btn.MouseButton1Click:Connect(function()
                         PlaySound("Element")
-                        updatePreset(value)
-                    end)
-                end
+                        if value then
+                            updatePreset(value)
+	                    end
+	                end)
+	            end
                 
                 -- Set giá trị mặc định ban đầu sau khi render xong
                 updatePreset(defaultValue)
