@@ -1,7 +1,20 @@
-![Version](https://img.shields.io/badge/Version-2.9.1-8B5CF6?style=for-the-badge&logo=roblox&logoColor=white)
-![Lua](https://img.shields.io/badge/Lua-100%25-8B5CF6?style=for-the-badge&logo=lua&logoColor=white)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/NoirStillHere/NUI/refs/heads/main/assets/logo.png" alt="NoirUI Icon" width="60" style="margin-right: 15px;" />
+  
+  <img src="https://raw.githubusercontent.com/NoirStillHere/NUI/refs/heads/main/assets/logo.jpg" alt="NoirUI helper" width="160" />
+</p>
 
-# NoirUI v2.9.1 - Complete Reference
+![Version](https://img.shields.io/badge/Version-2.0.5-8B5CF6?style=for-the-badge&logo=roblox&logoColor=white)
+![Lua](https://img.shields.io/badge/Lua-100%25-8B5CF6?style=for-the-badge&logo=lua&logoColor=white)
+[![Discord](https://img.shields.io/discord/123456789012345678?style=for-the-badge&logo=discord&logoColor=white&color=5865F2)](https://discord.gg/fw7zDS8ccv)
+
+<p align="center">
+  <em><strong>Dev by<br/>
+  <a href="https://github.com/NoirStillHere"><img src="https://img.shields.io/badge/Dev-NoirNF-8B5CF6?style=for-the-badge&logo=github&logoColor=white"></a>
+  <a href="https://github.com/NoirGoodBoi"><img src="https://img.shields.io/badge/Dev-Adono-8B5CF6?style=for-the-badge&logo=github&logoColor=white"></a>
+</p>
+
+# NoirUI v2.0.5 - Complete Reference
 **NoirUI** is a modern, feature-rich Roblox UI Library. It includes a comprehensive theme engine, config manager, asset cache, built-in music player, complex UI elements (Cards, Presets, Accordions, Carousels), and a robust key system.
 
 ---
@@ -12,13 +25,26 @@
 local NoirUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirStillHere/NUI/main/src/NoirUI.lua"))()
 ```
 
+## 🖼️ Demo Screenshots
+
+<div align="center" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;">
+  <img src="https://raw.githubusercontent.com/NoirStillHere/NUI/refs/heads/main/assets/demo/Screenshot_20260712-220412_Delta%20X%20VNG.jpg" alt="Main UI & Glassmorphism" width="45%" style="max-width: 400px; border-radius: 8px;" />
+  <img src="https://raw.githubusercontent.com/NoirStillHere/NUI/refs/heads/main/assets/demo/Screenshot_20260712-220419_Delta%20X%20VNG.jpg" alt="Preset Buttons & Cards" width="45%" style="max-width: 400px; border-radius: 8px;" />
+  <img src="https://raw.githubusercontent.com/NoirStillHere/NUI/refs/heads/main/assets/demo/Screenshot_20260712-221027_Delta%20X%20VNG.jpg" alt="Float Button & Notification" width="45%" style="max-width: 400px; border-radius: 8px;" />
+  <img src="https://raw.githubusercontent.com/NoirStillHere/NUI/refs/heads/main/assets/demo/Screenshot_20260712-220430_Delta%20X%20VNG.jpg" alt="Theme Selector & Color Picker" width="45%" style="max-width: 400px; border-radius: 8px;" />
+</div>
+
+<p align="center">
+  <em>NoirUI v2.0.5 Full Demo - Dark Theme, Glassmorphism, Dynamic Elements & Float Button</em>
+</p>
+
 ---
 
-🚀 Core Features (Global API)
+## 🚀 Core Features (Global API)
 
 These functions are available directly from the NoirUI table.
 
-1. Theme Engine
+### 1. Theme Engine
 
 ```lua
 -- Apply a theme
@@ -37,7 +63,7 @@ local specificTheme = NoirUI:GetTheme("Noir")
 NoirUI:RegisterThemeElement(instance, "BackgroundColor3", "element")
 ```
 
-2. Asset Cache System (Execution & Studio Support)
+### 2. Asset Cache System (Execution & Studio Support)
 
 Caches images to the local filesystem for faster loading.
 
@@ -49,7 +75,7 @@ NoirUI:EnableAssetCache("MyHub_Cache")
 -- Supports: rbxassetid, rbxthumb, and raw HTTP URLs.
 ```
 
-3. Config Manager & Flag System
+### 3. Config Manager & Flag System
 
 ```lua
 -- Create a Config Manager
@@ -75,7 +101,7 @@ NoirUI:GetAllFlags() -- Returns all registered flags
 NoirUI:ResetAllFlags() -- Resets all to defaults
 ```
 
-4. Auto-Save System
+### 4. Auto-Save System
 
 ```lua
 local AutoSave = NoirUI:CreateAutoSave({
@@ -91,7 +117,7 @@ AutoSave:GetLastSave() -- Timestamp
 AutoSave:GetTimeSinceLastSave()
 ```
 
-5. Hotkey & Keybind System
+### 5. Hotkey & Keybind System
 
 ```lua
 -- Register a global hotkey
@@ -104,7 +130,7 @@ NoirUI:UnregisterHotkey(Enum.KeyCode.R)
 NoirUI:InitHotkeyListener()
 ```
 
-6. Sound System
+### 6. Sound System
 
 ```lua
 NoirUI:SetCustomSound("Click", "rbxassetid://...")
@@ -117,7 +143,7 @@ NoirUI:SetCustomSound("Error", "rbxassetid://...")
 NoirUI:SetCustomSound("Success", "rbxassetid://...")
 ```
 
-7. Music Player (Full System)
+### 7. Music Player (Full System)
 
 ```lua
 -- Load a playlist
@@ -144,7 +170,7 @@ NoirUI.Music:SetMode("Shuffle")
 local modeName = NoirUI.Music:GetModeName()
 ```
 
-8. Notifications
+### 8. Notifications
 
 ```lua
 NoirUI:Notify(
@@ -157,7 +183,7 @@ NoirUI:Notify(
 )
 ```
 
-9. Loader (Splash Screen)
+### 9. Loader (Splash Screen)
 
 ```lua
 local Loader = NoirUI:CreateLoader({
@@ -175,20 +201,20 @@ Loader:yield() -- Wait for finish
 Loader:destroy()
 ```
 
-10. Logger System
+### 10. Logger System
 
 ```lua
 local Logger = NoirUI:CreateLogger()
 Logger:new("info", "Log message", 3) -- Icon, Message, Duration
 ```
 
-11. Commands
+### 11. Commands
 
 ```lua
 NoirUI:RegisterCommand("/reload", function() print("Reloading...") end)
 ```
 
-12. Utilities
+### 12. Utilities
 
 ```lua
 NoirUI:GetVersion() -- Returns "2.9.1"
@@ -198,9 +224,9 @@ NoirUI:CreateShineEffect(textLabel, 45, 1.5) -- Apply glow to text
 
 ---
 
-🪟 Window & Tab API
+## 🪟 Window & Tab API
 
-1. Creating the Window
+### 1. Creating the Window
 
 ```lua
 local Window = NoirUI:CreateWindow({
@@ -246,7 +272,7 @@ Window:Show() -- Show UI, hide Float button
 Window:GetTheme() -- Returns current theme table
 ```
 
-2. Creating Tabs
+### 2. Creating Tabs
 
 ```lua
 local Tab = Window:CreateTab("Home", "home")
@@ -254,32 +280,37 @@ local TabGroup = Window:CreateTabGroup("Settings", true) -- default open
 local TabFromGroup = TabGroup:CreateTab("General", "settings")
 ```
 
-3. Tab Elements (Tab:Create...)
+### 3. Tab Elements (`Tab:Create...`)
 
-All elements support Subtitle (text below the main element).
+All elements support `Subtitle` (text below the main element).
 
-· Label: Tab:CreateLabel("Hello", function() return "Dynamic" end)
-· Divider: Tab:CreateDivider()
-· Spacer: Tab:CreateSpacer(10)
-· Progress Bar: Returns { set(value, animate), get() }
-· Section: Tab:CreateSection("Title", true) (no line)
-· Paragraph: Tab:CreateParagraph({Title="", Content=""})
-· TextBox: Tab:CreateTextBox({Name="", Subtitle="", Default="", Callback=fn})
-· Button: Tab:CreateButton({Name="", Subtitle="", Align=false, Callback=fn})
-· Toggle: Tab:CreateToggle({Name="", Subtitle="", Default=false, FlagName="", Callback=fn})
-· Slider: Tab:CreateSlider({Name="", Subtitle="", range={0,100}, increment=1, Default=50, FlagName="", Callback=fn})
-· ColorPicker: Tab:CreateColorPicker({Name="", Subtitle="", Default=Color3, Callback=fn})
-· Keybind: Tab:CreateKeybind({Name="", Subtitle="", Default="RightControl", FlagName="", Callback=fn})
-· Image: Tab:CreateImage({Name="", Image="...", Height=120, ScaleType=Enum.ScaleType.Fit, CornerRadius=8}) -> Returns { set(newId) }
-· PresetButton: Tab:CreatePresetButton({Presets={"M","L","XL"}, Default="M", FlagName="", Callback=fn}) -> Returns { set(value), get() }
+#### 📝 Basic Display
+- **`Label`**: `Tab:CreateLabel("Hello", function() return "Dynamic" end)`
+- **`Divider`**: `Tab:CreateDivider()`
+- **`Spacer`**: `Tab:CreateSpacer(10)`
+- **`Section`**: `Tab:CreateSection("Title", true)` *(no line)*
+- **`Paragraph`**: `Tab:CreateParagraph({Title="", Content=""})`
+- **`Progress Bar`**: Returns `{ set(value, animate), get() }`
 
+#### 🎮 Interactive Inputs
+- **`TextBox`**: `Tab:CreateTextBox({Name="", Subtitle="", Default="", Callback=fn})`
+- **`Button`**: `Tab:CreateButton({Name="", Subtitle="", Align=false, Callback=fn})`
+- **`Toggle`**: `Tab:CreateToggle({Name="", Subtitle="", Default=false, FlagName="", Callback=fn})`
+- **`Slider`**: `Tab:CreateSlider({Name="", Subtitle="", range={0,100}, increment=1, Default=50, FlagName="", Callback=fn})`
+- **`ColorPicker`**: `Tab:CreateColorPicker({Name="", Subtitle="", Default=Color3, Callback=fn})`
+- **`Keybind`**: `Tab:CreateKeybind({Name="", Subtitle="", Default="RightControl", FlagName="", Callback=fn})`
+- **`Dropdown`**: `Tab:CreateDropdown({Name="", Subtitle="", Options={}, GetOptions=fn, FlagName="", Callback=fn})`
+
+#### 🖼️ Visual & Layout
+- **`Image`**: `Tab:CreateImage({Name="", Image="...", Height=120, ScaleType=Enum.ScaleType.Fit, CornerRadius=8})` -> Returns `{ set(newId) }`
+- **`PresetButton`**: `Tab:CreatePresetButton({Presets={"M","L","XL"}, Default="M", FlagName="", Callback=fn})` -> Returns `{ set(value), get() }`
 ---
 
-🃏 Card System (Tab:CreateCard)
+### 🃏 Card System (Tab:CreateCard)
 
 Allows building complex layouts inside a single element.
 
-1. Standard Card (with Layout)
+#### 1. Standard Card (with Layout)
 
 ```lua
 Tab:CreateCard({
@@ -294,7 +325,7 @@ Tab:CreateCard({
 })
 ```
 
-2. Accordion (Collapsible)
+#### 2. Accordion (Collapsible)
 
 ```lua
 Tab:CreateCard({
@@ -304,7 +335,7 @@ Tab:CreateCard({
 })
 ```
 
-3. Dashboard (Stats Grid)
+#### 3. Dashboard (Stats Grid)
 
 ```lua
 Tab:CreateCard({
@@ -318,7 +349,7 @@ Tab:CreateCard({
 })
 ```
 
-4. Carousel (Swipe/Click Icons)
+#### 4. Carousel (Swipe/Click Icons)
 
 ```lua
 Tab:CreateCard({
@@ -332,7 +363,7 @@ Tab:CreateCard({
 })
 ```
 
-5. Image Grid
+#### 5. Image Grid
 
 ```lua
 Tab:CreateCard({
@@ -343,7 +374,7 @@ Tab:CreateCard({
 })
 ```
 
-6. Action Card (Big CTA)
+#### 6. Action Card (Big CTA)
 
 ```lua
 Tab:CreateCard({
@@ -358,7 +389,7 @@ Tab:CreateCard({
 
 ---
 
-🔑 Key System (Detailed)
+### 🔑 Key System (Detailed)
 
 The KeySystem inside CreateWindow supports 2 modes.
 
@@ -380,9 +411,9 @@ KeySystem = {
 
 ---
 
-🛠️ Internal Utilities (Advanced)
+### 🛠️ Internal Utilities (Advanced)
 
-1. Resolve Icon
+#### 1. Resolve Icon
 
 The library automatically resolves:
 
@@ -391,7 +422,7 @@ The library automatically resolves:
 · Thumbnail URLs (e.g. "rbxthumb://...")
 · HTTP URLs (e.g. "https://i.imgur.com/...")
 
-2. Shine Effect
+#### 2. Shine Effect
 
 You can manually apply the animated gradient shine to any TextLabel:
 
@@ -401,11 +432,11 @@ NoirUI:CreateShineEffect(textLabel, 45, 1.5) -- Rotation, Speed
 
 It creates a permanent override on the text, keeping a static white base and a moving gradient overlay.
 
-3. File System Compatibility (Studio Support)
+#### 3. File System Compatibility (Studio Support)
 
 The library automatically detects if it is running in Roblox Studio. If it is, it emulates the readfile, writefile, isfile, listfiles, makefolder, and delfile functions using StringValues inside ReplicatedFirst. This ensures that features like Asset Cache, Config Manager, and Key System work perfectly even when testing in Studio.
 
-4. Dynamic Dropdowns
+#### 4. Dynamic Dropdowns
 
 When creating a Dropdown, you can provide a GetOptions function instead of a static Options array. The Dropdown will call this function every time it opens if RefreshOnOpen = true, or every RefreshInterval seconds.
 
@@ -418,14 +449,14 @@ Tab:CreateDropdown({
 })
 ```
 
-5. Spring & Hover Effects
+#### 5. Spring & Hover Effects
 
 · CreateSpringEffect(frame, delay): Animates elements popping in from the side.
 · CreateHoverEffect(button): Adds a subtle scale and transparency change on mouse hover.
 
 ---
 
-🎨 Theme Properties Reference
+## 🎨 Theme Properties Reference
 
 When creating a custom theme or modifying the current one, the following keys are expected:
 
@@ -442,3 +473,14 @@ When creating a custom theme or modifying the current one, the following keys ar
     border = Color3     -- Dividers, Strokes
 }
 ```
+
+---
+
+## 📝 Credits & License
+
+**NoirUI** được phát triển bởi:
+*   **NoirNF** - UI Engineer & Core Developer
+*   **Adono** - Lua Scripter & Animation Engineer
+
+---
+*Made for the Roblox scripting community.*
