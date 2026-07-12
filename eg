@@ -58,7 +58,44 @@ local NoirUI = {
     __LogSystem = nil
 }
 
-local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/NoirGoodBoi/UI/refs/heads/main/icons.lua"))()
+local LucideIcons = {}
+
+local function tableLength(t)
+    local count = 0
+    for _ in pairs(t) do count = count + 1 end
+    return count
+end
+
+local function LoadIconFile(url)
+    local success, result = pcall(function()
+        return loadstring(game:HttpGet(url))()
+    end)
+    
+    if success and type(result) == "table" then
+        local added = 0
+        for name, id in pairs(result) do
+            if not LucideIcons[name] then
+                LucideIcons[name] = id
+                added = added + 1
+            end
+        end
+        return true
+    else
+        return false
+    end
+end
+
+local IconSources = {
+    "https://raw.githubusercontent.com/NoirStillHere/NUI/main/modules/Base_Icons.lua",
+    "https://raw.githubusercontent.com/NoirStillHere/NUI/main/modules/Solar_Icons.lua",
+    "https://raw.githubusercontent.com/NoirStillHere/NUI/main/modules/SFSymbols_Icons.lua",
+    "https://raw.githubusercontent.com/NoirStillHere/NUI/main/modules/_Icons.lua",
+}
+
+for _, url in ipairs(IconSources) do
+    LoadIconFile(url)
+end
+
 local _version = "2.0.5"
 local LocalPlayer = Players.LocalPlayer
 
