@@ -2029,7 +2029,7 @@ function NoirUI:CreateWindow(settings)
     -- Search bar
     local SearchBtn = Instance.new("ImageButton", Header)
     SearchBtn.Size = UDim2.new(0, 20, 0, 20)
-    SearchBtn.Position = UDim2.new(1, -95, 0.5, 0)
+    SearchBtn.Position = UDim2.new(1, -70, 0.5, 0)
     SearchBtn.AnchorPoint = Vector2.new(1, 0.5)
     SearchBtn.BackgroundTransparency = 1
     SearchBtn.Image = ResolveIcon("search")
@@ -2600,8 +2600,8 @@ function NoirUI:CreateWindow(settings)
         local Indicator = Instance.new("Frame")
         Indicator.Name = "Indicator"
         Indicator.Parent = B
-        Indicator.Size = UDim2.new(0, 3, 0, 0)
-        Indicator.Position = UDim2.new(1, -4, 0.5, 0)
+        Indicator.Size = UDim2.new(0, 4, 0.85, 0)
+        Indicator.Position = UDim2.new(1, 0, 0.5, 0)
         Indicator.AnchorPoint = Vector2.new(1, 0.5)
         Indicator.BackgroundColor3 = ACCENT
         Indicator.BackgroundTransparency = 1
@@ -2619,6 +2619,10 @@ function NoirUI:CreateWindow(settings)
         BT.TextSize = 13
         BT.TextXAlignment = "Left"
         BT.ZIndex = 2
+        
+        NoirUI:RegisterThemeElement(B, "BackgroundColor3", "element")
+        NoirUI:RegisterThemeElement(BT, "TextColor3", "text")
+        NoirUI:RegisterThemeElement(Indicator, "BackgroundColor3", "accent")
         
         -- Bật Shine Effect nếu settings yêu cầu
         if settings.ShineEffect == true then
@@ -4064,16 +4068,23 @@ function NoirUI:CreateWindow(settings)
                 for _, value in ipairs(presetData) do
                     local btn = Instance.new("TextButton", container)
                     btn.Name = value
-                    btn.Size = UDim2.new(0, 0, 0, 32) -- Chiều cao vừa vặn 32
+                    btn.Size = UDim2.new(0, 0, 0, 40) -- Chiều cao vừa vặn 32
                     btn.AutomaticSize = Enum.AutomaticSize.X 
                     btn.BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26)
                     btn.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
-                    btn.Text = "  " .. value .. "  "
+                    btn.Text = value
                     btn.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
-                    btn.TextSize = 12 
+                    btn.TextSize = 14
                     btn.Font = Enum.Font.GothamBold
                     btn.AutoButtonColor = false
                     btn.ZIndex = 2
+                    
+                    local padding = Instance.new("UDPadding", btn)
+                    padding.PaddingLeft = UDim.new(0, 16)
+                    padding.PaddingRight = UDim.new(0,16)
+                    
+                    padding.PaddingTop = UDim.new(0, 8)
+                    padding.PaddingBottom = UDim.new(0, 8)
                     
                     -- Bo góc 8 (Như KyriLib)
                     local corner = Instance.new("UICorner", btn)
@@ -4083,7 +4094,7 @@ function NoirUI:CreateWindow(settings)
                     local stroke = Instance.new("UIStroke", btn)
                     stroke.Color = Color3.fromRGB(40,40,48)
                     stroke.Transparency = 1 -- Mặc định ẩn viền
-                    stroke.Thickness = 1.5
+                    stroke.Thickness = 0.75
                     
                     -- Đăng ký theme
                     NoirUI:RegisterThemeElement(btn, "BackgroundColor3", "element")
@@ -4384,7 +4395,7 @@ function NoirUI:CreateWindow(settings)
                     
                     for _, btnData in ipairs(opt.Footer) do
                         local btn = Instance.new("TextButton", footerFrame)
-                        btn.Size = UDim2.new(0, 0, 0, 28)
+                        btn.Size = UDim2.new(0, 0, 0, 32)
                         btn.AutomaticSize = Enum.AutomaticSize.X
                         btn.BackgroundColor3 = ACCENT
                         btn.Text = btnData.Text or "Button"
@@ -4394,6 +4405,10 @@ function NoirUI:CreateWindow(settings)
                         btn.TextSize = 12
                         Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
                         btn.AutoButtonColor = false
+                        
+                        local padding = Instance.new("UIPadding", btn)
+                        padding.PaddingLeft = UDim.new(0, 20)
+                        padding.PaddingRight = UDim.new(0, 20)
                         
                         btn.MouseButton1Click:Connect(function()
                             PlaySound("Element")
@@ -4500,7 +4515,7 @@ function NoirUI:CreateWindow(settings)
                     
                     for _, btnData in ipairs(opt.Footer) do
                         local btn = Instance.new("TextButton", footerFrame)
-                        btn.Size = UDim2.new(0, 0, 0, 28)
+                        btn.Size = UDim2.new(0, 0, 0, 32)
                         btn.AutomaticSize = Enum.AutomaticSize.X
                         btn.BackgroundColor3 = ACCENT
                         btn.Text = btnData.Text or "Button"
@@ -4510,6 +4525,10 @@ function NoirUI:CreateWindow(settings)
                         btn.TextSize = 12
                         Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
                         btn.AutoButtonColor = false
+                        
+                        local padding = Instance.new("UIPadding", btn)
+                        padding.PaddingLeft = UDim.new(0, 20)
+                        padding.PaddingRight = UDim.new(0, 20)
                         
                         btn.MouseButton1Click:Connect(function()
                             PlaySound("Element")
@@ -4637,7 +4656,7 @@ function NoirUI:CreateWindow(settings)
                     
                     for _, btnData in ipairs(opt.Footer) do
                         local btn = Instance.new("TextButton", footerFrame)
-                        btn.Size = UDim2.new(0, 0, 0, 28)
+                        btn.Size = UDim2.new(0, 0, 0, 32)
                         btn.AutomaticSize = Enum.AutomaticSize.X
                         btn.BackgroundColor3 = ACCENT
                         btn.Text = btnData.Text or "Button"
@@ -4647,6 +4666,10 @@ function NoirUI:CreateWindow(settings)
                         btn.TextSize = 12
                         Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
                         btn.AutoButtonColor = false
+                        
+                        local padding = Instance.new("UIPadding", btn)
+                        padding.PaddingLeft = UDim.new(0, 20)
+                        padding.PaddingRight = UDim.new(0, 20)
                         
                         btn.MouseButton1Click:Connect(function()
                             PlaySound("Element")
