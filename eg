@@ -1,11 +1,5 @@
 --[[
-	Library Owner: NoirNF
-	UI Engineer: NoirNF
-	Lua Scripter: NoirNF, Adono
-	Executor Compatibility Tester: Adono
-	Animation Engineer: Adono
-	Version: 2.0.5
-	Changelog: 
+	Changelog: (maybe)
 	- Theme Manager mở rộng (Kết hợp bản cũ và mới)
 	- Background System v2 (Gradient, Glassmorphism, Depth)
 	- Tab Indicator bên phải
@@ -27,6 +21,18 @@
 	- ShineEffect Toggle: Có thể bật/tắt hiệu ứng chữ qua settings (Mặc định tắt)
 	- Fix lỗi Float Button bị treo sau khi minimize/mở lại quá nhiều lần (Phân biệt rõ LastFloatPosition)
 	- Cập nhật hiệu ứng Slide Swap cho Float Button (Trượt xuống đáy mới biến mất, không đột ngột)
+]]
+
+--[[
+  NoirUI Documentation
+  Author: Noir & Adono
+      Library Owner: NoirNF
+  	UI Engineer: NoirNF
+  	Lua Scripter: NoirNF, Adono
+  	Executor Compatibility Tester: Adono
+  	Animation Engineer: Adono
+	Version: 2.0.5
+  Description: Advanced UI Library for Roblox
 ]]
 
 --Core
@@ -99,9 +105,6 @@ end
 local _version = "2.0.5"
 local LocalPlayer = Players.LocalPlayer
 
--- ==========================================================
--- THEME PRESETS (Kết hợp bản cũ và bản mở rộng)
--- ==========================================================
 NoirUI.Themes.Presets = {
     ["kyri"] = {
         bg = Color3.fromRGB(8,8,10),
@@ -514,7 +517,8 @@ function NoirUI:EnableAssetCache(directory)
     AssetCache:SetDirectory(directory or "NoirUI_Cache")
     AssetCache.Enabled = true
     NoirUI._AssetCache = AssetCache
-    print("✅ NoirUI Asset Cache đã được bật!")
+    print("NoirUI Asset Cache đã được bật!")
+    print("Asset Cache bật r thì, ai đọc làm cho' :)")
 end
 
 -- ==========================================================
@@ -847,7 +851,7 @@ function NoirUI:CreateLogger()
         IconLabel.Position = UDim2.new(0, 7, 0, 3)
         IconLabel.Size = UDim2.new(0, 15, 0, 15)
         IconLabel.ZIndex = 133
-        IconLabel.Image = ResolveIcon(icon) or "rbxassetid://6031094667"
+        IconLabel.Image = ResolveIcon(icon) or "rbxthumb://type=Asset&id=94916110511437&w=420&h=420"
         IconLabel.ImageColor3 = Color3.fromRGB(223, 223, 223)
         IconLabel.ImageTransparency = 0.25
         
@@ -1399,7 +1403,7 @@ function NoirUI:GetTheme(name)
     if name then
         return NoirUI.Themes.Presets[name]
     else
-        return NoirUI.Themes.Current or NoirUI.Themes.Presets["kyri"]
+        return NoirUI.Themes.Current or NoirUI.Themes.Presets["noir"]
     end
 end
 
@@ -1599,9 +1603,9 @@ end
 -- ==========================================================
 function NoirUI:CreateLoader(settings)
     settings = settings or {}
-    local iconId = settings.Icon or "rbxassetid://6031094700"
+    local iconId = settings.Icon or "rbxthumb://type=Asset&id=94916110511437&w=420&h=420"
     local duration = settings.Duration or 3.5
-    local theme = settings.Theme or _currentTheme or NoirUI.Themes.Presets["kyri"]
+    local theme = settings.Theme or _currentTheme or NoirUI.Themes.Presets["noir"]
     local onComplete = settings.OnComplete or nil
     local text = settings.Text or "Loading..."
     local textColor = settings.TextColor or theme.text or Color3.fromRGB(245,245,250)
@@ -1681,7 +1685,7 @@ function NoirUI:CreateLoader(settings)
     if iconImage then
         Icon.Image = iconImage
     else
-        Icon.Image = "rbxassetid://6031094700"
+        Icon.Image = "rbxthumb://type=Asset&id=94916110511437&w=420&h=420"
     end
 
     if shape ~= "tron" then
@@ -1880,9 +1884,9 @@ function NoirUI:CreateWindow(settings)
     resizeHandle.Position = UDim2.new(1, 0, 1, 0)
     resizeHandle.AnchorPoint = Vector2.new(1, 1)
     resizeHandle.BackgroundTransparency = 1
-    resizeHandle.Image = "rbxthumb://type=Decal&id=115443342386366&w=150&h=150"
+    resizeHandle.Image = "rbxassetid://116204881270182"
     resizeHandle.ImageColor3 = currentTheme.subtext or Color3.fromRGB(160,160,180)
-    resizeHandle.ZIndex = 100
+    resizeHandle.ZIndex = 10000
     resizeHandle.Name = "ResizeHandle"
 
     local isResizing = false
@@ -2684,7 +2688,7 @@ function NoirUI:CreateWindow(settings)
             local iconCorner = Instance.new("UICorner", IC)
             iconCorner.CornerRadius = UDim.new(0, 4)
             local iconImage = ResolveIcon(icon)
-            if iconImage then IC.Image = iconImage else IC.Image = "rbxassetid://6031094700" end
+            if iconImage then IC.Image = iconImage else IC.Image = "rbxthumb://type=Asset&id=94916110511437&w=420&h=420" end
             IC.ImageColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
         end
         
@@ -4307,24 +4311,27 @@ function NoirUI:CreateWindow(settings)
                 
             elseif cardType == "Dashboard" then
                 createTitle(opt.Title or "Dashboard")
-                
+    
                 local grid = Instance.new("Frame", f)
                 grid.Size = UDim2.new(1, 0, 0, 0)
                 grid.AutomaticSize = Enum.AutomaticSize.Y
                 grid.BackgroundTransparency = 1
                 grid.LayoutOrder = 2
-                
+    
                 local gridLayout = Instance.new("UIGridLayout", grid)
                 gridLayout.CellSize = UDim2.new(0.5, -4, 0, 50)
                 gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
                 gridLayout.FillDirection = Enum.FillDirection.Horizontal
-                
+    
+                -- Lưu các TextLabel Value vào một bảng để dễ cập nhật
+                local valueMap = {}
+    
                 if opt.Items then
                     for _, item in ipairs(opt.Items) do
                         local cell = Instance.new("Frame", grid)
                         cell.Size = UDim2.new(1, 0, 1, 0)
                         cell.BackgroundTransparency = 1
-                        
+            
                         local val = Instance.new("TextLabel", cell)
                         val.Size = UDim2.new(1, 0, 0, 30)
                         val.Position = UDim2.new(0, 0, 0.5, -15)
@@ -4336,6 +4343,11 @@ function NoirUI:CreateWindow(settings)
                         val.TextSize = 20
                         val.TextXAlignment = Enum.TextXAlignment.Center
                         
+                        -- Lưu trữ để dùng API update sau này
+                        if item.Label then
+                            valueMap[item.Label] = val
+                        end
+                        
                         local lbl = Instance.new("TextLabel", cell)
                         lbl.Size = UDim2.new(1, 0, 0, 18)
                         lbl.Position = UDim2.new(0, 0, 0.9, 0)
@@ -4346,9 +4358,9 @@ function NoirUI:CreateWindow(settings)
                         lbl.Font = Enum.Font.Gotham
                         lbl.TextSize = 10
                         lbl.TextXAlignment = Enum.TextXAlignment.Center
-                    end
+                    end 
                 end
-                
+    
                 if opt.FooterText then
                     local footer = Instance.new("TextLabel", f)
                     footer.Size = UDim2.new(1, 0, 0, 0)
@@ -4362,6 +4374,16 @@ function NoirUI:CreateWindow(settings)
                     footer.TextXAlignment = Enum.TextXAlignment.Center
                     footer.LayoutOrder = 3
                 end
+    
+                -- 🟢 TRẢ VỀ API CHO DASHBOARD
+                local dashboardAPI = {
+                    update = function(label, newValue)
+                        if valueMap[label] then
+                            valueMap[label].Text = tostring(newValue)
+                        end
+                    end
+                }
+                return dashboardAPI
                 
             elseif cardType == "Carousel" then
                 createTitle(opt.Title or "Carousel")
