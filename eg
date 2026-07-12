@@ -2076,7 +2076,7 @@ function NoirUI:CreateWindow(settings)
     
     local SearchBar = Instance.new("Frame", Header)
     SearchBar.Size = UDim2.new(0, 0, 0, 28)
-    SearchBar.Position = UDim2.new(1, -60, 0.5, 0)
+    SearchBar.Position = UDim2.new(1, -70, 0.5, 0)
     SearchBar.AnchorPoint = Vector2.new(1, 0.5)
     SearchBar.BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26)
     SearchBar.ClipsDescendants = true
@@ -2086,7 +2086,7 @@ function NoirUI:CreateWindow(settings)
     Instance.new("UICorner", SearchBar).CornerRadius = UDim.new(0, 6)
     
     local SearchBox = Instance.new("TextBox", SearchBar)
-    SearchBox.Size = UDim2.new(1, -50, 1, 0)
+    SearchBox.Size = UDim2.new(1, -60, 1, 0)
     SearchBox.Position = UDim2.new(0, 5, 0, 0)
     SearchBox.BackgroundTransparency = 1
     SearchBox.PlaceholderText = "Tìm kiếm..."
@@ -2187,7 +2187,8 @@ function NoirUI:CreateWindow(settings)
     local Side = Instance.new("Frame", Main)
     Side.Size = UDim2.new(0, 110, 1, -50)
     Side.Position = UDim2.new(0, 5, 0, 40)
-    Side.BackgroundTransparency = HAS_BG_IMAGE and 0.8 or 1
+    Side.BackgroundColor3 = currentTheme.container or Color3.fromRGB(14,14,18)
+    Side.BackgroundTransparency = HAS_BG_IMAGE and 0.8 or 0
     Side.ClipsDescendants = true
     local sideCorner = Instance.new("UICorner", Side)
     sideCorner.CornerRadius = UDim.new(0, 8)
@@ -2231,7 +2232,12 @@ function NoirUI:CreateWindow(settings)
     local Cont = Instance.new("Frame", Main)
     Cont.Size = UDim2.new(1, -125, 1, -50)
     Cont.Position = UDim2.new(0, 120, 0, 40)
-    Cont.BackgroundTransparency = 1
+    
+    -- 🟢 SỬA LẠI PHẦN NÀY ĐỂ CÓ MÀU NỀN THEO THEME VÀ GLASS EFFECT:
+    Cont.BackgroundColor3 = currentTheme.container or settings.ContainerBgColor or Color3.fromRGB(14,14,18)
+    Cont.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0.05
+    -- 🔴 Hết phần sửa
+
     Cont.ClipsDescendants = true
     local contCorner = Instance.new("UICorner", Cont)
     contCorner.CornerRadius = UDim.new(0, 8)
@@ -2625,10 +2631,11 @@ function NoirUI:CreateWindow(settings)
         B.Size = UDim2.new(1, -5, 0, 32)
         if settings.TabBackgroundColor then
             B.BackgroundColor3 = settings.TabBackgroundColor
+            B.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
         else
             B.BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26)
+            B.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
         end
-        B.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0
         B.Text = ""
         B.AutoButtonColor = false
         Instance.new("UICorner", B).CornerRadius = UDim.new(0, 6)
@@ -3755,6 +3762,16 @@ function NoirUI:CreateWindow(settings)
                         else
                             for k in pairs(selected) do selected[k] = false end
                             selected[option] = true
+                            
+                            -- 🟢 SỬA LỖI DẤU TÍCH Ở CHẾ ĐỘ ĐƠN TẠI ĐÂY:
+                            -- Cập nhật giao diện trực tiếp cho các nút option
+                            for _, ref in ipairs(optionRefs) do
+                                local isThisSelected = (ref.text == option)
+                                ref.check.Text = isThisSelected and "✓" or ""
+                                ref.lbl.TextColor3 = isThisSelected and ACCENT or currentTheme.text
+                                ref.btn.BackgroundColor3 = isThisSelected and currentTheme.active or currentTheme.element
+                            end
+                            
                             t.Text = "  " .. opt.Name .. " : " .. option
                             if opt.Callback then opt.Callback(option) end
                             closeDropdown()
