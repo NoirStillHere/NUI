@@ -2014,7 +2014,7 @@ function NoirUI:CreateWindow(settings)
     Title.Size = UDim2.new(1, -120, 1, 0)
     Title.Position = UDim2.new(0, settings.LogoID and 40 or 15, 0, 0)
     Title.BackgroundTransparency = 1
-    Title.Text = settings.Name or "NOIR HUB"
+    Title.Text = settings.Name or "NoirUI"
     Title.TextColor3 = currentTheme.text or Color3.new(1,1,1)
     Title.TextTransparency = 0
     Title.Font = "GothamBold"
@@ -2029,7 +2029,7 @@ function NoirUI:CreateWindow(settings)
     -- Search bar
     local SearchBtn = Instance.new("ImageButton", Header)
     SearchBtn.Size = UDim2.new(0, 20, 0, 20)
-    SearchBtn.Position = UDim2.new(1, -70, 0.5, 0)
+    SearchBtn.Position = UDim2.new(1, -95, 0.5, 0)
     SearchBtn.AnchorPoint = Vector2.new(1, 0.5)
     SearchBtn.BackgroundTransparency = 1
     SearchBtn.Image = ResolveIcon("search")
@@ -2039,7 +2039,7 @@ function NoirUI:CreateWindow(settings)
     
     local SearchBar = Instance.new("Frame", Header)
     SearchBar.Size = UDim2.new(0, 0, 0, 28)
-    SearchBar.Position = UDim2.new(1, -20, 0.5, 0)
+    SearchBar.Position = UDim2.new(1, -60, 0.5, 0)
     SearchBar.AnchorPoint = Vector2.new(1, 0.5)
     SearchBar.BackgroundColor3 = currentTheme.element or Color3.fromRGB(20,20,26)
     SearchBar.ClipsDescendants = true
@@ -2049,7 +2049,7 @@ function NoirUI:CreateWindow(settings)
     Instance.new("UICorner", SearchBar).CornerRadius = UDim.new(0, 6)
     
     local SearchBox = Instance.new("TextBox", SearchBar)
-    SearchBox.Size = UDim2.new(1, -10, 1, 0)
+    SearchBox.Size = UDim2.new(1, -50, 1, 0)
     SearchBox.Position = UDim2.new(0, 5, 0, 0)
     SearchBox.BackgroundTransparency = 1
     SearchBox.PlaceholderText = "Tìm kiếm..."
@@ -2600,7 +2600,7 @@ function NoirUI:CreateWindow(settings)
         local Indicator = Instance.new("Frame")
         Indicator.Name = "Indicator"
         Indicator.Parent = B
-        Indicator.Size = UDim2.new(0, 4, 0.85, 0)
+        Indicator.Size = UDim2.new(0, 4, 0.8, 0)
         Indicator.Position = UDim2.new(1, 0, 0.5, 0)
         Indicator.AnchorPoint = Vector2.new(1, 0.5)
         Indicator.BackgroundColor3 = ACCENT
@@ -4016,7 +4016,7 @@ function NoirUI:CreateWindow(settings)
             local presetData = opt.Presets or {} 
             local defaultValue = opt.Default or (presetData[1] or "")
             local currentValue = defaultValue
-            local spacing = opt.Spacing or 6
+            local spacing = opt.Spacing or 8
             
             local callback = opt.Callback or function() end
 
@@ -4056,7 +4056,7 @@ function NoirUI:CreateWindow(settings)
                         if stroke then
                             stroke.Color = isSelected and ACCENT or Color3.fromRGB(40,40,48) -- Viền Accent
                             stroke.Transparency = isSelected and 0.2 or 1 -- Hiện viền khi chọn
-                            stroke.Thickness = isSelected and 1.5 or 0 -- Độ dày viền
+                            stroke.Thickness = isSelected and 1 or 0 -- Độ dày viền
                         end
                     end
                 end
@@ -4094,7 +4094,7 @@ function NoirUI:CreateWindow(settings)
                     local stroke = Instance.new("UIStroke", btn)
                     stroke.Color = Color3.fromRGB(40,40,48)
                     stroke.Transparency = 1 -- Mặc định ẩn viền
-                    stroke.Thickness = 0.75
+                    stroke.Thickness = 1
                     
                     -- Đăng ký theme
                     NoirUI:RegisterThemeElement(btn, "BackgroundColor3", "element")
