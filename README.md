@@ -1,12 +1,10 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/NoirStillHere/NUI/refs/heads/main/assets/logo.png" alt="NoirUI Icon" width="60" style="margin-right: 15px;" />
-  
-  <img src="https://raw.githubusercontent.com/NoirStillHere/NUI/refs/heads/main/assets/logo.jpg" alt="NoirUI helper" width="160" />
-</p>
-
 ![Version](https://img.shields.io/badge/Version-2.0.5-8B5CF6?style=for-the-badge&logo=roblox&logoColor=white)
 ![Lua](https://img.shields.io/badge/Lua-100%25-8B5CF6?style=for-the-badge&logo=lua&logoColor=white)
 [![Discord](https://img.shields.io/discord/123456789012345678?style=for-the-badge&logo=discord&logoColor=white&color=5865F2)](https://discord.gg/fw7zDS8ccv)
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/NoirStillHere/NUI/refs/heads/main/assets/logo.jpg" alt="NoirUI helper" width="160" />
+</p>
 
 <p align="center">
   <em><strong>Dev by<br/>
@@ -342,11 +340,14 @@ Tab:CreateCard({
     Type = "Dashboard",
     Title = "Stats",
     Items = {
-        { Label = "Kills", Value = "123" },
+        { Label = "Kills", Value = "1k" },
         { Label = "Deaths", Value = "45" }
     },
     FooterText = "Updated 2m ago"
 })
+
+dashCard:update("Kills", "1k2")
+dashCard:update("Deaths", 50)
 ```
 
 #### 4. Carousel (Swipe/Click Icons)
