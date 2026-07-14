@@ -4311,24 +4311,27 @@ function NoirUI:CreateWindow(settings)
                 
             elseif cardType == "Dashboard" then
                 createTitle(opt.Title or "Dashboard")
-                
+    
                 local grid = Instance.new("Frame", f)
                 grid.Size = UDim2.new(1, 0, 0, 0)
                 grid.AutomaticSize = Enum.AutomaticSize.Y
                 grid.BackgroundTransparency = 1
                 grid.LayoutOrder = 2
-                
+    
                 local gridLayout = Instance.new("UIGridLayout", grid)
                 gridLayout.CellSize = UDim2.new(0.5, -4, 0, 50)
                 gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
                 gridLayout.FillDirection = Enum.FillDirection.Horizontal
-                
+    
+                -- Lưu các TextLabel Value vào một bảng để dễ cập nhật
+                local valueMap = {}
+    
                 if opt.Items then
                     for _, item in ipairs(opt.Items) do
                         local cell = Instance.new("Frame", grid)
                         cell.Size = UDim2.new(1, 0, 1, 0)
                         cell.BackgroundTransparency = 1
-                        
+            
                         local val = Instance.new("TextLabel", cell)
                         val.Size = UDim2.new(1, 0, 0, 30)
                         val.Position = UDim2.new(0, 0, 0.5, -15)
@@ -4340,6 +4343,11 @@ function NoirUI:CreateWindow(settings)
                         val.TextSize = 20
                         val.TextXAlignment = Enum.TextXAlignment.Center
                         
+                        -- Lưu trữ để dùng API update sau này
+                        if item.Label then
+                            valueMap[item.Label] = val
+                        end
+                        
                         local lbl = Instance.new("TextLabel", cell)
                         lbl.Size = UDim2.new(1, 0, 0, 18)
                         lbl.Position = UDim2.new(0, 0, 0.9, 0)
@@ -4350,9 +4358,9 @@ function NoirUI:CreateWindow(settings)
                         lbl.Font = Enum.Font.Gotham
                         lbl.TextSize = 10
                         lbl.TextXAlignment = Enum.TextXAlignment.Center
-                    end
+                    end 
                 end
-                
+    
                 if opt.FooterText then
                     local footer = Instance.new("TextLabel", f)
                     footer.Size = UDim2.new(1, 0, 0, 0)
@@ -4366,6 +4374,16 @@ function NoirUI:CreateWindow(settings)
                     footer.TextXAlignment = Enum.TextXAlignment.Center
                     footer.LayoutOrder = 3
                 end
+    
+                -- 🟢 TRẢ VỀ API CHO DASHBOARD
+                local dashboardAPI = {
+                    update = function(label, newValue)
+                        if valueMap[label] then
+                            valueMap[label].Text = tostring(newValue)
+                        end
+                    end
+                }
+                return dashboardAPI
                 
             elseif cardType == "Carousel" then
                 createTitle(opt.Title or "Carousel")
