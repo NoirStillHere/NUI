@@ -1,12 +1,12 @@
 --[[
-  NoirUI v2.1.0
+  NoirUI v2.1.0 (Fixed)
   Author: Noir & Adono
   Description: Advanced UI Library for Roblox with Complete Component API
   Changes in v2.1.0:
     - Added complete API wrappers for ALL components
+    - Fixed CreateLoader nil error
     - Every component now returns API object with get/set/callback/visibility/destroy methods
     - Backward compatibility maintained
-    - Improved documentation
 ]]
 
 --Core
@@ -1563,7 +1563,7 @@ function NoirUI.Music:GetQueue()
 end
 
 -- ==========================================================
--- LOADER SYSTEM
+-- LOADER SYSTEM (FIXED)
 -- ==========================================================
 function NoirUI:CreateLoader(settings)
     settings = settings or {}
@@ -1678,6 +1678,7 @@ function NoirUI:CreateLoader(settings)
     ProgressFill.ZIndex = 8
     Instance.new("UICorner", ProgressFill).CornerRadius = UDim.new(1, 0)
 
+    -- [FIX] Đặt biến TextLabel và Event trước khi dùng ở task.delay
     local TextLabel = Instance.new("TextLabel")
     TextLabel.Name = "TextLabel"
     TextLabel.Parent = Loader
@@ -2766,18 +2767,13 @@ function NoirUI:CreateWindow(settings)
                 table.insert(NoirUI.Connections, connection)
             end
             
-            -- ==========================================================
             -- API: Label
-            -- ==========================================================
             local api = {
-                -- Getter/Setter cơ bản
                 get = function() return l.Text end,
                 set = function(newText) 
                     l.Text = newText
                     searchData[idx] = newText
                 end,
-                
-                -- Style manipulation
                 setColor = function(color) l.TextColor3 = color end,
                 setSize = function(size) l.TextSize = size end,
                 setFont = function(font) l.Font = font end,
@@ -2785,23 +2781,15 @@ function NoirUI:CreateWindow(settings)
                     l.TextXAlignment = xAlign 
                     l.TextYAlignment = yAlign 
                 end,
-                
-                -- Visibility
                 show = function() l.Visible = true end,
                 hide = function() l.Visible = false end,
                 toggle = function() l.Visible = not l.Visible end,
-                
-                -- Get raw object
                 getObject = function() return l end,
-                
-                -- Destroy
                 destroy = function() 
                     l:Destroy()
                     table.remove(Tab.Elements, idx)
                     searchData[idx] = nil
                 end,
-                
-                -- Text change callback
                 setCallback = function(cb)
                     l:GetPropertyChangedSignal("Text"):Connect(function()
                         cb(l.Text)
@@ -2809,7 +2797,6 @@ function NoirUI:CreateWindow(settings)
                 end
             }
             
-            -- Nếu là dynamic text, thêm control để stop update
             if type(text) == "function" then
                 api.stopDynamicUpdate = function()
                     for i, conn in ipairs(Tab.Connections) do
@@ -2840,15 +2827,10 @@ function NoirUI:CreateWindow(settings)
             table.insert(Tab.Elements, div)
             
             local api = {
-                -- Visibility
                 show = function() div.Visible = true end,
                 hide = function() div.Visible = false end,
-                
-                -- Style
                 setColor = function(color) div.BackgroundColor3 = color end,
                 setTransparency = function(trans) div.BackgroundTransparency = trans end,
-                
-                -- Destroy
                 destroy = function() div:Destroy() end
             }
             
@@ -2864,15 +2846,10 @@ function NoirUI:CreateWindow(settings)
             table.insert(Tab.Elements, spacer)
             
             local api = {
-                -- Set height
                 setHeight = function(newHeight) spacer.Size = UDim2.new(1, 0, 0, newHeight or 8) end,
                 getHeight = function() return spacer.Size.Y.Offset end,
-                
-                -- Visibility
                 show = function() spacer.Visible = true end,
                 hide = function() spacer.Visible = false end,
-                
-                -- Destroy
                 destroy = function() spacer:Destroy() end
             }
             
@@ -2929,7 +2906,6 @@ function NoirUI:CreateWindow(settings)
             Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
             
             local api = {
-                -- Getter/Setter
                 get = function() return current end,
                 set = function(value, animate)
                     current = math.clamp(value, 0, maxValue)
@@ -2943,23 +2919,13 @@ function NoirUI:CreateWindow(settings)
                         fill.Size = UDim2.new(pct, 0, 1, 0)
                     end
                 end,
-                
-                -- Max value
                 setMax = function(newMax) maxValue = newMax end,
                 getMax = function() return maxValue end,
-                
-                -- Title
                 setTitle = function(newTitle) title.Text = newTitle end,
                 getTitle = function() return title.Text end,
-                
-                -- Visibility
                 show = function() f.Visible = true end,
                 hide = function() f.Visible = false end,
-                
-                -- Get raw object
                 getObject = function() return f end,
-                
-                -- Destroy
                 destroy = function() f:Destroy() end
             }
             
@@ -3068,7 +3034,6 @@ function NoirUI:CreateWindow(settings)
             Tab._sectionLayout = sectionLayout
             
             local api = {
-                -- Collapse/Expand
                 collapse = function() 
                     if not isCollapsed then headerBtn.MouseButton1Click:Fire() end 
                 end,
@@ -3077,19 +3042,11 @@ function NoirUI:CreateWindow(settings)
                 end,
                 toggle = function() headerBtn.MouseButton1Click:Fire() end,
                 isCollapsed = function() return isCollapsed end,
-                
-                -- Title
                 setTitle = function(newTitle) lbl.Text = newTitle:upper() end,
                 getTitle = function() return lbl.Text end,
-                
-                -- Content access
                 getContent = function() return sectionContent end,
-                
-                -- Visibility
                 show = function() s.Visible = true end,
                 hide = function() s.Visible = false end,
-                
-                -- Destroy
                 destroy = function() s:Destroy() end
             }
             
@@ -3135,20 +3092,13 @@ function NoirUI:CreateWindow(settings)
             content.TextYAlignment = "Top"
             
             local api = {
-                -- Getter/Setter
                 getTitle = function() return title.Text end,
                 setTitle = function(newTitle) title.Text = newTitle end,
                 getContent = function() return content.Text end,
                 setContent = function(newContent) content.Text = newContent end,
-                
-                -- Visibility
                 show = function() f.Visible = true end,
                 hide = function() f.Visible = false end,
-                
-                -- Get raw object
                 getObject = function() return f end,
-                
-                -- Destroy
                 destroy = function() f:Destroy() end
             }
             
@@ -3186,36 +3136,21 @@ function NoirUI:CreateWindow(settings)
             if hasSubtitle then AddSubtitle(f, opt.Subtitle, 38) end
             
             local api = {
-                -- Getter/Setter
                 get = function() return i.Text end,
                 set = function(text) 
                     i.Text = text 
                     if opt.Callback then opt.Callback(text) end
                 end,
-                
-                -- Focus management
                 focus = function() i:CaptureFocus() end,
                 blur = function() i:ReleaseFocus() end,
-                
-                -- Placeholder
                 setPlaceholder = function(text) i.PlaceholderText = text end,
-                
-                -- Style
                 setColor = function(color) i.TextColor3 = color end,
                 setPlaceholderColor = function(color) i.PlaceholderColor3 = color end,
-                
-                -- Callback
                 setCallback = function(cb) opt.Callback = cb end,
-                
-                -- Visibility
                 show = function() f.Visible = true end,
                 hide = function() f.Visible = false end,
-                
-                -- Get raw object
                 getObject = function() return i end,
                 getContainer = function() return f end,
-                
-                -- Destroy
                 destroy = function() f:Destroy() end
             }
             
@@ -3273,33 +3208,20 @@ function NoirUI:CreateWindow(settings)
             end)
             
             local api = {
-                -- State management
                 setEnabled = function(enabled)
                     b.Active = enabled
                     b.BackgroundTransparency = enabled and (HAS_BG_IMAGE and 0.5 or 0) or 0.8
                     b.TextColor3 = enabled and (currentTheme.text or Color3.fromRGB(245,245,250)) or Color3.fromRGB(100,100,100)
                 end,
                 getEnabled = function() return b.Active end,
-                
-                -- Text
                 setText = function(text) b.Text = text end,
                 getText = function() return b.Text end,
-                
-                -- Callback
                 setCallback = function(cb) opt.Callback = cb end,
-                
-                -- Visibility
                 show = function() b.Visible = true end,
                 hide = function() b.Visible = false end,
-                
-                -- Style
                 setBackgroundColor = function(color) b.BackgroundColor3 = color end,
                 setTextColor = function(color) b.TextColor3 = color end,
-                
-                -- Get raw object
                 getObject = function() return b end,
-                
-                -- Destroy
                 destroy = function() b:Destroy() end
             }
             
@@ -3384,7 +3306,6 @@ function NoirUI:CreateWindow(settings)
             end
             
             local api = {
-                -- Getter/Setter
                 get = function() return s end,
                 set = function(value)
                     s = value
@@ -3394,29 +3315,17 @@ function NoirUI:CreateWindow(settings)
                     knob.AnchorPoint = Vector2.new(s and 1 or 0, 0.5)
                     if opt.Callback then opt.Callback(s) end
                 end,
-                
-                -- Toggle (đảo ngược state)
                 toggle = function()
                     api:set(not s)
                 end,
-                
-                -- Callback
                 setCallback = function(cb) opt.Callback = cb end,
-                
-                -- Visibility
                 show = function() t.Visible = true end,
                 hide = function() t.Visible = false end,
-                
-                -- Style
                 setAccentColor = function(color) 
                     bx.BackgroundColor3 = s and color or currentTheme.container
                     ACCENT = color
                 end,
-                
-                -- Get raw object
                 getObject = function() return t end,
-                
-                -- Destroy
                 destroy = function() t:Destroy() end
             }
             
@@ -3602,7 +3511,6 @@ function NoirUI:CreateWindow(settings)
             end
             
             local api = {
-                -- Getter/Setter
                 get = function() return currentValue end,
                 set = function(value, animate)
                     local v = math.clamp(value, min, max)
@@ -3626,31 +3534,19 @@ function NoirUI:CreateWindow(settings)
                     valBtn.Text = tostring(currentValue)
                     if opt.Callback then opt.Callback(currentValue) end
                 end,
-                
-                -- Range management
                 setRange = function(newMin, newMax)
                     min = newMin
                     max = newMax
                     api:set(currentValue, true)
                 end,
                 getRange = function() return min, max end,
-                
-                -- Increment
                 setIncrement = function(newInc)
                     increment = newInc
                 end,
-                
-                -- Callback
                 setCallback = function(cb) opt.Callback = cb end,
-                
-                -- Visibility
                 show = function() f.Visible = true end,
                 hide = function() f.Visible = false end,
-                
-                -- Get raw object
                 getObject = function() return f end,
-                
-                -- Destroy
                 destroy = function() f:Destroy() end
             }
             
@@ -3834,20 +3730,15 @@ function NoirUI:CreateWindow(settings)
             end
             
             local api = {
-                -- Getter/Setter
                 get = function() return Color3.fromHSV(h, s, v) end,
                 set = function(color)
                     h, s, v = color:ToHSV()
                     UpdateColor()
                 end,
-                
-                -- Individual HSV control
                 setHue = function(value) h = math.clamp(value, 0, 1); UpdateColor() end,
                 setSaturation = function(value) s = math.clamp(value, 0, 1); UpdateColor() end,
                 setValue = function(value) v = math.clamp(value, 0, 1); UpdateColor() end,
                 getHSV = function() return h, s, v end,
-                
-                -- Open/Close picker
                 open = function() 
                     if not open then 
                         pvw.MouseButton1Click:Fire() 
@@ -3859,18 +3750,10 @@ function NoirUI:CreateWindow(settings)
                     end
                 end,
                 toggle = function() pvw.MouseButton1Click:Fire() end,
-                
-                -- Callback
                 setCallback = function(cb) opt.Callback = cb end,
-                
-                -- Visibility
                 show = function() f.Visible = true end,
                 hide = function() f.Visible = false end,
-                
-                -- Get raw object
                 getObject = function() return f end,
-                
-                -- Destroy
                 destroy = function() f:Destroy() end
             }
             
@@ -4203,8 +4086,6 @@ function NoirUI:CreateWindow(settings)
             
             local api = {
                 container = d,
-                
-                -- Getter/Setter
                 get = function() return isMulti and getSelectedList() or getSelectedText() end,
                 set = function(option)
                     if isMulti then
@@ -4221,8 +4102,6 @@ function NoirUI:CreateWindow(settings)
                     t.Text = "  " .. opt.Name .. " : " .. getSelectedText()
                     refreshOptions()
                 end,
-                
-                -- Options management
                 addOption = function(option)
                     if not opt.Options then opt.Options = {} end
                     table.insert(opt.Options, option)
@@ -4247,8 +4126,6 @@ function NoirUI:CreateWindow(settings)
                     t.Text = "  " .. opt.Name .. " : none"
                 end,
                 getOptions = function() return opt.Options or {} end,
-                
-                -- Open/Close
                 open = function() 
                     if not open then t.MouseButton1Click:Fire() end 
                 end,
@@ -4256,18 +4133,10 @@ function NoirUI:CreateWindow(settings)
                     if open then closeDropdown() end
                 end,
                 toggle = function() t.MouseButton1Click:Fire() end,
-                
-                -- Callback
                 setCallback = function(cb) opt.Callback = cb end,
-                
-                -- Visibility
                 show = function() d.Visible = true end,
                 hide = function() d.Visible = false end,
-                
-                -- Get raw object
                 getObject = function() return d end,
-                
-                -- Destroy
                 destroy = function() d:Destroy() end
             }
             
@@ -4382,15 +4251,12 @@ function NoirUI:CreateWindow(settings)
             end
             
             local api = {
-                -- Getter/Setter
                 get = function() return keybindText end,
                 set = function(value)
                     keybindText = value
                     updateKeybindDisplay()
                     if opt.Callback then opt.Callback(value) end
                 end,
-                
-                -- Start/Stop listening
                 startListening = function() kb.MouseButton1Click:Fire() end,
                 stopListening = function()
                     if isListening then
@@ -4399,18 +4265,10 @@ function NoirUI:CreateWindow(settings)
                     end
                 end,
                 isListening = function() return isListening end,
-                
-                -- Callback
                 setCallback = function(cb) opt.Callback = cb end,
-                
-                -- Visibility
                 show = function() f.Visible = true end,
                 hide = function() f.Visible = false end,
-                
-                -- Get raw object
                 getObject = function() return f end,
-                
-                -- Destroy
                 destroy = function() f:Destroy() end
             }
             
@@ -4458,30 +4316,21 @@ function NoirUI:CreateWindow(settings)
             CreateSpringEffect(box, 0.05 * Tab.Count)
             
             local api = {
-                -- Getter/Setter
                 get = function() return img.Image end,
                 set = function(newId)
                     local resolved = ResolveIcon(newId) or newId
                     img.Image = resolved
                 end,
-                
-                -- Style
                 setScaleType = function(type) img.ScaleType = type end,
                 setTransparency = function(trans) img.ImageTransparency = trans end,
                 setColor = function(color) img.ImageColor3 = color end,
                 setSize = function(width, height) 
                     box.Size = UDim2.new(1, 0, 0, height or box.Size.Y.Offset)
                 end,
-                
-                -- Visibility
                 show = function() box.Visible = true end,
                 hide = function() box.Visible = false end,
-                
-                -- Get raw object
                 getObject = function() return box end,
                 getImage = function() return img end,
-                
-                -- Destroy
                 destroy = function() box:Destroy() end
             }
             
@@ -4602,12 +4451,8 @@ function NoirUI:CreateWindow(settings)
             
             local api = {
                 container = container,
-                
-                -- Getter/Setter
                 get = function() return currentValue end,
                 set = function(value) updatePreset(value) end,
-                
-                -- Presets management
                 setPresets = function(newPresets)
                     presetData = newPresets
                     for _, child in pairs(container:GetChildren()) do
@@ -4629,26 +4474,16 @@ function NoirUI:CreateWindow(settings)
                         end
                     end
                 end,
-                
-                -- Refresh
                 refresh = function()
                     for _, child in pairs(container:GetChildren()) do
                         if child:IsA("TextButton") then child:Destroy() end
                     end
                     renderButtons()
                 end,
-                
-                -- Callback
                 setCallback = function(cb) callback = cb end,
-                
-                -- Visibility
                 show = function() container.Visible = true end,
                 hide = function() container.Visible = false end,
-                
-                -- Get raw object
                 getObject = function() return container end,
-                
-                -- Destroy
                 destroy = function() container:Destroy() end
             }
             
@@ -5230,14 +5065,9 @@ function NoirUI:CreateWindow(settings)
             end
             
             local api = {
-                -- Get raw object
                 getObject = function() return f end,
-                
-                -- Visibility
                 show = function() f.Visible = true end,
                 hide = function() f.Visible = false end,
-                
-                -- Destroy
                 destroy = function() f:Destroy() end
             }
             
