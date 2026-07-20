@@ -1,20 +1,24 @@
 --[[
-  NoirUI v2.1.0 (Stable)
+  NoirUI Documentation
   Author: Noir & Adono
-  Description: Advanced UI Library for Roblox with Complete Component API
-  Changes in v2.1.0:
-    - Added complete API wrappers for ALL components
-    - Restored Loader independence (No theme dependency, works out of the box)
-    - Every component now returns API object with get/set/callback/visibility/destroy methods
-    - Backward compatibility maintained
+  Library Owner: NoirNF
+  UI Engineer: NoirNF
+  Lua Scripter: NoirNF, Adono
+  Executor Compatibility Tester: Adono
+  Animation Engineer: Adono
+  Version: 2.1.0
+  Description: Advanced UI Library for Roblox
 ]]
 
---Core
+-- ==========================================================
+-- CORE
+-- ==========================================================
 local TweenService = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
+local TextService = game:GetService("TextService")
 
 local OldGui = game.CoreGui:FindFirstChild("NoirUI_V3_Ultimate")
 if OldGui then OldGui:Destroy() end
@@ -182,7 +186,7 @@ NoirUI.Themes.Presets = {
 }
 
 -- ==========================================================
--- THEME MANAGER API (Mở rộng từ CK)
+-- THEME MANAGER API
 -- ==========================================================
 function NoirUI:RegisterThemeElement(element, property, themeKey)
     if not element or not property or not themeKey then return end
@@ -297,7 +301,7 @@ end
 task.defer(function() NoirUI:InitHotkeyListener() end)
 
 -- ==========================================================
--- SHINE EFFECT V2 (Dùng 2 lớp chữ, không bao giờ bị tối)
+-- SHINE EFFECT V2
 -- ==========================================================
 function NoirUI:CreateShineEffect(textLabel, rotation, speed)
     if not textLabel then return end
@@ -482,7 +486,6 @@ function NoirUI:EnableAssetCache(directory)
     AssetCache:SetDirectory(directory or "NoirUI_Cache")
     AssetCache.Enabled = true
     NoirUI._AssetCache = AssetCache
-    print("NoirUI Asset Cache đã được bật!")
 end
 
 -- ==========================================================
@@ -884,9 +887,9 @@ local function GetContrastColor(backgroundColor)
     end
 end
 
--- ====================================================
+-- ==========================================================
 -- ANIMATION
--- ====================================================
+-- ==========================================================
 local function CreateClickScaleEffect(button)
     if not button then return end
     local origSize = button.Size
@@ -945,7 +948,6 @@ local function CreateHoverEffect(button)
     end)
 end
 
--- Sound Settings
 local SoundSettings = {
     Enabled = true,
     Volume = 0.5,
@@ -1053,9 +1055,9 @@ local function MakeDraggable(frame)
     end)
 end
 
--- ====================================================
--- BACKGROUND SYSTEM V2.0.0 (HIỆN ĐẠI)
--- ====================================================
+-- ==========================================================
+-- BACKGROUND SYSTEM V2.0.0
+-- ==========================================================
 local function SetupBackground(frame, bgSetting, bgColor, defaultTransparency)
     local existingBg = frame:FindFirstChild("_BackgroundImage")
     if existingBg then existingBg:Destroy() end
@@ -1153,7 +1155,9 @@ function NoirUI:RegisterCommand(prefix, callback)
     NoirUI.CustomCommands[prefix:lower()] = callback
 end
 
--- Key System
+-- ==========================================================
+-- KEY SYSTEM
+-- ==========================================================
 local function KeySystem(settings)
     if not settings then return true end
     local ks = settings.KeySettings or {}
@@ -1563,16 +1567,17 @@ function NoirUI.Music:GetQueue()
 end
 
 -- ==========================================================
--- LOADER SYSTEM (Fixed to not depend on themes)
+-- LOADER SYSTEM
 -- ==========================================================
 function NoirUI:CreateLoader(settings)
     settings = settings or {}
     local iconId = settings.Icon or "rbxthumb://type=Asset&id=94916110511437&w=420&h=420"
     local duration = settings.Duration or 3.5
+    local theme = settings.Theme or _currentTheme or NoirUI.Themes.Presets["noir"]
     local onComplete = settings.OnComplete or nil
     local text = settings.Text or "Loading..."
-    local textColor = settings.TextColor or Color3.fromRGB(245,245,250)
-    local accentColor = settings.AccentColor or Color3.fromRGB(138,116,249)
+    local textColor = settings.TextColor or theme.text or Color3.fromRGB(245,245,250)
+    local accentColor = settings.AccentColor or theme.accent or Color3.fromRGB(138,116,249)
     
     local shape = settings.Shape or "bo-goc"
     local iconCornerRadius = UDim.new(0, 12)
@@ -1612,7 +1617,7 @@ function NoirUI:CreateLoader(settings)
     Loader.Name = "Loader"
     Loader.Parent = ScreenGui
     Loader.AnchorPoint = Vector2.new(0.5, 0.5)
-    Loader.BackgroundColor3 = Color3.fromRGB(8,8,10)
+    Loader.BackgroundColor3 = theme.bg or Color3.fromRGB(8,8,10)
     Loader.BackgroundTransparency = 0.8
     Loader.BorderSizePixel = 0
     Loader.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -1663,7 +1668,7 @@ function NoirUI:CreateLoader(settings)
     ProgressBar.AnchorPoint = Vector2.new(0.5, 0.5)
     ProgressBar.Position = UDim2.new(0.5, 0, 0.70, 0)
     ProgressBar.Size = UDim2.new(0, 200, 0, 4)
-    ProgressBar.BackgroundColor3 = Color3.fromRGB(14,14,18)
+    ProgressBar.BackgroundColor3 = theme.container or Color3.fromRGB(14,14,18)
     ProgressBar.BackgroundTransparency = 0.5
     ProgressBar.ZIndex = 7
     Instance.new("UICorner", ProgressBar).CornerRadius = UDim.new(1, 0)
@@ -2191,7 +2196,6 @@ function NoirUI:CreateWindow(settings)
     local Cont = Instance.new("Frame", Main)
     Cont.Size = UDim2.new(1, -125, 1, -50)
     Cont.Position = UDim2.new(0, 120, 0, 40)
-    
     Cont.BackgroundColor3 = currentTheme.container or settings.ContainerBgColor or Color3.fromRGB(14,14,18)
     Cont.BackgroundTransparency = HAS_BG_IMAGE and 0.5 or 0.05
     Cont.ClipsDescendants = true
@@ -2735,6 +2739,9 @@ function NoirUI:CreateWindow(settings)
         local Tab = { Count = 0, Elements = {}, Connections = {}, _currentSectionContent = nil, _sectionLayout = nil }
         local function GetO() Tab.Count = Tab.Count + 1; return Tab.Count end
         
+        -- ==========================================================
+        -- ELEMENT: LABEL
+        -- ==========================================================
         function Tab:CreateLabel(text, updateFunction)
             local parent = Tab._currentSectionContent or ContentFrame
             local l = Instance.new("TextLabel", parent)
@@ -2753,6 +2760,14 @@ function NoirUI:CreateWindow(settings)
             searchData[idx] = type(text) == "string" and text or ""
             
             CreateSpringEffect(l, 0.05 * Tab.Count)
+            
+            local api = {
+                setText = function(newText) l.Text = newText end,
+                getText = function() return l.Text end,
+                setColor = function(color) l.TextColor3 = color end,
+                getObject = function() return l end
+            }
+            
             if type(text) == "function" then
                 local connection = RunService.RenderStepped:Connect(function()
                     if l and l.Parent then
@@ -2764,57 +2779,12 @@ function NoirUI:CreateWindow(settings)
                 table.insert(Tab.Connections, connection)
                 table.insert(NoirUI.Connections, connection)
             end
-            
-            -- API: Label
-            local api = {
-                get = function() return l.Text end,
-                set = function(newText) 
-                    l.Text = newText
-                    searchData[idx] = newText
-                end,
-                setColor = function(color) l.TextColor3 = color end,
-                setSize = function(size) l.TextSize = size end,
-                setFont = function(font) l.Font = font end,
-                setAlignment = function(xAlign, yAlign) 
-                    l.TextXAlignment = xAlign 
-                    l.TextYAlignment = yAlign 
-                end,
-                show = function() l.Visible = true end,
-                hide = function() l.Visible = false end,
-                toggle = function() l.Visible = not l.Visible end,
-                getObject = function() return l end,
-                destroy = function() 
-                    l:Destroy()
-                    table.remove(Tab.Elements, idx)
-                    searchData[idx] = nil
-                end,
-                setCallback = function(cb)
-                    l:GetPropertyChangedSignal("Text"):Connect(function()
-                        cb(l.Text)
-                    end)
-                end
-            }
-            
-            if type(text) == "function" then
-                api.stopDynamicUpdate = function()
-                    for i, conn in ipairs(Tab.Connections) do
-                        if conn and conn:IsConnected() and conn._label == l then
-                            conn:Disconnect()
-                            table.remove(Tab.Connections, i)
-                            break
-                        end
-                    end
-                end
-                for _, conn in ipairs(Tab.Connections) do
-                    if conn and conn:IsConnected() then
-                        conn._label = l
-                    end
-                end
-            end
-            
             return api
         end
         
+        -- ==========================================================
+        -- ELEMENT: DIVIDER
+        -- ==========================================================
         function Tab:CreateDivider()
             local div = Instance.new("Frame", Tab._currentSectionContent or ContentFrame)
             div.Size = UDim2.new(1, -20, 0, 1)
@@ -2825,16 +2795,17 @@ function NoirUI:CreateWindow(settings)
             table.insert(Tab.Elements, div)
             
             local api = {
-                show = function() div.Visible = true end,
-                hide = function() div.Visible = false end,
                 setColor = function(color) div.BackgroundColor3 = color end,
+                setThickness = function(px) div.Size = UDim2.new(1, -20, 0, px) end,
                 setTransparency = function(trans) div.BackgroundTransparency = trans end,
-                destroy = function() div:Destroy() end
+                getObject = function() return div end
             }
-            
             return api
         end
         
+        -- ==========================================================
+        -- ELEMENT: SPACER
+        -- ==========================================================
         function Tab:CreateSpacer(height)
             local spacer = Instance.new("Frame", Tab._currentSectionContent or ContentFrame)
             spacer.Size = UDim2.new(1, 0, 0, height or 8)
@@ -2844,16 +2815,15 @@ function NoirUI:CreateWindow(settings)
             table.insert(Tab.Elements, spacer)
             
             local api = {
-                setHeight = function(newHeight) spacer.Size = UDim2.new(1, 0, 0, newHeight or 8) end,
-                getHeight = function() return spacer.Size.Y.Offset end,
-                show = function() spacer.Visible = true end,
-                hide = function() spacer.Visible = false end,
-                destroy = function() spacer:Destroy() end
+                setHeight = function(newHeight) spacer.Size = UDim2.new(1, 0, 0, newHeight) end,
+                getObject = function() return spacer end
             }
-            
             return api
         end
         
+        -- ==========================================================
+        -- ELEMENT: PROGRESS BAR
+        -- ==========================================================
         function Tab:CreateProgressBar(text, maxValue)
             maxValue = maxValue or 100
             local current = 0
@@ -2904,7 +2874,6 @@ function NoirUI:CreateWindow(settings)
             Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
             
             local api = {
-                get = function() return current end,
                 set = function(value, animate)
                     current = math.clamp(value, 0, maxValue)
                     local pct = current / maxValue
@@ -2917,19 +2886,17 @@ function NoirUI:CreateWindow(settings)
                         fill.Size = UDim2.new(pct, 0, 1, 0)
                     end
                 end,
+                get = function() return current end,
+                reset = function() api.set(0) end,
                 setMax = function(newMax) maxValue = newMax end,
-                getMax = function() return maxValue end,
-                setTitle = function(newTitle) title.Text = newTitle end,
-                getTitle = function() return title.Text end,
-                show = function() f.Visible = true end,
-                hide = function() f.Visible = false end,
-                getObject = function() return f end,
-                destroy = function() f:Destroy() end
+                getObject = function() return f end
             }
-            
             return api
         end
         
+        -- ==========================================================
+        -- ELEMENT: SECTION
+        -- ==========================================================
         function Tab:CreateSection(title, noLine)
             local s = Instance.new("Frame", ContentFrame)
             s.Size = UDim2.new(0.95, 0, 0, noLine and 25 or 35)
@@ -3032,25 +2999,22 @@ function NoirUI:CreateWindow(settings)
             Tab._sectionLayout = sectionLayout
             
             local api = {
-                collapse = function() 
-                    if not isCollapsed then headerBtn.MouseButton1Click:Fire() end 
+                collapse = function()
+                    if not isCollapsed then headerBtn:Fire("MouseButton1Click") end
                 end,
                 expand = function()
-                    if isCollapsed then headerBtn.MouseButton1Click:Fire() end
+                    if isCollapsed then headerBtn:Fire("MouseButton1Click") end
                 end,
-                toggle = function() headerBtn.MouseButton1Click:Fire() end,
+                toggle = function() headerBtn:Fire("MouseButton1Click") end,
                 isCollapsed = function() return isCollapsed end,
-                setTitle = function(newTitle) lbl.Text = newTitle:upper() end,
-                getTitle = function() return lbl.Text end,
-                getContent = function() return sectionContent end,
-                show = function() s.Visible = true end,
-                hide = function() s.Visible = false end,
-                destroy = function() s:Destroy() end
+                getObject = function() return s end
             }
-            
             return api
         end
         
+        -- ==========================================================
+        -- ELEMENT: PARAGRAPH
+        -- ==========================================================
         function Tab:CreateParagraph(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local f = Instance.new("Frame", parent)
@@ -3090,19 +3054,16 @@ function NoirUI:CreateWindow(settings)
             content.TextYAlignment = "Top"
             
             local api = {
-                getTitle = function() return title.Text end,
-                setTitle = function(newTitle) title.Text = newTitle end,
-                getContent = function() return content.Text end,
-                setContent = function(newContent) content.Text = newContent end,
-                show = function() f.Visible = true end,
-                hide = function() f.Visible = false end,
-                getObject = function() return f end,
-                destroy = function() f:Destroy() end
+                setTitle = function(text) title.Text = text end,
+                setContent = function(text) content.Text = text end,
+                getObject = function() return f end
             }
-            
             return api
         end
         
+        -- ==========================================================
+        -- ELEMENT: TEXTBOX (FULL API)
+        -- ==========================================================
         function Tab:CreateTextBox(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -3135,26 +3096,27 @@ function NoirUI:CreateWindow(settings)
             
             local api = {
                 get = function() return i.Text end,
-                set = function(text) 
-                    i.Text = text 
-                    if opt.Callback then opt.Callback(text) end
-                end,
+                set = function(newText) i.Text = newText end,
                 focus = function() i:CaptureFocus() end,
-                blur = function() i:ReleaseFocus() end,
-                setPlaceholder = function(text) i.PlaceholderText = text end,
-                setColor = function(color) i.TextColor3 = color end,
-                setPlaceholderColor = function(color) i.PlaceholderColor3 = color end,
-                setCallback = function(cb) opt.Callback = cb end,
-                show = function() f.Visible = true end,
-                hide = function() f.Visible = false end,
-                getObject = function() return i end,
-                getContainer = function() return f end,
-                destroy = function() f:Destroy() end
+                clear = function() i.Text = "" end,
+                getObject = function() return f end
             }
+            
+            if opt.FlagName then
+                NoirUI:RegisterFlag(opt.FlagName, {
+                    Type = "TextBox",
+                    GetValue = function() return api.get() end,
+                    SetValue = function(v) api.set(v) end,
+                    SetDefault = function() api.set(opt.Default or "") end
+                })
+            end
             
             return api
         end
         
+        -- ==========================================================
+        -- ELEMENT: BUTTON (FULL API)
+        -- ==========================================================
         function Tab:CreateButton(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -3206,26 +3168,22 @@ function NoirUI:CreateWindow(settings)
             end)
             
             local api = {
-                setEnabled = function(enabled)
-                    b.Active = enabled
-                    b.BackgroundTransparency = enabled and (HAS_BG_IMAGE and 0.5 or 0) or 0.8
-                    b.TextColor3 = enabled and (currentTheme.text or Color3.fromRGB(245,245,250)) or Color3.fromRGB(100,100,100)
-                end,
-                getEnabled = function() return b.Active end,
-                setText = function(text) b.Text = text end,
+                setText = function(newText) b.Text = newText end,
                 getText = function() return b.Text end,
-                setCallback = function(cb) opt.Callback = cb end,
-                show = function() b.Visible = true end,
-                hide = function() b.Visible = false end,
-                setBackgroundColor = function(color) b.BackgroundColor3 = color end,
-                setTextColor = function(color) b.TextColor3 = color end,
-                getObject = function() return b end,
-                destroy = function() b:Destroy() end
+                setEnabled = function(enabled) 
+                    b.Active = enabled
+                    b.TextTransparency = enabled and 0 or 0.5
+                end,
+                setColor = function(color) b.BackgroundColor3 = color end,
+                click = function() b:Fire("MouseButton1Click") end,
+                getObject = function() return b end
             }
-            
             return api
         end
         
+        -- ==========================================================
+        -- ELEMENT: TOGGLE (FULL API)
+        -- ==========================================================
         function Tab:CreateToggle(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -3282,27 +3240,6 @@ function NoirUI:CreateWindow(settings)
                 if opt.Callback then opt.Callback(s) end
             end)
             
-            -- Flag System
-            if opt.FlagName then
-                local flagData = {
-                    Type = "Toggle",
-                    GetValue = function() return s end,
-                    SetValue = function(value)
-                        s = value
-                        t.TextColor3 = s and currentTheme.text or currentTheme.subtext
-                        bx.BackgroundColor3 = s and ACCENT or currentTheme.container
-                        knob.Position = s and UDim2.new(1, -3, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
-                        knob.AnchorPoint = Vector2.new(s and 1 or 0, 0.5)
-                        if opt.Callback then opt.Callback(s) end
-                    end,
-                    SetDefault = function()
-                        local def = opt.Default or false
-                        flagData:SetValue(def)
-                    end
-                }
-                NoirUI:RegisterFlag(opt.FlagName, flagData)
-            end
-            
             local api = {
                 get = function() return s end,
                 set = function(value)
@@ -3313,23 +3250,25 @@ function NoirUI:CreateWindow(settings)
                     knob.AnchorPoint = Vector2.new(s and 1 or 0, 0.5)
                     if opt.Callback then opt.Callback(s) end
                 end,
-                toggle = function()
-                    api:set(not s)
-                end,
-                setCallback = function(cb) opt.Callback = cb end,
-                show = function() t.Visible = true end,
-                hide = function() t.Visible = false end,
-                setAccentColor = function(color) 
-                    bx.BackgroundColor3 = s and color or currentTheme.container
-                    ACCENT = color
-                end,
-                getObject = function() return t end,
-                destroy = function() t:Destroy() end
+                toggle = function() api.set(not s) end,
+                getObject = function() return t end
             }
+            
+            if opt.FlagName then
+                NoirUI:RegisterFlag(opt.FlagName, {
+                    Type = "Toggle",
+                    GetValue = function() return api.get() end,
+                    SetValue = function(v) api.set(v) end,
+                    SetDefault = function() api.set(opt.Default or false) end
+                })
+            end
             
             return api
         end
         
+        -- ==========================================================
+        -- ELEMENT: SLIDER (FULL API)
+        -- ==========================================================
         function Tab:CreateSlider(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -3486,71 +3425,51 @@ function NoirUI:CreateWindow(settings)
                 valBtn.Visible = true
             end)
             
-            -- Flag System
-            if opt.FlagName then
-                local flagData = {
-                    Type = "Slider",
-                    GetValue = function() return currentValue end,
-                    SetValue = function(value)
-                        currentValue = math.clamp(value, min, max)
-                        local newPercent = (currentValue - min) / (max - min)
-                        fill.Size = UDim2.new(newPercent, 0, 1, 0)
-                        handle.Position = UDim2.new(newPercent, 0, 0.5, 0)
-                        l.Text = opt.Name .. ": " .. currentValue
-                        valBtn.Text = tostring(currentValue)
-                        if opt.Callback then opt.Callback(currentValue) end
-                    end,
-                    SetDefault = function()
-                        local def = opt.Default or min
-                        flagData:SetValue(def)
-                    end
-                }
-                NoirUI:RegisterFlag(opt.FlagName, flagData)
-            end
-            
             local api = {
                 get = function() return currentValue end,
                 set = function(value, animate)
-                    local v = math.clamp(value, min, max)
-                    v = math.floor((v - min) / increment) * increment + min
-                    local newPercent = (v - min) / (max - min)
-                    currentValue = v
-                    
+                    currentValue = math.clamp(value, min, max)
+                    local newPercent = (currentValue - min) / (max - min)
                     if animate then
-                        TweenService:Create(fill, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
+                        TweenService:Create(fill, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                             Size = UDim2.new(newPercent, 0, 1, 0)
                         }):Play()
-                        TweenService:Create(handle, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
+                        TweenService:Create(handle, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                             Position = UDim2.new(newPercent, 0, 0.5, 0)
                         }):Play()
                     else
                         fill.Size = UDim2.new(newPercent, 0, 1, 0)
                         handle.Position = UDim2.new(newPercent, 0, 0.5, 0)
                     end
-                    
                     l.Text = opt.Name .. ": " .. currentValue
                     valBtn.Text = tostring(currentValue)
                     if opt.Callback then opt.Callback(currentValue) end
                 end,
+                getMin = function() return min end,
+                getMax = function() return max end,
                 setRange = function(newMin, newMax)
                     min = newMin
                     max = newMax
-                    api:set(currentValue, true)
+                    api.set(math.clamp(currentValue, min, max))
                 end,
-                getRange = function() return min, max end,
-                setIncrement = function(newInc)
-                    increment = newInc
-                end,
-                setCallback = function(cb) opt.Callback = cb end,
-                show = function() f.Visible = true end,
-                hide = function() f.Visible = false end,
-                getObject = function() return f end,
-                destroy = function() f:Destroy() end
+                getObject = function() return f end
             }
+            
+            if opt.FlagName then
+                NoirUI:RegisterFlag(opt.FlagName, {
+                    Type = "Slider",
+                    GetValue = function() return api.get() end,
+                    SetValue = function(v) api.set(v) end,
+                    SetDefault = function() api.set(opt.Default or min) end
+                })
+            end
             
             return api
         end
         
+        -- ==========================================================
+        -- ELEMENT: COLOR PICKER (FULL API)
+        -- ==========================================================
         function Tab:CreateColorPicker(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -3710,54 +3629,35 @@ function NoirUI:CreateWindow(settings)
             end)
             UpdateColor()
             
-            -- Flag System
-            if opt.FlagName then
-                local flagData = {
-                    Type = "ColorPicker",
-                    GetValue = function() return Color3.fromHSV(h, s, v) end,
-                    SetValue = function(color)
-                        h, s, v = color:ToHSV()
-                        UpdateColor()
-                    end,
-                    SetDefault = function()
-                        local def = opt.Default or Color3.fromRGB(138,116,249)
-                        flagData:SetValue(def)
-                    end
-                }
-                NoirUI:RegisterFlag(opt.FlagName, flagData)
-            end
-            
             local api = {
-                get = function() return Color3.fromHSV(h, s, v) end,
-                set = function(color)
-                    h, s, v = color:ToHSV()
+                get = function() return ColorSelected end,
+                set = function(newColor)
+                    ColorSelected = newColor
+                    h, s, v = newColor:ToHSV()
                     UpdateColor()
                 end,
-                setHue = function(value) h = math.clamp(value, 0, 1); UpdateColor() end,
-                setSaturation = function(value) s = math.clamp(value, 0, 1); UpdateColor() end,
-                setValue = function(value) v = math.clamp(value, 0, 1); UpdateColor() end,
-                getHSV = function() return h, s, v end,
-                open = function() 
-                    if not open then 
-                        pvw.MouseButton1Click:Fire() 
-                    end
+                getHex = function()
+                    local c = ColorSelected
+                    return string.format("#%02X%02X%02X", c.R*255, c.G*255, c.B*255)
                 end,
-                close = function()
-                    if open then
-                        pvw.MouseButton1Click:Fire()
-                    end
-                end,
-                toggle = function() pvw.MouseButton1Click:Fire() end,
-                setCallback = function(cb) opt.Callback = cb end,
-                show = function() f.Visible = true end,
-                hide = function() f.Visible = false end,
-                getObject = function() return f end,
-                destroy = function() f:Destroy() end
+                getObject = function() return f end
             }
+            
+            if opt.FlagName then
+                NoirUI:RegisterFlag(opt.FlagName, {
+                    Type = "ColorPicker",
+                    GetValue = function() return api.get() end,
+                    SetValue = function(v) api.set(v) end,
+                    SetDefault = function() api.set(opt.Default or Color3.new(1,1,1)) end
+                })
+            end
             
             return api
         end
         
+        -- ==========================================================
+        -- ELEMENT: DROPDOWN (FULL API - V2.1.0)
+        -- ==========================================================
         function Tab:CreateDropdown(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -3784,6 +3684,8 @@ function NoirUI:CreateWindow(settings)
             end
             
             local open = false
+            local callback = opt.Callback or function() end
+            local allOptions = {}
             
             local function getSelectedText()
                 local list = {}
@@ -3805,6 +3707,19 @@ function NoirUI:CreateWindow(settings)
                     if v then table.insert(list, k) end
                 end
                 return list
+            end
+            
+            local function updateDisplayText()
+                t.Text = "  " .. opt.Name .. " : " .. getSelectedText()
+            end
+            
+            local function fireCallback()
+                if isMulti then
+                    callback(getSelectedList())
+                else
+                    local list = getSelectedList()
+                    callback(list[1] or "none")
+                end
             end
             
             local d = Instance.new("Frame", parent)
@@ -3895,26 +3810,14 @@ function NoirUI:CreateWindow(settings)
             
             local optionRefs = {}
             
-            local function closeDropdown()
-                open = false
-                searchBox.Text = ""
-                for _, ref in ipairs(optionRefs) do
-                    if ref.btn then ref.btn.Visible = true end
-                end
-                Arrow.Image = ResolveIcon("chevron-down")
-                TweenService:Create(d, TweenInfo.new(0.2), {Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 42)}):Play()
-                TweenService:Create(listFrame, TweenInfo.new(0.2), {Size = UDim2.new(1, 0, 0, 0)}):Play()
-                task.wait(0.2)
-                if listFrame and listFrame.Parent then listFrame.Visible = false end
-            end
-            
-            local function refreshOptions()
+            local function renderOptions(optionsList)
                 for _, child in pairs(listContainer:GetChildren()) do
                     if child:IsA("TextButton") then child:Destroy() end
                 end
                 optionRefs = {}
+                allOptions = optionsList or allOptions
                 
-                local options = opt.GetOptions and opt.GetOptions() or opt.Options or {}
+                local options = optionsList or allOptions
                 
                 for _, option in ipairs(options) do
                     local isSel = selected[option] == true
@@ -3969,8 +3872,8 @@ function NoirUI:CreateWindow(settings)
                             check.Text = now and "✓" or ""
                             optLbl.TextColor3 = now and ACCENT or currentTheme.text or Color3.fromRGB(245,245,250)
                             optBtn.BackgroundColor3 = now and currentTheme.active or currentTheme.element or Color3.fromRGB(20,20,26)
-                            t.Text = "  " .. opt.Name .. " : " .. getSelectedText()
-                            if opt.Callback then opt.Callback(getSelectedList()) end
+                            updateDisplayText()
+                            fireCallback()
                         else
                             for k in pairs(selected) do selected[k] = false end
                             selected[option] = true
@@ -3982,9 +3885,9 @@ function NoirUI:CreateWindow(settings)
                                 ref.btn.BackgroundColor3 = isThisSelected and currentTheme.active or currentTheme.element
                             end
                             
-                            t.Text = "  " .. opt.Name .. " : " .. option
-                            if opt.Callback then opt.Callback(option) end
-                            closeDropdown()
+                            updateDisplayText()
+                            fireCallback()
+                            api:close()
                         end
                     end)
                 end
@@ -3997,25 +3900,47 @@ function NoirUI:CreateWindow(settings)
                 end
             end)
             
+            local function openDropdown()
+                if open then return end
+                open = true
+                if opt.RefreshOnOpen and opt.GetOptions then
+                    local newOpts = opt.GetOptions()
+                    if newOpts then renderOptions(newOpts) end
+                end
+                local contentHeight = listLayout.AbsoluteContentSize.Y + 8
+                local maxList = math.min(contentHeight, 166)
+                listFrame.Visible = true
+                Arrow.Image = ResolveIcon("chevron-up")
+                TweenService:Create(d, TweenInfo.new(0.2), {
+                    Size = UDim2.new(0.95, 0, 0, 42 + 34 + maxList + 4 + (hasSubtitle and 20 or 0))
+                }):Play()
+                TweenService:Create(listFrame, TweenInfo.new(0.2), {
+                    Size = UDim2.new(1, 0, 0, 34 + maxList)
+                }):Play()
+            end
+            
+            local function closeDropdown()
+                if not open then return end
+                open = false
+                searchBox.Text = ""
+                for _, ref in ipairs(optionRefs) do
+                    if ref.btn then ref.btn.Visible = true end
+                end
+                Arrow.Image = ResolveIcon("chevron-down")
+                TweenService:Create(d, TweenInfo.new(0.2), {Size = UDim2.new(0.95, 0, 0, hasSubtitle and 55 or 42)}):Play()
+                TweenService:Create(listFrame, TweenInfo.new(0.2), {Size = UDim2.new(1, 0, 0, 0)}):Play()
+                task.wait(0.2)
+                if listFrame and listFrame.Parent then listFrame.Visible = false end
+            end
+            
+            local function toggleDropdown()
+                if open then closeDropdown() else openDropdown() end
+            end
+            
             t.MouseButton1Click:Connect(function()
                 PlaySound("Element")
                 CreateClickScaleEffect(t)
-                open = not open
-                if open then
-                    if opt.RefreshOnOpen and opt.GetOptions then refreshOptions() end
-                    local contentHeight = listLayout.AbsoluteContentSize.Y + 8
-                    local maxList = math.min(contentHeight, 166)
-                    listFrame.Visible = true
-                    Arrow.Image = ResolveIcon("chevron-up")
-                    TweenService:Create(d, TweenInfo.new(0.2), {
-                        Size = UDim2.new(0.95, 0, 0, 42 + 34 + maxList + 4 + (hasSubtitle and 20 or 0))
-                    }):Play()
-                    TweenService:Create(listFrame, TweenInfo.new(0.2), {
-                        Size = UDim2.new(1, 0, 0, 34 + maxList)
-                    }):Play()
-                else
-                    closeDropdown()
-                end
+                toggleDropdown()
             end)
             
             UIS.InputBegan:Connect(function(inp, gpe)
@@ -4030,9 +3955,9 @@ function NoirUI:CreateWindow(settings)
             end)
             
             if opt.GetOptions then
-                refreshOptions()
+                renderOptions(opt.GetOptions())
             elseif opt.Options then
-                refreshOptions()
+                renderOptions(opt.Options)
             end
             
             if opt.RefreshInterval and opt.GetOptions then
@@ -4044,7 +3969,7 @@ function NoirUI:CreateWindow(settings)
                             for _, child in pairs(listContainer:GetChildren()) do
                                 if child:IsA("TextButton") then currentCount = currentCount + 1 end
                             end
-                            if currentCount ~= #newOptions then refreshOptions() end
+                            if currentCount ~= #newOptions then renderOptions(newOptions) end
                         end
                     else
                         refreshConnection:Disconnect()
@@ -4054,37 +3979,14 @@ function NoirUI:CreateWindow(settings)
                 table.insert(NoirUI.Connections, refreshConnection)
             end
             
-            -- Flag System
-            if opt.FlagName then
-                local flagData = {
-                    Type = "Dropdown",
-                    GetValue = function() return isMulti and getSelectedList() or getSelectedText() end,
-                    SetValue = function(option)
-                        if isMulti then
-                            for k in pairs(selected) do selected[k] = false end
-                            if type(option) == "table" then
-                                for _, v in ipairs(option) do selected[v] = true end
-                            else
-                                selected[option] = true
-                            end
-                        else
-                            for k in pairs(selected) do selected[k] = false end
-                            selected[option] = true
-                        end
-                        t.Text = "  " .. opt.Name .. " : " .. getSelectedText()
-                        refreshOptions()
-                    end,
-                    SetDefault = function()
-                        local def = opt.Default or (opt.Options and opt.Options[1] or "none")
-                        flagData:SetValue(def)
-                    end
-                }
-                NoirUI:RegisterFlag(opt.FlagName, flagData)
-            end
-            
             local api = {
                 container = d,
-                get = function() return isMulti and getSelectedList() or getSelectedText() end,
+                
+                -- 1. Get/Set
+                get = function()
+                    if isMulti then return getSelectedList() else return getSelectedText() end
+                end,
+                
                 set = function(option)
                     if isMulti then
                         for k in pairs(selected) do selected[k] = false end
@@ -4097,50 +3999,112 @@ function NoirUI:CreateWindow(settings)
                         for k in pairs(selected) do selected[k] = false end
                         selected[option] = true
                     end
-                    t.Text = "  " .. opt.Name .. " : " .. getSelectedText()
-                    refreshOptions()
+                    updateDisplayText()
+                    renderOptions()
+                    fireCallback()
+                    return api
                 end,
+                
+                -- 2. Options management
                 addOption = function(option)
-                    if not opt.Options then opt.Options = {} end
-                    table.insert(opt.Options, option)
-                    refreshOptions()
+                    if not table.find(allOptions, option) then
+                        table.insert(allOptions, option)
+                        renderOptions()
+                    end
+                    return api
                 end,
+                
                 removeOption = function(option)
-                    if opt.Options then
-                        for i, v in ipairs(opt.Options) do
-                            if v == option then
-                                table.remove(opt.Options, i)
-                                selected[option] = nil
-                                refreshOptions()
-                                break
-                            end
+                    for i, v in ipairs(allOptions) do
+                        if v == option then
+                            table.remove(allOptions, i)
+                            selected[option] = nil
+                            renderOptions()
+                            updateDisplayText()
+                            break
                         end
                     end
+                    return api
                 end,
+                
                 clear = function()
-                    opt.Options = {}
-                    selected = {}
-                    refreshOptions()
-                    t.Text = "  " .. opt.Name .. " : none"
+                    allOptions = {}
+                    for k in pairs(selected) do selected[k] = nil end
+                    renderOptions()
+                    updateDisplayText()
+                    return api
                 end,
-                getOptions = function() return opt.Options or {} end,
-                open = function() 
-                    if not open then t.MouseButton1Click:Fire() end 
+                
+                getOptions = function()
+                    return allOptions
                 end,
+                
+                -- 3. Open/Close/Toggle
+                open = function()
+                    openDropdown()
+                    return api
+                end,
+                
                 close = function()
-                    if open then closeDropdown() end
+                    closeDropdown()
+                    return api
                 end,
-                toggle = function() t.MouseButton1Click:Fire() end,
-                setCallback = function(cb) opt.Callback = cb end,
-                show = function() d.Visible = true end,
-                hide = function() d.Visible = false end,
-                getObject = function() return d end,
-                destroy = function() d:Destroy() end
+                
+                toggle = function()
+                    toggleDropdown()
+                    return api
+                end,
+                
+                -- 4. Callback
+                setCallback = function(newCallback)
+                    callback = newCallback
+                    return api
+                end,
+                
+                -- 5. Show/Hide
+                show = function()
+                    d.Visible = true
+                    return api
+                end,
+                
+                hide = function()
+                    d.Visible = false
+                    return api
+                end,
+                
+                -- 6. Get object
+                getObject = function()
+                    return d
+                end,
+                
+                -- 7. Destroy
+                destroy = function()
+                    d:Destroy()
+                    return api
+                end
             }
+            
+            if opt.FlagName then
+                local flagData = {
+                    Type = "Dropdown",
+                    GetValue = function() return api.get() end,
+                    SetValue = function(option)
+                        api.set(option)
+                    end,
+                    SetDefault = function()
+                        local def = opt.Default or (opt.Options and opt.Options[1] or "none")
+                        api.set(def)
+                    end
+                }
+                NoirUI:RegisterFlag(opt.FlagName, flagData)
+            end
             
             return api
         end
         
+        -- ==========================================================
+        -- ELEMENT: KEYBIND (FULL API)
+        -- ==========================================================
         function Tab:CreateKeybind(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local hasSubtitle = opt.Subtitle and opt.Subtitle ~= ""
@@ -4231,48 +4195,38 @@ function NoirUI:CreateWindow(settings)
                 end)
             end)
             
-            -- Flag System
+            local api = {
+                get = function() return keybindText end,
+                set = function(newKey)
+                    keybindText = newKey
+                    updateKeybindDisplay()
+                    if opt.Callback then opt.Callback(newKey) end
+                end,
+                startListening = function() kb:Fire("MouseButton1Click") end,
+                getObject = function() return f end
+            }
+            
             if opt.FlagName then
                 local flagData = {
                     Type = "Keybind",
-                    GetValue = function() return keybindText end,
+                    GetValue = function() return api.get() end,
                     SetValue = function(value)
-                        keybindText = value
-                        updateKeybindDisplay()
+                        api.set(value)
                     end,
                     SetDefault = function()
                         local def = opt.Default or "None"
-                        flagData:SetValue(def)
+                        api.set(def)
                     end
                 }
                 NoirUI:RegisterFlag(opt.FlagName, flagData)
             end
             
-            local api = {
-                get = function() return keybindText end,
-                set = function(value)
-                    keybindText = value
-                    updateKeybindDisplay()
-                    if opt.Callback then opt.Callback(value) end
-                end,
-                startListening = function() kb.MouseButton1Click:Fire() end,
-                stopListening = function()
-                    if isListening then
-                        isListening = false
-                        updateKeybindDisplay()
-                    end
-                end,
-                isListening = function() return isListening end,
-                setCallback = function(cb) opt.Callback = cb end,
-                show = function() f.Visible = true end,
-                hide = function() f.Visible = false end,
-                getObject = function() return f end,
-                destroy = function() f:Destroy() end
-            }
-            
             return api
         end
         
+        -- ==========================================================
+        -- ELEMENT: IMAGE (FULL API)
+        -- ==========================================================
         function Tab:CreateImage(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local height = opt.Height or 120
@@ -4314,27 +4268,21 @@ function NoirUI:CreateWindow(settings)
             CreateSpringEffect(box, 0.05 * Tab.Count)
             
             local api = {
-                get = function() return img.Image end,
                 set = function(newId)
                     local resolved = ResolveIcon(newId) or newId
                     img.Image = resolved
                 end,
-                setScaleType = function(type) img.ScaleType = type end,
-                setTransparency = function(trans) img.ImageTransparency = trans end,
-                setColor = function(color) img.ImageColor3 = color end,
-                setSize = function(width, height) 
-                    box.Size = UDim2.new(1, 0, 0, height or box.Size.Y.Offset)
-                end,
-                show = function() box.Visible = true end,
-                hide = function() box.Visible = false end,
-                getObject = function() return box end,
-                getImage = function() return img end,
-                destroy = function() box:Destroy() end
+                get = function() return img.Image end,
+                setScaleType = function(newScale) img.ScaleType = newScale end,
+                setCornerRadius = function(radius) imgCorner.CornerRadius = UDim.new(0, radius) end,
+                getObject = function() return box end
             }
-            
             return api
         end
         
+        -- ==========================================================
+        -- ELEMENT: PRESET BUTTON (Style KyriLib)
+        -- ==========================================================
         function Tab:CreatePresetButton(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local presetData = opt.Presets or {} 
@@ -4432,62 +4380,33 @@ function NoirUI:CreateWindow(settings)
         
             renderButtons()
             
+            local api = {
+                set = function(value) updatePreset(value) end,
+                get = function() return currentValue end,
+                getObject = function() return container end
+            }
+            
             if opt.FlagName then
                 local flagData = {
                     Type = "Preset",
-                    GetValue = function() return currentValue end,
+                    GetValue = function() return api.get() end,
                     SetValue = function(value)
-                        updatePreset(value)
+                        api.set(value)
                     end,
                     SetDefault = function()
                         local def = opt.Default or (presetData[1] or "")
-                        flagData:SetValue(def)
+                        api.set(def)
                     end
                 }
                 NoirUI:RegisterFlag(opt.FlagName, flagData)
             end
-            
-            local api = {
-                container = container,
-                get = function() return currentValue end,
-                set = function(value) updatePreset(value) end,
-                setPresets = function(newPresets)
-                    presetData = newPresets
-                    for _, child in pairs(container:GetChildren()) do
-                        if child:IsA("TextButton") then child:Destroy() end
-                    end
-                    renderButtons()
-                end,
-                getPresets = function() return presetData end,
-                addPreset = function(value)
-                    table.insert(presetData, value)
-                    renderButtons()
-                end,
-                removePreset = function(value)
-                    for i, v in ipairs(presetData) do
-                        if v == value then
-                            table.remove(presetData, i)
-                            renderButtons()
-                            break
-                        end
-                    end
-                end,
-                refresh = function()
-                    for _, child in pairs(container:GetChildren()) do
-                        if child:IsA("TextButton") then child:Destroy() end
-                    end
-                    renderButtons()
-                end,
-                setCallback = function(cb) callback = cb end,
-                show = function() container.Visible = true end,
-                hide = function() container.Visible = false end,
-                getObject = function() return container end,
-                destroy = function() container:Destroy() end
-            }
-            
+    
             return api
         end
         
+        -- ==========================================================
+        -- ELEMENT: CARD (FULL API)
+        -- ==========================================================
         function Tab:CreateCard(opt)
             local parent = Tab._currentSectionContent or ContentFrame
             local cardType = opt.Type or "Standard"
@@ -4534,8 +4453,7 @@ function NoirUI:CreateWindow(settings)
                 return t
             end
             
-            local valueMap = {}
-            local isOpen = false
+            local api = { getObject = function() return f end }
             
             if cardType == "Accordion" then
                 local headerBtn = Instance.new("TextButton", f)
@@ -4593,6 +4511,7 @@ function NoirUI:CreateWindow(settings)
                     content.TextWrapped = true
                 end
                 
+                local isOpen = false
                 headerBtn.MouseButton1Click:Connect(function()
                     PlaySound("Element")
                     CreateClickScaleEffect(headerBtn)
@@ -4601,6 +4520,9 @@ function NoirUI:CreateWindow(settings)
                     arrow.Image = ResolveIcon(isOpen and "chevron-up" or "chevron-down")
                     f.Size = UDim2.new(0.95, 0, 0, 0)
                 end)
+                
+                api.toggle = function() headerBtn:Fire("MouseButton1Click") end
+                api.isOpen = function() return isOpen end
                 
             elseif cardType == "Dashboard" then
                 createTitle(opt.Title or "Dashboard")
@@ -4615,6 +4537,8 @@ function NoirUI:CreateWindow(settings)
                 gridLayout.CellSize = UDim2.new(0.5, -4, 0, 50)
                 gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
                 gridLayout.FillDirection = Enum.FillDirection.Horizontal
+    
+                local valueMap = {}
     
                 if opt.Items then
                     for _, item in ipairs(opt.Items) do
@@ -4664,21 +4588,11 @@ function NoirUI:CreateWindow(settings)
                     footer.LayoutOrder = 3
                 end
     
-                local dashboardAPI = {
-                    update = function(label, newValue)
-                        if valueMap[label] then
-                            valueMap[label].Text = tostring(newValue)
-                        end
-                    end,
-                    getValues = function() 
-                        local result = {}
-                        for label, val in pairs(valueMap) do
-                            result[label] = val.Text
-                        end
-                        return result
+                api.update = function(label, newValue)
+                    if valueMap[label] then
+                        valueMap[label].Text = tostring(newValue)
                     end
-                }
-                return dashboardAPI
+                end
                 
             elseif cardType == "Carousel" then
                 createTitle(opt.Title or "Carousel")
@@ -4752,6 +4666,19 @@ function NoirUI:CreateWindow(settings)
                     updateCarousel(currentIndex)
                 end)
                 
+                api.next = function() nextBtn:Fire("MouseButton1Click") end
+                api.prev = function() prevBtn:Fire("MouseButton1Click") end
+                api.goTo = function(index) 
+                    currentIndex = math.clamp(index, 1, #items)
+                    updateCarousel(currentIndex)
+                end
+                api.getCurrentIndex = function() return currentIndex end
+                api.setItems = function(newItems)
+                    items = newItems
+                    currentIndex = 1
+                    updateCarousel(currentIndex)
+                end
+                
                 if opt.Footer then
                     local footerFrame = Instance.new("Frame", f)
                     footerFrame.Size = UDim2.new(1, 0, 0, 30)
@@ -4791,17 +4718,6 @@ function NoirUI:CreateWindow(settings)
                 
                 updateCarousel(1)
                 
-                local api = {
-                    next = function() nextBtn.MouseButton1Click:Fire() end,
-                    prev = function() prevBtn.MouseButton1Click:Fire() end,
-                    goTo = function(index)
-                        currentIndex = math.clamp(index, 1, #items)
-                        updateCarousel(currentIndex)
-                    end,
-                    getCurrent = function() return items[currentIndex] end
-                }
-                return api
-                
             elseif cardType == "Grid" then
                 createTitle(opt.Title or "Image Grid")
                 
@@ -4835,6 +4751,10 @@ function NoirUI:CreateWindow(settings)
                     end
                 end
                 
+                api.addItem = function(item) table.insert(opt.Items, item); gridLayout:Apply() end
+                api.removeItem = function(index) table.remove(opt.Items, index); gridLayout:Apply() end
+                api.getItems = function() return opt.Items end
+                
             elseif cardType == "Image" then
                 createTitle(opt.Title or "Image Card")
                 
@@ -4847,6 +4767,8 @@ function NoirUI:CreateWindow(settings)
                     img.ScaleType = Enum.ScaleType.Fit
                     Instance.new("UICorner", img).CornerRadius = UDim.new(0, 6)
                     img.LayoutOrder = 2
+                    
+                    api.setImage = function(newImage) img.Image = ResolveIcon(newImage) or "" end
                 end
                 
                 if opt.Content then
@@ -4862,6 +4784,8 @@ function NoirUI:CreateWindow(settings)
                     content.TextXAlignment = Enum.TextXAlignment.Left
                     content.TextWrapped = true
                     content.LayoutOrder = 3
+                    
+                    api.setContent = function(text) content.Text = text end
                 end
                 
             elseif cardType == "Action" then
@@ -4880,6 +4804,8 @@ function NoirUI:CreateWindow(settings)
                     content.TextXAlignment = Enum.TextXAlignment.Left
                     content.TextWrapped = true
                     content.LayoutOrder = 2
+                    
+                    api.setContent = function(text) content.Text = text end
                 end
                 
                 if opt.Footer then
@@ -4916,6 +4842,26 @@ function NoirUI:CreateWindow(settings)
                             PlaySound("Element")
                             CreateClickScaleEffect(btn)
                             if btnData.Callback then btnData.Callback() end
+                        end)
+                    end
+                    
+                    api.addFooterButton = function(text, callback)
+                        local btn = Instance.new("TextButton", footerFrame)
+                        btn.Size = UDim2.new(0, 0, 0, 30)
+                        btn.AutomaticSize = Enum.AutomaticSize.X
+                        btn.BackgroundColor3 = ACCENT
+                        btn.Text = text
+                        btn.TextColor3 = GetContrastColor(ACCENT)
+                        btn.Font = Enum.Font.GothamBold
+                        btn.TextSize = 12
+                        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+                        local padding = Instance.new("UIPadding", btn)
+                        padding.PaddingLeft = UDim.new(0, 16)
+                        padding.PaddingRight = UDim.new(0, 16)
+                        btn.MouseButton1Click:Connect(function()
+                            PlaySound("Element")
+                            CreateClickScaleEffect(btn)
+                            if callback then callback() end
                         end)
                     end
                 end
@@ -4976,7 +4922,11 @@ function NoirUI:CreateWindow(settings)
                             content.TextXAlignment = Enum.TextXAlignment.Left
                             content.TextWrapped = true
                             content.LayoutOrder = 1
+                            
+                            api.setContent = function(text) content.Text = text end
                         end
+                        
+                        api.setImage = function(newImage) img.Image = ResolveIcon(newImage) or "" end
                     else
                         if opt.Content then
                             local content = Instance.new("TextLabel", contentWrapper)
@@ -4991,10 +4941,15 @@ function NoirUI:CreateWindow(settings)
                             content.TextXAlignment = Enum.TextXAlignment.Left
                             content.TextWrapped = true
                             content.LayoutOrder = 2
+                            
+                            api.setContent = function(text) content.Text = text end
                         end
                     end
+                    
+                    api.setTitle = function(text) title.Text = text end
                 else
-                    createTitle(opt.Title or "Standard Card")
+                    local title = createTitle(opt.Title or "Standard Card")
+                    api.setTitle = function(text) title.Text = text end
                     
                     if opt.Image then
                         local img = Instance.new("ImageLabel", f)
@@ -5005,6 +4960,8 @@ function NoirUI:CreateWindow(settings)
                         img.ScaleType = Enum.ScaleType.Fit
                         Instance.new("UICorner", img).CornerRadius = UDim.new(0, 8)
                         img.LayoutOrder = 2
+                        
+                        api.setImage = function(newImage) img.Image = ResolveIcon(newImage) or "" end
                     end
                     
                     if opt.Content then
@@ -5020,6 +4977,8 @@ function NoirUI:CreateWindow(settings)
                         content.TextXAlignment = Enum.TextXAlignment.Left
                         content.TextWrapped = true
                         content.LayoutOrder = 3
+                        
+                        api.setContent = function(text) content.Text = text end
                     end
                 end
                 
@@ -5059,39 +5018,26 @@ function NoirUI:CreateWindow(settings)
                             if btnData.Callback then btnData.Callback() end
                         end)
                     end
-                end
-            end
-            
-            local api = {
-                getObject = function() return f end,
-                show = function() f.Visible = true end,
-                hide = function() f.Visible = false end,
-                destroy = function() f:Destroy() end
-            }
-            
-            if cardType == "Accordion" then
-                api.collapse = function()
-                    if isOpen then headerBtn.MouseButton1Click:Fire() end
-                end
-                api.expand = function()
-                    if not isOpen then headerBtn.MouseButton1Click:Fire() end
-                end
-                api.toggle = function() headerBtn.MouseButton1Click:Fire() end
-                api.isOpen = function() return isOpen end
-            end
-            
-            if cardType == "Dashboard" then
-                api.update = function(label, newValue)
-                    if valueMap[label] then
-                        valueMap[label].Text = tostring(newValue)
+                    
+                    api.addFooterButton = function(text, callback)
+                        local btn = Instance.new("TextButton", footerFrame)
+                        btn.Size = UDim2.new(0, 0, 0, 30)
+                        btn.AutomaticSize = Enum.AutomaticSize.X
+                        btn.BackgroundColor3 = ACCENT
+                        btn.Text = text
+                        btn.TextColor3 = GetContrastColor(ACCENT)
+                        btn.Font = Enum.Font.GothamBold
+                        btn.TextSize = 12
+                        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+                        local padding = Instance.new("UIPadding", btn)
+                        padding.PaddingLeft = UDim.new(0, 16)
+                        padding.PaddingRight = UDim.new(0, 16)
+                        btn.MouseButton1Click:Connect(function()
+                            PlaySound("Element")
+                            CreateClickScaleEffect(btn)
+                            if callback then callback() end
+                        end)
                     end
-                end
-                api.getValues = function() 
-                    local result = {}
-                    for label, val in pairs(valueMap) do
-                        result[label] = val.Text
-                    end
-                    return result
                 end
             end
             
