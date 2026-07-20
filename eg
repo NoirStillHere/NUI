@@ -1,10 +1,10 @@
 --[[
-  NoirUI v2.1.0 (Fixed)
+  NoirUI v2.1.0 (Stable)
   Author: Noir & Adono
   Description: Advanced UI Library for Roblox with Complete Component API
   Changes in v2.1.0:
     - Added complete API wrappers for ALL components
-    - Fixed CreateLoader nil error
+    - Restored Loader independence (No theme dependency, works out of the box)
     - Every component now returns API object with get/set/callback/visibility/destroy methods
     - Backward compatibility maintained
 ]]
@@ -1563,17 +1563,16 @@ function NoirUI.Music:GetQueue()
 end
 
 -- ==========================================================
--- LOADER SYSTEM (FIXED)
+-- LOADER SYSTEM (Fixed to not depend on themes)
 -- ==========================================================
 function NoirUI:CreateLoader(settings)
     settings = settings or {}
     local iconId = settings.Icon or "rbxthumb://type=Asset&id=94916110511437&w=420&h=420"
     local duration = settings.Duration or 3.5
-    local theme = settings.Theme or _currentTheme or NoirUI.Themes.Presets["noir"]
     local onComplete = settings.OnComplete or nil
     local text = settings.Text or "Loading..."
-    local textColor = settings.TextColor or theme.text or Color3.fromRGB(245,245,250)
-    local accentColor = settings.AccentColor or theme.accent or Color3.fromRGB(138,116,249)
+    local textColor = settings.TextColor or Color3.fromRGB(245,245,250)
+    local accentColor = settings.AccentColor or Color3.fromRGB(138,116,249)
     
     local shape = settings.Shape or "bo-goc"
     local iconCornerRadius = UDim.new(0, 12)
@@ -1613,7 +1612,7 @@ function NoirUI:CreateLoader(settings)
     Loader.Name = "Loader"
     Loader.Parent = ScreenGui
     Loader.AnchorPoint = Vector2.new(0.5, 0.5)
-    Loader.BackgroundColor3 = theme.bg or Color3.fromRGB(8,8,10)
+    Loader.BackgroundColor3 = Color3.fromRGB(8,8,10)
     Loader.BackgroundTransparency = 0.8
     Loader.BorderSizePixel = 0
     Loader.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -1664,7 +1663,7 @@ function NoirUI:CreateLoader(settings)
     ProgressBar.AnchorPoint = Vector2.new(0.5, 0.5)
     ProgressBar.Position = UDim2.new(0.5, 0, 0.70, 0)
     ProgressBar.Size = UDim2.new(0, 200, 0, 4)
-    ProgressBar.BackgroundColor3 = theme.container or Color3.fromRGB(14,14,18)
+    ProgressBar.BackgroundColor3 = Color3.fromRGB(14,14,18)
     ProgressBar.BackgroundTransparency = 0.5
     ProgressBar.ZIndex = 7
     Instance.new("UICorner", ProgressBar).CornerRadius = UDim.new(1, 0)
@@ -1678,7 +1677,6 @@ function NoirUI:CreateLoader(settings)
     ProgressFill.ZIndex = 8
     Instance.new("UICorner", ProgressFill).CornerRadius = UDim.new(1, 0)
 
-    -- [FIX] Đặt biến TextLabel và Event trước khi dùng ở task.delay
     local TextLabel = Instance.new("TextLabel")
     TextLabel.Name = "TextLabel"
     TextLabel.Parent = Loader
