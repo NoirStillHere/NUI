@@ -1,29 +1,4 @@
 --[[
-	Changelog: (maybe)
-	- Theme Manager mở rộng (Kết hợp bản cũ và mới)
-	- Background System v2 (Gradient, Glassmorphism, Depth)
-	- Tab Indicator bên phải
-	- Auto select tab đầu tiên
-	- Loader nâng cấp: Mặc định bo-goc (bo góc 12), thanh dời xuống, chữ dời xuống
-	- Fix lỗi Float Button bị nhân đôi lớp đen khi mở lại
-	- Tự động Glass effect khi có ảnh nền
-	- Notify v2: Auto Height, Indicator trái, Reset Stack thông minh
-	- Asset Cache: Tự động lưu ảnh vào bộ nhớ máy (getcustomasset)
-	- Flag System: Tự động đăng ký trạng thái các Toggle, Slider, Dropdown, ColorPicker, TextBox
-	- Config Manager: Lưu và Load trạng thái UI ra file JSON
-	- AutoSave: Tự động lưu Config theo thời gian (mặc định 60 giây)
-	- Hotkey System: Đăng ký phím tắt toàn cục
-	- Element Keybind: Tạo nút gán phím tắt trong UI, hỗ trợ Flag System
-	- Log System: Hiển thị thông báo dạng nhỏ gọn, tự động biến mất, hỗ trợ icon Lucide
-	- Element Image: Chèn ảnh hoặc icon lớn vào giao diện, hỗ trợ LucideIcons và Asset Cache
-	- Element PresetButton: Nút chọn dạng KyriLib (Viền sáng màu Accent khi chọn), tự động xuống dòng, hỗ trợ Flag System
-	- Shine Effect V2: Hiệu ứng chữ chạy Gradient (Snags) dùng 2 lớp chữ (Không bao giờ bị tối chữ, chuẩn Discord/Apple)
-	- ShineEffect Toggle: Có thể bật/tắt hiệu ứng chữ qua settings (Mặc định tắt)
-	- Fix lỗi Float Button bị treo sau khi minimize/mở lại quá nhiều lần (Phân biệt rõ LastFloatPosition)
-	- Cập nhật hiệu ứng Slide Swap cho Float Button (Trượt xuống đáy mới biến mất, không đột ngột)
-]]
-
---[[
   NoirUI Documentation
   Author: Noir & Adono
       Library Owner: NoirNF
