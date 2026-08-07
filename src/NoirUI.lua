@@ -16,6 +16,7 @@ local UIS = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
+local TextService = game:GetService("TextService")
 
 local OldGui = game.CoreGui:FindFirstChild("NoirUI_V3_Ultimate")
 if OldGui then OldGui:Destroy() end
@@ -40,6 +41,12 @@ local NoirUI = {
 }
 
 local LucideIcons = {}
+
+-- Helper: đăng ký connection vào NoirUI.Connections để NoirUI:Destroy() dọn dẹp được
+local function Track(connection)
+    table.insert(NoirUI.Connections, connection)
+    return connection
+end
 
 local function tableLength(t)
     local count = 0
@@ -921,12 +928,17 @@ local function CreateSpringEffect(frame, delay)
     frame.BackgroundTransparency = 1
     frame.Visible = true
     
-    task.wait(delay or 0)
-    TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Size = origSize,
-        Position = origPos,
-        BackgroundTransparency = origTrans
-    }):Play()
+    -- Chạy trong task.spawn để không chặn luồng đang dựng UI (CreateWindow/CreateTab...)
+    task.spawn(function()
+        task.wait(delay or 0)
+        if frame and frame.Parent then
+            TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Size = origSize,
+                Position = origPos,
+                BackgroundTransparency = origTrans
+            }):Play()
+        end
+    end)
 end
 
 local function CreateHoverEffect(button)
@@ -1056,12 +1068,17 @@ local function MakeDraggable(frame)
             dragInput = input
         end
     end)
-    UIS.InputChanged:Connect(function(input)
+    local dragConnection
+    dragConnection = Track(UIS.InputChanged:Connect(function(input)
+        if not frame or not frame.Parent then
+            dragConnection:Disconnect()
+            return
+        end
         if input == dragInput and dragging then
             local delta = input.Position - dragStart
             frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
-    end)
+    end))
 end
 
 -- ====================================================
@@ -1764,10 +1781,6 @@ function NoirUI:CreateLoader(settings)
                     ScreenGui:Destroy()
                 end)
             end)
-            
-            task.delay(0.6, function()
-                Event:Fire()
-            end)
         end)
     end)
     
@@ -1874,19 +1887,29 @@ function NoirUI:CreateWindow(settings)
             sizeStart = Main.Size
         end
     end)
-    UIS.InputChanged:Connect(function(inp)
+    local resizeChangedConn, resizeEndedConn
+    resizeChangedConn = Track(UIS.InputChanged:Connect(function(inp)
+        if not Main or not Main.Parent then
+            resizeChangedConn:Disconnect()
+            return
+        end
         if isResizing and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
             local delta = inp.Position - resizeStart
             local new_x = math.max(sizeStart.X.Offset + delta.X, minSize.X)
             local new_y = math.max(sizeStart.Y.Offset + delta.Y, minSize.Y)
             Main.Size = UDim2.new(0, new_x, 0, new_y)
             savedSize = Main.Size
-        end    end)
-    UIS.InputEnded:Connect(function(inp)
+        end
+    end))
+    resizeEndedConn = Track(UIS.InputEnded:Connect(function(inp)
+        if not Main or not Main.Parent then
+            resizeEndedConn:Disconnect()
+            return
+        end
         if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
             isResizing = false
         end
-    end)
+    end))
 
     -- ==========================================================
     -- FLOAT BUTTON
@@ -2002,13 +2025,22 @@ function NoirUI:CreateWindow(settings)
             floatDragInput = input
         end
     end)
-    UIS.InputChanged:Connect(function(input)
+    local floatChangedConn, floatEndedConn
+    floatChangedConn = Track(UIS.InputChanged:Connect(function(input)
+        if not TBtn or not TBtn.Parent then
+            floatChangedConn:Disconnect()
+            return
+        end
         if input == floatDragInput and floatDragging then
             local delta = input.Position - floatDragStart
             TBtn.Position = UDim2.new(floatStartPos.X.Scale, floatStartPos.X.Offset + delta.X, floatStartPos.Y.Scale, floatStartPos.Y.Offset + delta.Y)
         end
-    end)
-    UIS.InputEnded:Connect(function(input)
+    end))
+    floatEndedConn = Track(UIS.InputEnded:Connect(function(input)
+        if not TBtn or not TBtn.Parent then
+            floatEndedConn:Disconnect()
+            return
+        end
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             if floatDragging then
                 -- ✅ CHỈ CẬP NHẬT Ở ĐÂY: Lưu vị trí hiện tại làm điểm neo
@@ -2016,7 +2048,7 @@ function NoirUI:CreateWindow(settings)
                 floatDragging = false
             end
         end
-    end)
+    end))
     
     -- Header
     local Header = Instance.new("Frame", Main)
@@ -3304,16 +3336,25 @@ function NoirUI:CreateWindow(settings)
                     UpdateSlider(i, true)
                 end
             end)
-            UIS.InputEnded:Connect(function(i)
+            local sliderEndedConn, sliderChangedConn
+            sliderEndedConn = Track(UIS.InputEnded:Connect(function(i)
+                if not f or not f.Parent then
+                    sliderEndedConn:Disconnect()
+                    return
+                end
                 if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
                     isHeld = false
                 end
-            end)
-            UIS.InputChanged:Connect(function(i)
+            end))
+            sliderChangedConn = Track(UIS.InputChanged:Connect(function(i)
+                if not f or not f.Parent then
+                    sliderChangedConn:Disconnect()
+                    return
+                end
                 if isHeld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
                     UpdateSlider(i, true)
                 end
-            end)
+            end))
             
             valBtn.MouseButton1Click:Connect(function()
                 valBtn.Visible = false
@@ -3511,8 +3552,21 @@ function NoirUI:CreateWindow(settings)
                 end
             end
             
-            UIS.InputChanged:Connect(onInputChanged)
-            UIS.InputEnded:Connect(onInputEnded)
+            local pickerChangedConn, pickerEndedConn
+            pickerChangedConn = Track(UIS.InputChanged:Connect(function(input)
+                if not f or not f.Parent then
+                    pickerChangedConn:Disconnect()
+                    return
+                end
+                onInputChanged(input)
+            end))
+            pickerEndedConn = Track(UIS.InputEnded:Connect(function(input)
+                if not f or not f.Parent then
+                    pickerEndedConn:Disconnect()
+                    return
+                end
+                onInputEnded(input)
+            end))
             
             pvw.MouseButton1Click:Connect(function()
                 PlaySound("Element")
@@ -3787,7 +3841,12 @@ function NoirUI:CreateWindow(settings)
                 end
             end)
             
-            UIS.InputBegan:Connect(function(inp, gpe)
+            local outsideClickConn
+            outsideClickConn = Track(UIS.InputBegan:Connect(function(inp, gpe)
+                if not d or not d.Parent then
+                    outsideClickConn:Disconnect()
+                    return
+                end
                 if not open then return end
                 if inp.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
                 local pos = inp.Position
@@ -3796,7 +3855,7 @@ function NoirUI:CreateWindow(settings)
                 if pos.X < ap.X or pos.X > ap.X + as.X or pos.Y < ap.Y or pos.Y > ap.Y + as.Y then
                     closeDropdown()
                 end
-            end)
+            end))
             
             if opt.GetOptions then
                 refreshOptions()
@@ -3805,8 +3864,10 @@ function NoirUI:CreateWindow(settings)
             end
             
             if opt.RefreshInterval and opt.GetOptions then
-                local refreshConnection = RunService.RenderStepped:Connect(function()
-                    if d and d.Parent then
+                local refreshThread = task.spawn(function()
+                    while d and d.Parent do
+                        task.wait(opt.RefreshInterval)
+                        if not (d and d.Parent) then break end
                         local newOptions = opt.GetOptions()
                         if newOptions then
                             local currentCount = 0
@@ -3815,12 +3876,11 @@ function NoirUI:CreateWindow(settings)
                             end
                             if currentCount ~= #newOptions then refreshOptions() end
                         end
-                    else
-                        refreshConnection:Disconnect()
                     end
                 end)
-                table.insert(Tab.Connections, refreshConnection)
-                table.insert(NoirUI.Connections, refreshConnection)
+                local refreshHandle = { Disconnect = function() task.cancel(refreshThread) end }
+                table.insert(Tab.Connections, refreshHandle)
+                table.insert(NoirUI.Connections, refreshHandle)
             end
             
             -- === FLAG SYSTEM: Register Dropdown ===
