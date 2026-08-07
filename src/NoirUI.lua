@@ -16,7 +16,6 @@ local UIS = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
-local TextService = game:GetService("TextService")
 
 local OldGui = game.CoreGui:FindFirstChild("NoirUI_V3_Ultimate")
 if OldGui then OldGui:Destroy() end
@@ -36,8 +35,7 @@ local NoirUI = {
         AccentColor = Color3.fromRGB(138, 116, 249)
     },
     Hotkeys = {},
-    HotkeyConnections = {},
-    __LogSystem = nil
+    HotkeyConnections = {}
 }
 
 local LucideIcons = {}
@@ -739,123 +737,6 @@ function NoirUI:CreateAutoSave(settings)
     end
     
     return AutoSave
-end
-
--- ==========================================================
--- LOG SYSTEM
--- ==========================================================
-function NoirUI:CreateLogger()
-    if NoirUI.__LogSystem then
-        return NoirUI.__LogSystem
-    end
-    
-    local LogGui = Instance.new("ScreenGui")
-    LogGui.Name = "NoirUI_Logs"
-    LogGui.Parent = game:GetService("CoreGui")
-    LogGui.ResetOnSpawn = false
-    LogGui.IgnoreGuiInset = true
-    LogGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-    LogGui.DisplayOrder = 999999999
-    
-    local Log = Instance.new("Frame")
-    Log.Name = "LogContainer"
-    Log.Parent = LogGui
-    Log.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Log.BackgroundTransparency = 1
-    Log.Position = UDim2.new(0, 25, 0, 5)
-    Log.Size = UDim2.new(0, 25, 0, 25)
-    Log.ZIndex = 999
-    
-    local UIListLayout = Instance.new("UIListLayout")
-    UIListLayout.Parent = Log
-    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    UIListLayout.Padding = UDim.new(0, 12)
-    UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-    
-    local Logging = {}
-    NoirUI.__LogSystem = Logging
-    
-    function Logging.new(icon, message, duration)
-        duration = duration or 3
-        message = message or "Log"
-        icon = icon or "info"
-        
-        local LogFrame = Instance.new("Frame")
-        local UICorner = Instance.new("UICorner")
-        local UIStroke = Instance.new("UIStroke")
-        local LogContent = Instance.new("TextLabel")
-        local IconLabel = Instance.new("ImageLabel")
-        local Shadow = Instance.new("ImageLabel")
-        
-        LogFrame.Name = "LogFrame"
-        LogFrame.Parent = Log
-        LogFrame.BackgroundColor3 = Color3.fromRGB(20, 22, 27)
-        LogFrame.BackgroundTransparency = 0.075
-        LogFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        LogFrame.BorderSizePixel = 0
-        LogFrame.ClipsDescendants = true
-        LogFrame.Size = UDim2.new(0, 0, 0, 20)
-        LogFrame.ZIndex = 130
-        
-        UICorner.CornerRadius = UDim.new(0, 4)
-        UICorner.Parent = LogFrame
-        
-        UIStroke.Transparency = 0.650
-        UIStroke.Color = Color3.fromRGB(45, 48, 58)
-        UIStroke.Parent = LogFrame
-        
-        Shadow.Parent = LogFrame
-        Shadow.Size = UDim2.new(1, 0, 1, 0)
-        Shadow.Position = UDim2.new(0, 0, 0, 0)
-        Shadow.BackgroundTransparency = 1
-        Shadow.Image = "rbxassetid://18720640102"
-        Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-        Shadow.ImageTransparency = 0.65
-        Shadow.ZIndex = 0
-        Shadow.ScaleType = Enum.ScaleType.Crop
-        
-        LogContent.Parent = LogFrame
-        LogContent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        LogContent.BackgroundTransparency = 1
-        LogContent.Position = UDim2.new(0, 25, 0, 2)
-        LogContent.Size = UDim2.new(0, 200, 0, 15)
-        LogContent.ZIndex = 132
-        LogContent.Font = Enum.Font.GothamBold
-        LogContent.Text = message
-        LogContent.TextColor3 = Color3.fromRGB(255, 255, 255)
-        LogContent.TextSize = 12
-        LogContent.TextTransparency = 0.25
-        LogContent.TextXAlignment = Enum.TextXAlignment.Left
-        
-        IconLabel.Parent = LogFrame
-        IconLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        IconLabel.BackgroundTransparency = 1
-        IconLabel.Position = UDim2.new(0, 7, 0, 3)
-        IconLabel.Size = UDim2.new(0, 15, 0, 15)
-        IconLabel.ZIndex = 133
-        IconLabel.Image = ResolveIcon(icon) or "rbxthumb://type=Asset&id=94916110511437&w=420&h=420"
-        IconLabel.ImageColor3 = Color3.fromRGB(223, 223, 223)
-        IconLabel.ImageTransparency = 0.25
-        
-        local size = TextService:GetTextSize(LogContent.Text, LogContent.TextSize, LogContent.Font, Vector2.new(math.huge, math.huge))
-        LogFrame.Size = UDim2.new(0, size.X + 35, 0, 20)
-        
-        task.delay(duration, function()
-            TweenService:Create(LogFrame, TweenInfo.new(0.3), {
-                BackgroundTransparency = 1
-            }):Play()
-            TweenService:Create(LogContent, TweenInfo.new(0.3), {
-                TextTransparency = 1
-            }):Play()
-            TweenService:Create(IconLabel, TweenInfo.new(0.3), {
-                ImageTransparency = 1
-            }):Play()
-            task.wait(0.3)
-            LogFrame:Destroy()
-        end)
-    end
-    
-    return Logging
 end
 
 -- ==========================================================
@@ -4278,6 +4159,69 @@ function NoirUI:CreateWindow(settings)
                 return t
             end
             
+            -- Dùng chung cho mọi loại Card thay vì lặp lại code ở từng nhánh (Standard/Action/Left-Right/...)
+            local function createContentLabel(labelParent, layoutOrder)
+                if not opt.Content then return nil end
+                local content = Instance.new("TextLabel", labelParent)
+                content.Size = UDim2.new(1, 0, 0, 0)
+                content.AutomaticSize = Enum.AutomaticSize.Y
+                content.Text = opt.Content
+                content.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
+                content.TextTransparency = 0
+                content.BackgroundTransparency = 1
+                content.Font = Enum.Font.Gotham
+                content.TextSize = 12
+                content.TextXAlignment = Enum.TextXAlignment.Left
+                content.TextWrapped = true
+                if layoutOrder then content.LayoutOrder = layoutOrder end
+                return content
+            end
+            
+            -- Dùng chung cho mọi loại Card thay vì lặp lại code ở từng nhánh (Carousel/Action/Grid)
+            local function createFooterButtons(footerParent, layoutOrder, autoHeight)
+                if not opt.Footer then return nil end
+                local footerFrame = Instance.new("Frame", footerParent)
+                if autoHeight then
+                    footerFrame.Size = UDim2.new(1, 0, 0, 0)
+                    footerFrame.AutomaticSize = Enum.AutomaticSize.Y
+                else
+                    footerFrame.Size = UDim2.new(1, 0, 0, 30)
+                end
+                footerFrame.BackgroundTransparency = 1
+                footerFrame.LayoutOrder = layoutOrder or 4
+                
+                local footerLayout = Instance.new("UIListLayout", footerFrame)
+                footerLayout.FillDirection = Enum.FillDirection.Horizontal
+                footerLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+                footerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                footerLayout.Padding = UDim.new(0, 8)
+                
+                for _, btnData in ipairs(opt.Footer) do
+                    local btn = Instance.new("TextButton", footerFrame)
+                    btn.Size = UDim2.new(0, 0, 0, 30)
+                    btn.AutomaticSize = Enum.AutomaticSize.X
+                    btn.BackgroundColor3 = ACCENT
+                    btn.Text = btnData.Text or "Button"
+                    btn.TextColor3 = GetContrastColor(ACCENT)
+                    btn.TextTransparency = 0
+                    btn.Font = Enum.Font.GothamBold
+                    btn.TextSize = 12
+                    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+                    btn.AutoButtonColor = false
+                    
+                    local padding = Instance.new("UIPadding", btn)
+                    padding.PaddingLeft = UDim.new(0, 16)
+                    padding.PaddingRight = UDim.new(0, 16)
+                    
+                    btn.MouseButton1Click:Connect(function()
+                        PlaySound("Element")
+                        CreateClickScaleEffect(btn)
+                        if btnData.Callback then btnData.Callback() end
+                    end)
+                end
+                return footerFrame
+            end
+            
             if cardType == "Accordion" then
                 local headerBtn = Instance.new("TextButton", f)
                 headerBtn.Size = UDim2.new(1, 0, 0, 30)
@@ -4320,19 +4264,7 @@ function NoirUI:CreateWindow(settings)
                 bodyPadding.PaddingRight = UDim.new(0, 0)
                 bodyPadding.PaddingBottom = UDim.new(0, 0)
                 
-                if opt.Content then
-                    local content = Instance.new("TextLabel", body)
-                    content.Size = UDim2.new(1, 0, 0, 0)
-                    content.AutomaticSize = Enum.AutomaticSize.Y
-                    content.Text = opt.Content
-                    content.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
-                    content.TextTransparency = 0
-                    content.BackgroundTransparency = 1
-                    content.Font = Enum.Font.Gotham
-                    content.TextSize = 12
-                    content.TextXAlignment = Enum.TextXAlignment.Left
-                    content.TextWrapped = true
-                end
+                createContentLabel(body)
                 
                 local isOpen = false
                 headerBtn.MouseButton1Click:Connect(function()
@@ -4492,42 +4424,7 @@ function NoirUI:CreateWindow(settings)
                     updateCarousel(currentIndex)
                 end)
                 
-                if opt.Footer then
-                    local footerFrame = Instance.new("Frame", f)
-                    footerFrame.Size = UDim2.new(1, 0, 0, 30)
-                    footerFrame.BackgroundTransparency = 1
-                    footerFrame.LayoutOrder = 4
-                    
-                    local footerLayout = Instance.new("UIListLayout", footerFrame)
-                    footerLayout.FillDirection = Enum.FillDirection.Horizontal
-                    footerLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-                    footerLayout.SortOrder = Enum.SortOrder.LayoutOrder
-                    footerLayout.Padding = UDim.new(0, 8)
-                    
-                    for _, btnData in ipairs(opt.Footer) do
-                        local btn = Instance.new("TextButton", footerFrame)
-                        btn.Size = UDim2.new(0, 0, 0, 30)
-                        btn.AutomaticSize = Enum.AutomaticSize.X
-                        btn.BackgroundColor3 = ACCENT
-                        btn.Text = btnData.Text or "Button"
-                        btn.TextColor3 = GetContrastColor(ACCENT)
-                        btn.TextTransparency = 0
-                        btn.Font = Enum.Font.GothamBold
-                        btn.TextSize = 12
-                        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-                        btn.AutoButtonColor = false
-                        
-                        local padding = Instance.new("UIPadding", btn)
-                        padding.PaddingLeft = UDim.new(0, 16)
-                        padding.PaddingRight = UDim.new(0, 16)
-                        
-                        btn.MouseButton1Click:Connect(function()
-                            PlaySound("Element")
-                            CreateClickScaleEffect(btn)
-                            if btnData.Callback then btnData.Callback() end
-                        end)
-                    end
-                end
+                createFooterButtons(f, 4, false)
                 
                 updateCarousel(1)
                 
@@ -4578,76 +4475,14 @@ function NoirUI:CreateWindow(settings)
                     img.LayoutOrder = 2
                 end
                 
-                if opt.Content then
-                    local content = Instance.new("TextLabel", f)
-                    content.Size = UDim2.new(1, 0, 0, 0)
-                    content.AutomaticSize = Enum.AutomaticSize.Y
-                    content.Text = opt.Content
-                    content.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
-                    content.TextTransparency = 0
-                    content.BackgroundTransparency = 1
-                    content.Font = Enum.Font.Gotham
-                    content.TextSize = 12
-                    content.TextXAlignment = Enum.TextXAlignment.Left
-                    content.TextWrapped = true
-                    content.LayoutOrder = 3
-                end
+                createContentLabel(f, 3)
                 
             elseif cardType == "Action" then
                 createTitle(opt.Title or "Action Card")
                 
-                if opt.Content then
-                    local content = Instance.new("TextLabel", f)
-                    content.Size = UDim2.new(1, 0, 0, 0)
-                    content.AutomaticSize = Enum.AutomaticSize.Y
-                    content.Text = opt.Content
-                    content.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
-                    content.TextTransparency = 0
-                    content.BackgroundTransparency = 1
-                    content.Font = Enum.Font.Gotham
-                    content.TextSize = 12
-                    content.TextXAlignment = Enum.TextXAlignment.Left
-                    content.TextWrapped = true
-                    content.LayoutOrder = 2
-                end
+                createContentLabel(f, 2)
                 
-                if opt.Footer then
-                    local footerFrame = Instance.new("Frame", f)
-                    footerFrame.Size = UDim2.new(1, 0, 0, 0)
-                    footerFrame.AutomaticSize = Enum.AutomaticSize.Y
-                    footerFrame.BackgroundTransparency = 1
-                    footerFrame.LayoutOrder = 3
-                    
-                    local footerLayout = Instance.new("UIListLayout", footerFrame)
-                    footerLayout.FillDirection = Enum.FillDirection.Horizontal
-                    footerLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-                    footerLayout.SortOrder = Enum.SortOrder.LayoutOrder
-                    footerLayout.Padding = UDim.new(0, 8)
-                    
-                    for _, btnData in ipairs(opt.Footer) do
-                        local btn = Instance.new("TextButton", footerFrame)
-                        btn.Size = UDim2.new(0, 0, 0, 30)
-                        btn.AutomaticSize = Enum.AutomaticSize.X
-                        btn.BackgroundColor3 = ACCENT
-                        btn.Text = btnData.Text or "Button"
-                        btn.TextColor3 = GetContrastColor(ACCENT)
-                        btn.TextTransparency = 0
-                        btn.Font = Enum.Font.GothamBold
-                        btn.TextSize = 12
-                        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-                        btn.AutoButtonColor = false
-                        
-                        local padding = Instance.new("UIPadding", btn)
-                        padding.PaddingLeft = UDim.new(0, 16)
-                        padding.PaddingRight = UDim.new(0, 16)
-                        
-                        btn.MouseButton1Click:Connect(function()
-                            PlaySound("Element")
-                            CreateClickScaleEffect(btn)
-                            if btnData.Callback then btnData.Callback() end
-                        end)
-                    end
-                end
+                createFooterButtons(f, 3, true)
                 
             else
                 if layout == "Left" or layout == "Right" then
@@ -4692,35 +4527,9 @@ function NoirUI:CreateWindow(settings)
                         textWrapperLayout.SortOrder = Enum.SortOrder.LayoutOrder
                         textWrapperLayout.Padding = UDim.new(0, 2)
                         
-                        if opt.Content then
-                            local content = Instance.new("TextLabel", textWrapper)
-                            content.Size = UDim2.new(1, 0, 0, 0)
-                            content.AutomaticSize = Enum.AutomaticSize.Y
-                            content.Text = opt.Content
-                            content.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
-                            content.TextTransparency = 0
-                            content.BackgroundTransparency = 1
-                            content.Font = Enum.Font.Gotham
-                            content.TextSize = 12
-                            content.TextXAlignment = Enum.TextXAlignment.Left
-                            content.TextWrapped = true
-                            content.LayoutOrder = 1
-                        end
+                        createContentLabel(textWrapper, 1)
                     else
-                        if opt.Content then
-                            local content = Instance.new("TextLabel", contentWrapper)
-                            content.Size = UDim2.new(1, 0, 0, 0)
-                            content.AutomaticSize = Enum.AutomaticSize.Y
-                            content.Text = opt.Content
-                            content.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
-                            content.TextTransparency = 0
-                            content.BackgroundTransparency = 1
-                            content.Font = Enum.Font.Gotham
-                            content.TextSize = 12
-                            content.TextXAlignment = Enum.TextXAlignment.Left
-                            content.TextWrapped = true
-                            content.LayoutOrder = 2
-                        end
+                        createContentLabel(contentWrapper, 2)
                     end
                 else
                     createTitle(opt.Title or "Standard Card")
@@ -4736,59 +4545,10 @@ function NoirUI:CreateWindow(settings)
                         img.LayoutOrder = 2
                     end
                     
-                    if opt.Content then
-                        local content = Instance.new("TextLabel", f)
-                        content.Size = UDim2.new(1, 0, 0, 0)
-                        content.AutomaticSize = Enum.AutomaticSize.Y
-                        content.Text = opt.Content
-                        content.TextColor3 = currentTheme.subtext or Color3.fromRGB(165,165,180)
-                        content.TextTransparency = 0
-                        content.BackgroundTransparency = 1
-                        content.Font = Enum.Font.Gotham
-                        content.TextSize = 12
-                        content.TextXAlignment = Enum.TextXAlignment.Left
-                        content.TextWrapped = true
-                        content.LayoutOrder = 3
-                    end
+                    createContentLabel(f, 3)
                 end
                 
-                if opt.Footer then
-                    local footerFrame = Instance.new("Frame", f)
-                    footerFrame.Size = UDim2.new(1, 0, 0, 0)
-                    footerFrame.AutomaticSize = Enum.AutomaticSize.Y
-                    footerFrame.BackgroundTransparency = 1
-                    footerFrame.LayoutOrder = 10
-                    
-                    local footerLayout = Instance.new("UIListLayout", footerFrame)
-                    footerLayout.FillDirection = Enum.FillDirection.Horizontal
-                    footerLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-                    footerLayout.SortOrder = Enum.SortOrder.LayoutOrder
-                    footerLayout.Padding = UDim.new(0, 8)
-                    
-                    for _, btnData in ipairs(opt.Footer) do
-                        local btn = Instance.new("TextButton", footerFrame)
-                        btn.Size = UDim2.new(0, 0, 0, 30)
-                        btn.AutomaticSize = Enum.AutomaticSize.X
-                        btn.BackgroundColor3 = ACCENT
-                        btn.Text = btnData.Text or "Button"
-                        btn.TextColor3 = GetContrastColor(ACCENT)
-                        btn.TextTransparency = 0
-                        btn.Font = Enum.Font.GothamBold
-                        btn.TextSize = 12
-                        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-                        btn.AutoButtonColor = false
-                        
-                        local padding = Instance.new("UIPadding", btn)
-                        padding.PaddingLeft = UDim.new(0, 16)
-                        padding.PaddingRight = UDim.new(0, 16)
-                        
-                        btn.MouseButton1Click:Connect(function()
-                            PlaySound("Element")
-                            CreateClickScaleEffect(btn)
-                            if btnData.Callback then btnData.Callback() end
-                        end)
-                    end
-                end
+                createFooterButtons(f, 10, true)
             end
             
             return f
