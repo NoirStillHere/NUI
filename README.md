@@ -1,6 +1,5 @@
 ![Version](https://img.shields.io/badge/Version-2.0.5-8B5CF6?style=for-the-badge&logo=roblox&logoColor=white)
 ![Lua](https://img.shields.io/badge/Lua-100%25-8B5CF6?style=for-the-badge&logo=lua&logoColor=white)
-[![Discord](https://img.shields.io/discord/123456789012345678?style=for-the-badge&logo=discord&logoColor=white&color=5865F2)](https://discord.gg/fw7zDS8ccv)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/NoirStillHere/NUI/refs/heads/main/assets/logo.jpg" alt="NoirUI helper" width="160" />
