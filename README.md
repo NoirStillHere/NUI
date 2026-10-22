@@ -482,6 +482,7 @@ When creating a custom theme or modifying the current one, the following keys ar
 **NoirUI** được phát triển bởi:
 *   **NoirNF** - UI Engineer & Core Developer
 *   **Adono** - Lua Scripter & Animation Engineer
+*   **D4T** - Tester :)
 
 ---
 *Made for the Roblox scripting community.*
